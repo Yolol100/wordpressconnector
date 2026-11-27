@@ -11,6 +11,8 @@ namespace Webactueel\WordPressConnector\Support;
 
 use RuntimeException;
 
+require_once __DIR__ . '/class-chainedfailure.php';
+
 require_once __DIR__ . '/trait-jsonmethods.php';
 require_once __DIR__ . '/class-localfilesystem.php';
 require_once __DIR__ . '/class-localfileidentity.php';
@@ -37,7 +39,8 @@ final class Json {
 		try {
 			$value = json_decode( $json, true, 512, JSON_THROW_ON_ERROR );
 		} catch ( \JsonException $error ) {
-			throw new RuntimeException( 'Invalid JSON: ' . $error->getMessage(), 0, $error );
+			$failure = ChainedFailure::create( 'Invalid JSON: ' . $error->getMessage(), $error );
+			throw $failure;
 		}
 
 		if ( ! is_array( $value ) ) {
@@ -66,7 +69,8 @@ final class Json {
 		try {
 			return json_encode( $value, $flags | JSON_THROW_ON_ERROR ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Native JSON_THROW_ON_ERROR guarantees failure before any atomic file write; the WordPress wrapper changes that behavior.
 		} catch ( \JsonException $error ) {
-			throw new RuntimeException( 'Could not encode JSON: ' . $error->getMessage(), 0, $error );
+			$failure = ChainedFailure::create( 'Could not encode JSON: ' . $error->getMessage(), $error );
+			throw $failure;
 		}
 	}
 
@@ -195,7 +199,8 @@ final class Json {
 			clearstatcache( true, $temporary );
 			if ( file_exists( $temporary ) || is_link( $temporary ) ) {
 				if ( ! $removed ) {
-					throw new RuntimeException( 'Temporary output file removal failed; manual cleanup required.', 0, $error );
+					$failure = ChainedFailure::create( 'Temporary output file removal failed; manual cleanup required.', $error );
+					throw $failure;
 				}
 				throw new RuntimeException( 'Temporary output file cleanup readback failed; manual cleanup required.' );
 			}

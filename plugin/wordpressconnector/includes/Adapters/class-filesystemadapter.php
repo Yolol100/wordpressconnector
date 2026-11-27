@@ -13,10 +13,13 @@ use ParseError;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\ChainedFailure;
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\LocalFileIdentity;
+
+require_once __DIR__ . '/../Support/class-chainedfailure.php';
 
 require_once __DIR__ . '/trait-filesystemadapteractions.php';
 require_once __DIR__ . '/../Support/class-localfileidentity.php';
@@ -282,9 +285,11 @@ final class FilesystemAdapter {
 			clearstatcache( true, $absolute );
 			$restored = $filesystem->get_contents( $absolute );
 			if ( ! is_string( $restored ) || ! hash_equals( $before_state['sha256'], hash( 'sha256', $restored ) ) ) {
-				throw new RuntimeException( $error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error );
+				$failure = ChainedFailure::create( $error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', $error );
+				throw $failure;
 			}
-			throw new RuntimeException( $error->getMessage() . ' Recovery complete; original file restored and verified.', 0, $error );
+			$failure = ChainedFailure::create( $error->getMessage() . ' Recovery complete; original file restored and verified.', $error );
+			throw $failure;
 		}
 
 		$result['after']     = $this->state( $relative, $readback, $absolute );

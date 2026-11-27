@@ -205,6 +205,22 @@ namespace {
             $rejected=false; try { Json::decode($scalar); } catch(RuntimeException $e) { $rejected=true; }
             $assert($rejected,'Scalar root is rejected: ' . $scalar);
         }
+        // A chained display diagnostic must not leak raw markup into its text
+        // or discard the original exception object and its diagnostic trace.
+        $cause = new RuntimeException('<script>alert(1)</script> & "quoted"');
+        $wrapped = \Webactueel\WordPressConnector\Support\ChainedFailure::create('Failure: ' . $cause->getMessage(), $cause);
+        $assert(get_class($wrapped) === RuntimeException::class && $wrapped->getPrevious() === $cause, 'Native exception type and exact cause preserved');
+        $assert($wrapped->getMessage() === 'Failure: &lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;quoted&quot;', 'Unsafe display markup escaped');
+        $again = \Webactueel\WordPressConnector\Support\ChainedFailure::create($wrapped->getMessage(), $wrapped);
+        $assert($again->getMessage() === $wrapped->getMessage(), 'Already escaped display text not double encoded');
+        foreach (array('decode','encode') as $op) {
+            $caught = null;
+            try {
+                if ('decode' === $op) Json::decode('{');
+                else Json::encode(array('bad'=>"\xB1"));
+            } catch (RuntimeException $error) { $caught = $error; }
+            $assert($caught instanceof RuntimeException && $caught->getPrevious() instanceof JsonException, $op . ': preserves original native JSON exception');
+        }
         if ($failures) throw new RuntimeException(implode("\n",$failures));
         echo "PASS $checks atomic JSON write and root-shape assertions\n";
     } finally {

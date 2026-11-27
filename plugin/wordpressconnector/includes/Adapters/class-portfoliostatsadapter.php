@@ -12,8 +12,11 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\ChainedFailure;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+
+require_once __DIR__ . '/../Support/class-chainedfailure.php';
 
 require_once __DIR__ . '/trait-portfoliostatsadapteractions.php';
 
@@ -219,7 +222,8 @@ final class PortfolioStatsAdapter {
 				}
 			}
 			if ( $failures ) {
-				throw new RuntimeException( 'Portfolio case compensation failed for: ' . implode( ', ', $failures ) . '. Original error: ' . $error->getMessage(), 0, $error );
+				$failure = ChainedFailure::create( 'Portfolio case compensation failed for: ' . implode( ', ', $failures ) . '. Original error: ' . $error->getMessage(), $error );
+				throw $failure;
 			}
 			throw $error;
 		}
@@ -369,11 +373,11 @@ final class PortfolioStatsAdapter {
 				}
 			}
 			if ( $restore_failures ) {
-				throw new RuntimeException(
+				$failure = ChainedFailure::create(
 					'Portfolio stats compensation readback failed for: ' . esc_html( implode( ', ', $restore_failures ) ) . '. Manual recovery is required.',
-					0,
 					$error
 				);
+				throw $failure;
 			}
 			throw $error;
 		}

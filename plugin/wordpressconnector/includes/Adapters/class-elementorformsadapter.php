@@ -12,8 +12,11 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\ChainedFailure;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+
+require_once __DIR__ . '/../Support/class-chainedfailure.php';
 
 /**
  * Registers and handles Elementor Forms connector actions.
@@ -255,13 +258,14 @@ final class ElementorFormsAdapter {
 			try {
 				$this->restore_snapshot( $before );
 			} catch ( Throwable $rollback_error ) {
-				throw new RuntimeException(
+				$failure = ChainedFailure::create(
 					'Elementor form mutation failed and automatic rollback also failed. Manual recovery is required.',
-					0,
 					$error
 				);
+				throw $failure;
 			}
-			throw new RuntimeException( 'Elementor form mutation failed; previous document restored: ' . $error->getMessage(), 0, $error );
+			$failure = ChainedFailure::create( 'Elementor form mutation failed; previous document restored: ' . $error->getMessage(), $error );
+			throw $failure;
 		}
 
 		$result['after_form']           = $readback;
