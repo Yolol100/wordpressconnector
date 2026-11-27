@@ -81,7 +81,7 @@ $wpconnector_files = array(
 	'includes/Admin/Settings.php',
 	'includes/Admin/ElementorJsonExport.php',
 	'includes/Admin/ElementorJsonImport.php',
-	'includes/CLI/class-command.php',
+	'includes/CLI/Command.php',
 	'includes/class-plugin.php',
 );
 foreach ( $wpconnector_files as $wpconnector_file ) {
