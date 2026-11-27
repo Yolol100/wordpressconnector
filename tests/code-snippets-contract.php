@@ -177,6 +177,20 @@ if (0 !== $status || $deletion['payload']['replacements'] !== $parse->invoke($ad
     throw new LogicException('Explicit empty replacement was not preserved.');
 }
 
+// Reject malformed extra selectors even when the other selector is valid.
+foreach (array(true, false, array(1), array(), 1.9, '1junk', '1e0', '+1', ' 1', -1, str_repeat('9', 50)) as $index => $invalid) {
+    $bad = $base;
+    $bad['payload']['snippet_id'] = $invalid;
+    list($status) = $run($validator, array($write('bad-extra-id-' . $index . '.json', $bad)));
+    if (0 === $status) throw new LogicException('CLI ignored malformed extra snippet ID.');
+}
+foreach (array(false, array('x'), 1) as $index => $invalid) {
+    $bad = $base;
+    $bad['payload']['snippet_id'] = 1;
+    $bad['payload']['match_code_contains'] = $invalid;
+    list($status) = $run($validator, array($write('bad-extra-marker-' . $index . '.json', $bad)));
+    if (0 === $status) throw new LogicException('CLI ignored malformed extra marker.');
+}
 $restore = $base;
 $restore['request_id'] = 'snippet-patch-contract-005';
 $restore['action'] = 'code_snippets.restore_code';

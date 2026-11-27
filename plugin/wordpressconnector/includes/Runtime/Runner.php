@@ -14,6 +14,7 @@ use Throwable;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -1141,10 +1142,11 @@ final class Runner {
 			}
 		}
 
-		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$marker     = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
-			? $payload['match_code_contains']
-			: '';
+		$snippet_id = isset( $payload['snippet_id'] ) ? Input::non_negative_id( $payload['snippet_id'] ) : 0;
+		if ( isset( $payload['match_code_contains'] ) && ! is_string( $payload['match_code_contains'] ) ) {
+			throw new RuntimeException( 'Code Snippets marker must be a string.' );
+		}
+		$marker = $payload['match_code_contains'] ?? '';
 
 		if ( ( $snippet_id > 0 && '' !== $marker ) || ( $snippet_id <= 0 && '' === $marker ) ) {
 			throw new RuntimeException( 'Public Code Snippets patch requires exactly one of snippet_id or match_code_contains.' );

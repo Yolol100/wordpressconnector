@@ -29,10 +29,12 @@ namespace Code_Snippets\Model {
 namespace Code_Snippets {
     function get_snippets(array $ids = array(), ?bool $network = null): array
     {
+        ++$GLOBALS['wpc_identity_reads'];
         return array_values($GLOBALS['wpc_snippet_records']);
     }
     function get_snippet(int $id, ?bool $network = null)
     {
+        ++$GLOBALS['wpc_identity_reads'];
         return $GLOBALS['wpc_snippet_records'][$id] ?? new \Code_Snippets\Model\Snippet();
     }
     function update_snippet_fields(int $id, array $fields, ?bool $network = null): void
@@ -81,6 +83,7 @@ namespace {
     $root = dirname(__DIR__);
     require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
     require_once $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
 
     $fail = static function (string $message): void {
@@ -126,6 +129,7 @@ namespace {
 
     $GLOBALS['wpc_snippet_records'] = array();
     $GLOBALS['wpc_save_calls'] = 0;
+    $GLOBALS['wpc_identity_reads'] = 0;
     $adapter = new \Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter();
 
     $empty = $adapter->catalogOnlyInspect(array());
@@ -187,5 +191,73 @@ namespace {
     if (! isset($GLOBALS['wpc_snippet_records'][202]) || $GLOBALS['wpc_snippet_records'][202]->active) {
         $fail('Preexisting snippet should remain saved, but inactive, after rollback.');
     }
-    echo "code snippets catalogue preset contract OK\n";
+    // Invalid selectors must never be converted to a different valid ID.
+    $fixture = new \Code_Snippets\Model\Snippet(array(
+        'id' => 1, 'name' => 'Identity fixture', 'code' => 'fixture marker', 'type' => 'php',
+    ));
+    $GLOBALS['wpc_snippet_records'][1] = $fixture;
+    $patch = array('snippet_id' => 1, 'replacements' => array(array('find' => 'marker', 'replace' => 'changed')));
+    $rollback = array('snippet_id' => 1, 'code' => 'prior fixture', 'expected_code_fingerprint' => hash('sha256', $fixture->code));
+    $badIds = array(true, false, array(1), array(), 1.9, '1junk', '1e0', '+1', ' 1', -1, str_repeat('9', 50));
+    foreach ($badIds as $invalid) {
+        foreach (array('patch' => $patch, 'restoreCode' => $rollback) as $method => $payload) {
+            $payload['snippet_id'] = $invalid;
+            $beforeReads = $GLOBALS['wpc_identity_reads'];
+            $rejected = false;
+            try {
+                $adapter->$method($payload, array('dry_run' => true));
+            } catch (\RuntimeException $error) {
+                $rejected = true;
+            }
+            if (!$rejected || $beforeReads !== $GLOBALS['wpc_identity_reads']) {
+                $fail('Malformed identifier reached provider: ' . $method);
+            }
+        }
+    }
+    foreach (array(false, array('fixture'), 1) as $invalid) {
+        $payload = $patch;
+        $payload['match_code_contains'] = $invalid;
+        $beforeReads = $GLOBALS['wpc_identity_reads'];
+        $rejected = false;
+        try { $adapter->patch($payload, array('dry_run' => true)); }
+        catch (\RuntimeException $error) { $rejected = true; }
+        if (!$rejected || $beforeReads !== $GLOBALS['wpc_identity_reads']) {
+            $fail('Malformed marker reached provider.');
+        }
+    }
+    foreach (array(1, '0001') as $validId) {
+        $payload = $patch;
+        $payload['snippet_id'] = $validId;
+        $preview = $adapter->patch($payload, array('dry_run' => true));
+        if (1 !== $preview['snippet']['id'] || 'fixture marker' !== $fixture->code) {
+            $fail('Valid ID preview changed target or fixture.');
+        }
+        $payload = $rollback;
+        $payload['snippet_id'] = $validId;
+        $preview = $adapter->restoreCode($payload, array('dry_run' => true));
+        if (1 !== $preview['snippet']['id'] || 'fixture marker' !== $fixture->code) {
+            $fail('Valid rollback preview changed target or fixture.');
+        }
+    }
+    foreach (array(array(), array('snippet_id' => 0)) as $selector) {
+        $payload = array_merge($selector, array('match_code_contains' => 'fixture marker', 'replacements' => $patch['replacements']));
+        $preview = $adapter->patch($payload, array('dry_run' => true));
+        if (1 !== $preview['snippet']['id'] || 'fixture marker' !== $fixture->code) {
+            $fail('Valid marker preview changed target or fixture.');
+        }
+    }
+    foreach (array(array('x'), false, 7) as $invalid) {
+        $payload = $rollback;
+        $payload['expected_code_fingerprint'] = $invalid;
+        $beforeReads = $GLOBALS['wpc_identity_reads'];
+        $rejected = false;
+        set_error_handler(static function(int $severity, string $message): bool { throw new \ErrorException($message, 0, $severity); });
+        try { $adapter->restoreCode($payload, array('dry_run' => true)); }
+        catch (\RuntimeException $error) { $rejected = true; }
+        finally { restore_error_handler(); }
+        if (!$rejected || $beforeReads !== $GLOBALS['wpc_identity_reads']) {
+            $fail('Malformed rollback fingerprint reached provider.');
+        }
+    }
+    echo "code snippets catalogue preset and target identity contract OK\n";
 }
