@@ -18,6 +18,12 @@ namespace {
     $GLOBALS['owner_can_update'] = true;
     $GLOBALS['owner_session'] = true;
     function is_user_logged_in(): bool { return $GLOBALS['owner_session']; }
+    function is_ssl(): bool { return false; }
+    final class ApprovalBrowserDenied extends RuntimeException {}
+    function esc_html__($text, $domain = ''): string { return $text; }
+    function wp_die($message = '', $title = '', $args = array()): void {
+        throw new ApprovalBrowserDenied((string) $message, (int) ($args['response'] ?? 500));
+    }
     function current_user_can(string $capability): bool {
         return 'update_plugins' === $capability && $GLOBALS['owner_can_update'];
     }
@@ -56,6 +62,25 @@ namespace {
 
     function ensure(bool $ok, string $reason): void {
         if (! $ok) { fwrite(STDERR, 'FAIL: ' . $reason . "\n"); exit(1); }
+    }
+    // Only an exact POST may enter the owner-session gate. Malformed values
+    // are rejected before nonce checks, release lookup or option writes.
+    $savedMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+    try {
+        foreach (array(null, 'GET', 'post', ' POST', 'POST ', array('POST'), 'POST') as $method) {
+            if (null === $method) { unset($_SERVER['REQUEST_METHOD']); }
+            else { $_SERVER['REQUEST_METHOD'] = $method; }
+            try {
+                (new ReleaseApproval())->approve();
+                throw new RuntimeException('Invalid browser approval reached the mutation path.');
+            } catch (ApprovalBrowserDenied $error) {
+                ensure($error->getCode() === 403 && $GLOBALS['owner_options'] === array(),
+                    'Browser approval must require exact POST and a real HTTPS owner session.');
+            }
+        }
+    } finally {
+        if (null === $savedMethod) { unset($_SERVER['REQUEST_METHOD']); }
+        else { $_SERVER['REQUEST_METHOD'] = $savedMethod; }
     }
     $fingerprint = hash('sha256', 'synthetic canonical release sha and site version');
     $key = 'wpconnector_oauth_release_approval_v1';
