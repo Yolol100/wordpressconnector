@@ -102,7 +102,7 @@ $zipPath = tempnam(sys_get_temp_dir(), 'connector-source-');
 if (! is_string($zipPath)) { throw new RuntimeException('Unable to create an isolated ZIP.'); }
 register_shutdown_function(static function() use ($zipPath): void { @unlink($zipPath); });
 $adapter = new ConnectorUpdateAdapter();
-$verify = new ReflectionMethod(ConnectorUpdateAdapter::class, 'verifyProtectedSource');
+$verify = new ReflectionMethod(ConnectorUpdateAdapter::class, 'verify_protected_source');
 $verify->setAccessible(true);
 $release = array('source_commit' => RELEASE_TEST_COMMIT);
 $makeZip = static function(array $files) use ($zipPath): void {

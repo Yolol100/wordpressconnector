@@ -795,7 +795,7 @@ final class ConnectorUpdateAdapter {
 	private function download_protected_source_package( array $release ): string {
 		$package = $this->download_verified_package( $release );
 		try {
-			$this->verifyProtectedSource( $release, $package );
+			$this->verify_protected_source( $release, $package );
 			return $package;
 		} catch ( \Throwable $error ) {
 			if ( file_exists( $package ) ) {
@@ -884,7 +884,7 @@ final class ConnectorUpdateAdapter {
 	 * @return array Decoded JSON object.
 	 * @throws \RuntimeException If the bounded trusted-source request fails validation.
 	 */
-	private function trustedSourceJson( string $path, int $limit = 524288 ): array {
+	private function trusted_source_json( string $path, int $limit = 524288 ): array {
 		if ( ! preg_match( '#^/(compare/[a-f0-9]{40}\.\.\.main\?per_page=1|git/commits/[a-f0-9]{40}|git/trees/[a-f0-9]{40}\?recursive=1)\z#', $path ) ) {
 			throw new RuntimeException( 'Invalid protected-source request path.' );
 		}
@@ -926,7 +926,7 @@ final class ConnectorUpdateAdapter {
 	 * @param string $package Already checksum/identity validated ZIP.
 	 * @throws \RuntimeException If source commit ancestry or file integrity cannot be verified.
 	 */
-	private function verifyProtectedSource( array $release, string $package ): void {
+	private function verify_protected_source( array $release, string $package ): void {
 		$commit = $release['source_commit'] ?? '';
 		if ( ! is_string( $commit ) || ! preg_match( '/^[a-f0-9]{40}\z/', $commit ) ) {
 			throw new RuntimeException( 'Release must identify the exact approved protected-main commit.' );
@@ -934,17 +934,17 @@ final class ConnectorUpdateAdapter {
 		// The authenticated GitHub API controls the protected main ancestry;
 		// the ZIP author cannot affect this proof by replacing release assets.
 		// A paged comparison retains the merge-base proof; bound file patches to 8 MiB.
-		$compare = $this->trustedSourceJson( '/compare/' . $commit . '...main?per_page=1', 8388608 );
+		$compare = $this->trusted_source_json( '/compare/' . $commit . '...main?per_page=1', 8388608 );
 		if ( ! in_array( $compare['status'] ?? '', array( 'ahead', 'identical' ), true )
 			|| ( $compare['merge_base_commit']['sha'] ?? '' ) !== $commit ) {
 			throw new RuntimeException( 'Release commit is not an ancestor of protected main.' );
 		}
-		$git_commit = $this->trustedSourceJson( '/git/commits/' . $commit, 65536 );
+		$git_commit = $this->trusted_source_json( '/git/commits/' . $commit, 65536 );
 		$tree_sha   = $git_commit['tree']['sha'] ?? '';
 		if ( ! is_string( $tree_sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $tree_sha ) ) {
 			throw new RuntimeException( 'Protected release commit has no canonical Git tree.' );
 		}
-		$tree = $this->trustedSourceJson( '/git/trees/' . $tree_sha . '?recursive=1', 2097152 );
+		$tree = $this->trusted_source_json( '/git/trees/' . $tree_sha . '?recursive=1', 2097152 );
 		if ( true === ( $tree['truncated'] ?? null ) || ! isset( $tree['tree'] ) || ! is_array( $tree['tree'] ) ) {
 			throw new RuntimeException( 'Protected release source tree is incomplete.' );
 		}

@@ -50,7 +50,11 @@ final class Controller {
 	 * @var mixed
 	 */
 	private $authorization_callback;
-	/** @var OAuthResourceServer|null */
+	/**
+	 * Optional OAuth protected-resource authenticator.
+	 *
+	 * @var OAuthResourceServer|null
+	 */
 	private ?OAuthResourceServer $oauth_resource;
 
 	/**

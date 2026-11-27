@@ -32,7 +32,7 @@ final class ReleaseApproval {
 	 *
 	 * @param string $digest Candidate release SHA-256 digest.
 	 */
-	private static function pinnedDigest( string $digest ): bool {
+	private static function pinned_digest( string $digest ): bool {
 		$pin = defined( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256' )
 			? constant( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256' )
 			: null;
@@ -88,7 +88,7 @@ final class ReleaseApproval {
 			|| ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $plan['github_asset_digest'] ) ) {
 			return null;
 		}
-		if ( ! self::pinnedDigest( $plan['github_asset_digest'] ) ) {
+		if ( ! self::pinned_digest( $plan['github_asset_digest'] ) ) {
 			return null;
 		}
 		return array(
@@ -196,7 +196,7 @@ final class ReleaseApproval {
 	 * @param string $fingerprint Exact release fingerprint.
 	 */
 	public static function idForFingerprint( string $fingerprint ): ?string {
-		$record = self::currentApproval( $fingerprint );
+		$record = self::current_approval( $fingerprint );
 		return null === $record ? null : $record['id'];
 	}
 
@@ -205,7 +205,7 @@ final class ReleaseApproval {
 	 *
 	 * @param string $fingerprint Exact release fingerprint.
 	 */
-	private static function currentApproval( string $fingerprint ): ?array {
+	private static function current_approval( string $fingerprint ): ?array {
 		if ( ! OAuthResourceServer::selfUpdateConfigured() || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint )
 			|| ! is_user_logged_in() || ! current_user_can( 'update_plugins' ) ) {
 			return null;
@@ -217,7 +217,7 @@ final class ReleaseApproval {
 			|| ! is_string( $record['id'] ) || ! preg_match( '/^[a-f0-9]{32}\z/', $record['id'] )
 			|| ! is_string( $record['fingerprint'] )
 			|| ! hash_equals( $record['fingerprint'], $fingerprint )
-			|| ! is_string( $record['digest'] ) || ! self::pinnedDigest( $record['digest'] )
+			|| ! is_string( $record['digest'] ) || ! self::pinned_digest( $record['digest'] )
 			|| ! is_int( $record['owner'] ) || get_current_user_id() !== $record['owner']
 			|| ! is_int( $record['issued'] ) || $record['issued'] > $now
 			|| ! is_int( $record['expires'] ) || $record['expires'] <= $now
@@ -241,7 +241,7 @@ final class ReleaseApproval {
 		if ( 1 !== preg_match( '/^[a-f0-9]{32}\\z/', $expected_approval_id ) ) {
 			return false;
 		}
-		$record = self::currentApproval( $fingerprint );
+		$record = self::current_approval( $fingerprint );
 		if ( null === $record || ! hash_equals( $record['id'], $expected_approval_id ) ) {
 			return false;
 		}
@@ -269,7 +269,7 @@ final class ReleaseApproval {
 		}
 		// Never delete the shared approval slot here: another owner's newer
 		// approval may have replaced it between our read and the atomic claim.
-		// currentApproval rejects a claimed ID, and the unique claim blocks reuse.
+		// current_approval rejects a claimed ID, and the unique claim blocks reuse.
 		return true;
 	}
 }
