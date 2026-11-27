@@ -71,7 +71,13 @@ $GLOBALS['wp_filesystem'] = new WP_Filesystem_Base();
 $GLOBALS['wpconn_file_edits_allowed'] = true;
 $GLOBALS['wpconn_file_permissions'] = true;
 function get_filesystem_method($args = array(), $context = ''): string { return 'direct'; }
-function WP_Filesystem($credentials = false, $context = ''): bool { return true; }
+function WP_Filesystem($credentials = false, $context = ''): bool {
+    if (isset($GLOBALS['wpconn_create_race_target'])) {
+        file_put_contents($GLOBALS['wpconn_create_race_target'], 'concurrent upload bytes');
+        unset($GLOBALS['wpconn_create_race_target']);
+    }
+    return true;
+}
 function current_user_can($cap): bool { return $GLOBALS['wpconn_file_permissions']; }
 function wp_is_file_mod_allowed($context): bool { return $GLOBALS['wpconn_file_edits_allowed']; }
 function sanitize_text_field($s): string { return trim(strip_tags((string) $s)); }
@@ -355,6 +361,34 @@ if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
 $fail(static function()use($fs,$path,$content) {
     $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 }, 'overwrite by create');
+// Simulate a different writer creating the target after path validation,
+// but before the exclusive local open. Even a strict PHP error handler
+// must see a bounded Connector failure, with no overwrite or cleanup of
+// the other writer's file.
+$racePath = 'wp-content/themes/fixture/assets/concurrent.html';
+$GLOBALS['wpconn_create_race_target'] = $root . $racePath;
+$deleteCallsBeforeRace = $GLOBALS['wp_filesystem']->deleteCalls;
+$raceMessage = '';
+set_error_handler(static function ($severity, $message) {
+    throw new ErrorException($message, 0, $severity);
+});
+try {
+    try {
+        $fs->createText(array('path'=>$racePath,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
+    } catch (RuntimeException $error) {
+        $raceMessage = $error->getMessage();
+    }
+} finally {
+    restore_error_handler();
+    unset($GLOBALS['wpconn_create_race_target']);
+}
+if ('New file could not be created exclusively; target may now exist or filesystem permissions may block it.' !== $raceMessage
+    || 'concurrent upload bytes' !== file_get_contents($root . $racePath)
+    || $deleteCallsBeforeRace !== $GLOBALS['wp_filesystem']->deleteCalls) {
+    throw new LogicException('Exclusive create race overwrote or cleaned up a competing writer, or leaked a native failure.');
+}
+unlink($root . $racePath);
+
 // A failed create must not be reported as cleaned up without actual readback.
 $failurePath = 'wp-content/themes/fixture/assets/failing-create.html';
 $failureCases = array(

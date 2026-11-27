@@ -341,26 +341,35 @@ final class FilesystemAdapter {
 		}
 
 		$filesystem = $this->filesystem();
-		// Exclusive create: a concurrent file or symlink must not be overwritten.
-		$handle = @fopen( $absolute, 'x' );
-		if ( false === $handle ) {
+		// Exclusive binary create: never overwrite another writer's file.
+		// SPL reports open failures as exceptions, including under strict
+		// host error handlers; the failed opener does not own the target.
+		try {
+			$handle = new \SplFileObject( $absolute, 'xb' );
+		} catch ( Throwable $error ) {
 			throw new RuntimeException( 'New file could not be created exclusively; target may now exist or filesystem permissions may block it.' );
 		}
 		$ok     = true;
 		$offset = 0;
 		$size   = strlen( $content );
-		while ( $offset < $size ) {
-			$written = @fwrite( $handle, substr( $content, $offset ) );
-			if ( false === $written || 0 === $written ) {
-				$ok = false;
-				break;
+		try {
+			while ( $offset < $size ) {
+				$written = $handle->fwrite( substr( $content, $offset ) );
+				if ( ! is_int( $written ) || $written <= 0 ) {
+					$ok = false;
+					break;
+				}
+				$offset += $written;
 			}
-			$offset += $written;
-		}
-		if ( ! @fflush( $handle ) ) {
+			if ( ! $handle->fflush() ) {
+				$ok = false;
+			}
+		} catch ( Throwable $error ) {
 			$ok = false;
+		} finally {
+			// Close the only handle before verifying or removing partial bytes.
+			unset( $handle );
 		}
-		@fclose( $handle );
 		if ( ! $ok || $offset !== $size ) {
 			$this->remove_failed_create( $filesystem, $absolute );
 			throw new RuntimeException( 'New file write failed; partial content was removed.' );
