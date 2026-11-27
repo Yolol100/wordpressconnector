@@ -197,10 +197,7 @@ final class PluginPackageAdapter {
 			if ( true !== $saved ) {
 				$restore_pending = false;
 				remove_action( 'shutdown', $shutdown_restore, 10 );
-				throw new RuntimeException(
-					is_wp_error( $saved ) ? $saved->get_error_message()
-					: 'The original theme could not be backed up safely.'
-				);
+				throw new RuntimeException( 'The original theme could not be backed up safely.' );
 			}
 		}
 
@@ -209,14 +206,11 @@ final class PluginPackageAdapter {
 			// backup directory, so installation must never clear a live path.
 			$result = $upgrader->install( $package, array( 'overwrite_package' => false ) );
 			if ( is_wp_error( $result ) || true !== $result ) {
-				throw new RuntimeException(
-					is_wp_error( $result ) ? $result->get_error_message()
-					: 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.'
-				);
+				throw new RuntimeException( 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.' );
 			}
 			wp_clean_themes_cache();
 			$after_theme = wp_get_theme( $expected );
-			if ( ! $after_theme->exists() ) {
+			if ( ! $after_theme->exists() || $after_theme->errors() ) {
 				throw new RuntimeException( 'Theme installation readback failed.' );
 			}
 			$after = array(
@@ -234,7 +228,7 @@ final class PluginPackageAdapter {
 					|| ! is_string( $restored_style_hash ) || ! hash_equals( $before_style_hash, $restored_style_hash ) ) {
 					throw new RuntimeException( 'Theme replacement failed and automatic recovery could not be verified. Manual recovery is required.' );
 				}
-				throw new RuntimeException( 'Theme replacement failed; original theme restored: ' . $error->getMessage() );
+				throw new RuntimeException( 'Theme replacement failed; original theme restored. Check the WordPress upgrader and filesystem permissions.' );
 			}
 			throw $error;
 		}
@@ -453,16 +447,8 @@ final class PluginPackageAdapter {
 
 		$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
 		$result   = $upgrader->install( $package, array( 'overwrite_package' => $overwrite ) );
-		if ( is_wp_error( $result ) ) {
-			throw new RuntimeException( $result->get_error_message() );
-		}
-		if ( true !== $result ) {
-			$errors  = isset( $upgrader->skin ) && method_exists( $upgrader->skin, 'get_errors' )
-				? $upgrader->skin->get_errors() : null;
-			$details = is_wp_error( $errors ) ? (array) $errors->get_error_messages() : array();
-			$message = $details ? substr( sanitize_text_field( implode( '; ', $details ) ), 0, 280 )
-				: 'WordPress Core upgrader returned an unsuccessful result; verify filesystem, target directory and host restrictions.';
-			throw new RuntimeException( 'Plugin package installation failed: ' . $message );
+		if ( is_wp_error( $result ) || true !== $result ) {
+			throw new RuntimeException( 'Plugin package installation failed; verify filesystem, target directory and host restrictions.' );
 		}
 
 		wp_clean_plugins_cache( true );
@@ -480,7 +466,7 @@ final class PluginPackageAdapter {
 				// Third-party install hooks must run exactly as in wp-admin.
 				$activated = activate_plugin( $expected_plugin, '', $network_wide, false );
 				if ( is_wp_error( $activated ) ) {
-					throw new RuntimeException( $activated->get_error_message() );
+					throw new RuntimeException( 'Plugin was installed but activation failed; check plugin requirements or security restrictions.' );
 				}
 			}
 		}
