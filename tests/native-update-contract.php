@@ -57,6 +57,9 @@ namespace {
     function wp_safe_remote_get(string $url, array $options = array())
     {
         ++$GLOBALS['release_calls'];
+        if (isset($GLOBALS['test_http_failure']) && false !== strpos($url, $GLOBALS['test_http_failure'])) {
+            return new WP_Error('synthetic_transport_failure', 'qa_private_release_transport_diagnostic_758e');
+        }
         if (false !== strpos($url, '/releases/latest')) {
             $tag = 'v' . $GLOBALS['test_release_version'];
             $prefix = 'https://github.com/Yolol100/wordpressconnector/releases/download/' . $tag . '/';
@@ -284,6 +287,29 @@ namespace {
     }
     $GLOBALS['test_can_update_plugins'] = true;
     unset($_GET['wpconnector_update_checked'], $_GET['wpconnector_notice_nonce']);
+
+    // Transport failures must not expose arbitrary provider diagnostics through the connector.
+    $GLOBALS['test_http_failure'] = '/releases/latest';
+    try {
+        $adapter->check();
+        throw new \RuntimeException('Release transport failure was accepted.');
+    } catch (\RuntimeException $error) {
+        if ('Canonical WordPress Connector release metadata is unavailable.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    $GLOBALS['test_http_failure'] = '.sha256';
+    $checksum = new \ReflectionMethod($adapter, 'checksum');
+    if (PHP_VERSION_ID < 80100) { $checksum->setAccessible(true); }
+    try {
+        $checksum->invoke($adapter, 'https://github.com/Yolol100/wordpressconnector/releases/download/v'.$newerVersion.'/wordpressconnector.zip.sha256', 'sha256:'.str_repeat('a', 64));
+        throw new \RuntimeException('Checksum transport failure was accepted.');
+    } catch (\RuntimeException $error) {
+        if ('Connector checksum asset could not be downloaded.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    unset($GLOBALS['test_http_failure']);
 
     echo "native plugin update offers, single and bulk verified download gates OK\n";
 }
