@@ -7,11 +7,11 @@ if (! defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/'); }
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 foreach (array(
     'Support/Json.php',
-    'Support/Fingerprint.php',
+    'Support/class-fingerprint.php',
     'Support/Input.php',
     'Security/Policy.php',
     'Runtime/class-registry.php',
-    'Runtime/Request.php',
+    'Runtime/class-request.php',
     'Runtime/class-result.php',
     'Runtime/class-diagnostics.php',
     'Runtime/SnapshotStore.php',

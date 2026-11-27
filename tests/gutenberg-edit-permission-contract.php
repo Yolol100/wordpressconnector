@@ -83,7 +83,7 @@ function is_wp_error( $value ): bool {
 $root = dirname( __DIR__ );
 foreach ( array(
 	'Support/Json.php',
-	'Support/Fingerprint.php',
+	'Support/class-fingerprint.php',
 	'Support/Input.php',
 	'Security/Policy.php',
 	'Adapters/class-gutenbergadapter.php',

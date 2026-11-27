@@ -50,7 +50,7 @@ function wp_json_encode($value, $options = 0): string {
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 require_once $root . 'Support/Json.php';
-require_once $root . 'Support/Fingerprint.php';
+require_once $root . 'Support/class-fingerprint.php';
 require_once $root . 'Security/Policy.php';
 require_once $root . 'Runtime/class-registry.php';
 require_once $root . 'Adapters/PluginSettingsAdapter.php';

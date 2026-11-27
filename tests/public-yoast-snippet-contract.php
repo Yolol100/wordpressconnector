@@ -23,7 +23,7 @@ function sanitize_text_field($value) { return trim(strip_tags((string) $value));
 define('WPSEO_VERSION', '28.7');
 
 $base = dirname(__DIR__);
-foreach (array('Support/Fingerprint.php', 'Security/Policy.php', 'Runtime/class-registry.php',
+foreach (array('Support/class-fingerprint.php', 'Security/Policy.php', 'Runtime/class-registry.php',
     'Adapters/YoastSnippetAdapter.php', 'Runtime/Runner.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
 }

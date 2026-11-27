@@ -11,10 +11,21 @@ namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
+require_once __DIR__ . '/trait-filesystempolicymethods.php';
+
 /**
  * Applies Filesystem Policy safeguards to connector operations.
  */
 final class FilesystemPolicy {
+	use FilesystemPolicyMethods {
+		assert_listable as assertListable;
+		assert_readable_text as assertReadableText;
+		assert_writable_text as assertWritableText;
+		assert_lifecycle_text as assertLifecycleText;
+		affects_browser_execution as affectsBrowserExecution;
+		is_writable_text as isWritableText;
+	}
+
 	private const TEXT_EXTENSIONS = array(
 		'css',
 		'htm',
@@ -68,137 +79,6 @@ final class FilesystemPolicy {
 		}
 
 		return implode( '/', $segments );
-	}
-
-	/**
-	 * Ensure listable for the FilesystemPolicy component.
-	 *
-	 * @param string $path Input for the operation.
-	 *
-	 * @return string Operation result.
-	 */
-	public static function assertListable( string $path ): string {
-		$path = self::normalize( $path );
-		if ( '.' !== $path ) {
-			self::assert_no_hidden_or_secret_path( $path );
-			self::assert_no_managed_data_path( $path );
-		}
-		return $path;
-	}
-
-	/**
-	 * Ensure readable text for the FilesystemPolicy component.
-	 *
-	 * @param string $path Input for the operation.
-	 *
-	 * @return string Operation result.
-	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 */
-	public static function assertReadableText( string $path ): string {
-		$path = self::normalize( $path );
-		if ( '.' === $path ) {
-			throw new RuntimeException( 'A file path is required.' );
-		}
-		self::assert_no_hidden_or_secret_path( $path );
-		self::assert_no_managed_data_path( $path );
-		self::assert_text_extension( $path );
-		return $path;
-	}
-
-	/**
-	 * Ensure writable text for the FilesystemPolicy component.
-	 *
-	 * @param string $path Input for the operation.
-	 *
-	 * @return string Operation result.
-	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 */
-	public static function assertWritableText( string $path ): string {
-		$path    = self::assertReadableText( $path );
-		$allowed = false;
-		foreach ( self::WRITE_PREFIXES as $prefix ) {
-			if ( 0 === strpos( $path, $prefix ) ) {
-				$allowed = true;
-				break;
-			}
-		}
-		if ( ! $allowed ) {
-			throw new RuntimeException( 'Filesystem writes are limited to existing plugin and theme text files.' );
-		}
-		if ( 0 === strpos( $path, 'wp-content/plugins/wordpressconnector/' ) ) {
-			throw new RuntimeException( 'The connector cannot rewrite its own runtime files. Deploy connector changes through GitHub/release flow.' );
-		}
-		return $path;
-	}
-
-	/**
-	 * Creation/deletion is narrower than replacement: executable PHP and
-	 * plugin/theme identity, build and dependency manifests stay deployment-only.
-	 *
-	 * @param string $path Filesystem path to validate.
-	 *
-	 * @throws \RuntimeException When the requested operation cannot be completed safely.
-	 */
-	public static function assertLifecycleText( string $path ): string {
-		$path      = self::assertWritableText( $path );
-		$extension = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
-		if ( ! in_array( $extension, array( 'css', 'htm', 'html', 'js', 'json', 'md', 'mjs', 'txt', 'xml', 'yaml', 'yml' ), true ) ) {
-			throw new RuntimeException( 'Create/delete supports only non-PHP theme/plugin text assets.' );
-		}
-		$base = strtolower( (string) basename( $path ) );
-		if ( in_array(
-			$base,
-			array(
-				'style.css',
-				'theme.json',
-				'block.json',
-				'package.json',
-				'package-lock.json',
-				'composer.json',
-				'composer.lock',
-				'readme.txt',
-				'license.txt',
-			),
-			true
-		) ) {
-			throw new RuntimeException( 'Package and theme identity files require reviewed deployment rather than direct create/delete.' );
-		}
-		return $path;
-	}
-
-	/**
-	 * HTML and JavaScript execute in browsers; CSS also changes the rendered
-	 * interface. Treat these as active code assets, not inert text.
-	 *
-	 * @param string $path Filesystem path to validate.
-	 */
-	public static function affectsBrowserExecution( string $path ): bool {
-		// Replacement also edits active browser assets; PHP/INC remain separately
-		// parser-validated under the existing plugin/theme capability gate.
-		$path = self::assertWritableText( $path );
-		return in_array(
-			strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) ),
-			array( 'html', 'htm', 'js', 'mjs', 'css' ),
-			true
-		);
-	}
-
-	/**
-	 * Check whether writable text for the FilesystemPolicy component.
-	 *
-	 * @param string $path Input for the operation.
-	 *
-	 * @return bool Operation result.
-	 */
-	public static function isWritableText( string $path ): bool {
-		try {
-			self::assertWritableText( $path );
-			return true;
-		} catch ( RuntimeException $error ) {
-			return false;
-		}
 	}
 
 	/**

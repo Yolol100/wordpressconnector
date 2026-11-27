@@ -201,6 +201,16 @@ if (! class_exists('WP_Post')) {
 $GLOBALS['wpconnector_import_form_reads'] = 0;
 function get_posts(array $args): array {
     ++$GLOBALS['wpconnector_import_form_reads'];
+    if (100 !== ($args['posts_per_page'] ?? null) ||
+        array('modified' => 'DESC', 'ID' => 'DESC') !== ($args['orderby'] ?? null) ||
+        !in_array($args['offset'] ?? null, array(0, 100), true)) {
+        throw new RuntimeException('Import selector query is not bounded and deterministic.');
+    }
+    $GLOBALS['wpconnector_import_form_offsets'][] = $args['offset'];
+    if (!empty($GLOBALS['wpconnector_import_form_large'])) {
+        return array_map(static function(int $id): WP_Post { return new WP_Post($id); },
+            range(300 - $args['offset'], 201 - $args['offset']));
+    }
     return array(new WP_Post(23), new WP_Post(27));
 }
 function get_post(int $id) {
@@ -265,6 +275,28 @@ try {
         if ($validCase[1] > 0 && false !== strpos($html, '<option value="0" selected="selected">')) {
             throw new RuntimeException('Explicit existing target incorrectly selected create.');
         }
+    }
+    // A full first page must preserve the second 100 options without a duplicate
+    // or additional query, and without changing explicit older-target selection.
+    $GLOBALS['wpconnector_import_form_large'] = true;
+    $GLOBALS['wpconnector_import_form_offsets'] = array();
+    $_GET = array('post_id' => '23');
+    ob_start();
+    try {
+        $import->renderImportPage('page');
+        $html = ob_get_clean();
+    } catch (Throwable $error) {
+        ob_end_clean();
+        throw $error;
+    }
+    unset($GLOBALS['wpconnector_import_form_large']);
+    if (array(0, 100) !== $GLOBALS['wpconnector_import_form_offsets'] ||
+        202 !== substr_count($html, '<option value="') ||
+        1 !== substr_count($html, '<option value="23" selected="selected">') ||
+        1 !== substr_count($html, '<option value="101"') ||
+        false === strpos($html, '<option value="300"') ||
+        false !== strpos($html, '<option value="100"')) {
+        throw new RuntimeException('Two-page import selector lost, duplicated, or expanded its bounded options.');
     }
     // Deleted, wrong-type, trashed, and unauthorized explicit targets must stop
     // before rendering a form that could submit an unintended new draft.

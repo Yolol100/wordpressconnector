@@ -193,7 +193,7 @@ function acf_delete_field_group($id = 0): bool
 }
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';

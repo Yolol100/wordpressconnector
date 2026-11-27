@@ -91,7 +91,7 @@ function current_user_can($capability, ...$args): bool { return true; }
 function sanitize_key($value): string { return is_string($value) ? strtolower($value) : ''; }
 function get_post_thumbnail_id($id): int { return 0; }
 require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 $badTargets = array(true, 102.5, '102junk', '1.02e2', ' 102', -102,
     0, '0', array(102), '9999999999999999999999999', null);
 foreach (array('featured_image', 'product_gallery') as $targetType) {

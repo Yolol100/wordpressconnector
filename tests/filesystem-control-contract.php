@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-require_once $root . '/plugin/wordpressconnector/includes/Security/FilesystemPolicy.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-filesystempolicy.php';
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 $mustContain = array(
-    'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/FilesystemPolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
+    'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/class-filesystempolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
     'plugin/wordpressconnector/includes/class-plugin.php' => array('new FilesystemAdapter()'),
     'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'AUTO_ENABLED_FLAGS'),
     'plugin/wordpressconnector/includes/Admin/Settings.php' => array('After a WordPress administrator clicks Activate,', 'Optional emergency policy overrides', 'Reconnect trusted GitHub Actions'),

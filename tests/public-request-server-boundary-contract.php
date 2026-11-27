@@ -7,7 +7,7 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/Request.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Security\Policy;

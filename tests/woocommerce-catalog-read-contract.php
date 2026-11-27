@@ -7,7 +7,7 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php';
 
