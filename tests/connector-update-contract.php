@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
+$implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-connectorupdateadapteractions.php');
+if ($implementation === false || !is_string($adapter)) { throw new RuntimeException('Missing canonical implementation: Adapters/trait-connectorupdateadapteractions.php'); }
+$adapter .= $implementation;
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/class-plugin.php');
 $readme = file_get_contents($root . '/plugin/wordpressconnector/readme.txt');

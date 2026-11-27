@@ -8,6 +8,9 @@ if(!is_string($source)||''===$source) {
     fwrite(STDERR,"ElementorJsonImport.php is missing or unreadable.\n");
     exit(1);
 }
+$importImplementation = file_get_contents(dirname($path) . '/trait-elementorjsonimportmethods.php');
+if (!is_string($importImplementation)) { throw new RuntimeException('Missing canonical Elementor import implementation.'); }
+$source .= $importImplementation;
 $compactSource = preg_replace('/\\s+/', '', $source);
 if (! is_string($compactSource)) { throw new RuntimeException('Could not normalize Elementor import source.'); }
 $required=array("add_filter('page_row_actions'","add_filter('post_row_actions'","add_action('admin_menu'","admin_post_","Import Elementor JSON","elementor_library","MAX_BYTES","new ElementorAdapter()","replaceDocument","createDocument","Create new draft from JSON","'edit_mode'=>'builder'");
@@ -35,12 +38,12 @@ if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->r
 $singleStart = strpos($source, 'public function handleImport(): void {');
 $singleNonce = false !== $singleStart ? strpos($source, 'check_admin_referer( self::ACTION );', $singleStart) : false;
 $singleParser = false !== $singleNonce ? strpos($source, '$this->uploaded_payload()', $singleNonce) : false;
-$bulkStart = strpos($source, 'public function previewBulk(): void {');
+$bulkStart = strpos($source, 'public function preview_bulk(): void {');
 $bulkNonce = false !== $bulkStart ? strpos($source, 'check_admin_referer( self::BULK_PREVIEW );', $bulkStart) : false;
 $bulkCapability = false !== $bulkNonce ? strpos($source, "current_user_can( 'manage_options' )", $bulkNonce) : false;
 $bulkParser = false !== $bulkCapability ? strpos($source, '$this->bulk_uploads()', $bulkCapability) : false;
 $singleEnd = false !== $singleStart ? strpos($source, 'private function uploaded_payload(): array {', $singleStart) : false;
-$bulkEnd = false !== $bulkStart ? strpos($source, 'public function confirmBulk(): void {', $bulkStart) : false;
+$bulkEnd = false !== $bulkStart ? strpos($source, 'public function confirm_bulk(): void {', $bulkStart) : false;
 if (false === $singleNonce || false === $singleParser || false === $singleEnd
     || ! ($singleStart < $singleNonce && $singleNonce < $singleParser && $singleParser < $singleEnd)
     || false === $bulkNonce || false === $bulkCapability || false === $bulkParser || false === $bulkEnd

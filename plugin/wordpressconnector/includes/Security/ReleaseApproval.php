@@ -13,6 +13,8 @@ namespace Webactueel\WordPressConnector\Security;
 use Throwable;
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
 
+require_once __DIR__ . '/trait-releaseapprovalmethods.php';
+
 /**
  * A ChatGPT-provided confirm:true is NOT evidence of owner consent.
  *
@@ -20,6 +22,10 @@ use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
  * WordPress nonce, a live cookie session and the exact release fingerprint.
  */
 final class ReleaseApproval {
+	use ReleaseApprovalMethods {
+		id_for_fingerprint as idForFingerprint;
+	}
+
 	private const OPTION       = 'wpconnector_oauth_release_approval_v1';
 	private const CLAIM_PREFIX = 'wpconnector_oauth_release_claim_';
 	private const TTL_SECONDS  = 600;
@@ -188,16 +194,6 @@ final class ReleaseApproval {
 	 */
 	public static function available( string $fingerprint ): bool {
 		return null !== self::idForFingerprint( $fingerprint );
-	}
-
-	/**
-	 * Bind the locked preflight to the exact one-time approval record.
-	 *
-	 * @param string $fingerprint Exact release fingerprint.
-	 */
-	public static function idForFingerprint( string $fingerprint ): ?string {
-		$record = self::current_approval( $fingerprint );
-		return null === $record ? null : $record['id'];
 	}
 
 	/**

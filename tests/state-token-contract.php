@@ -31,7 +31,54 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/Policy.p
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/SitePairing.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/GitHubOidc.php';
 
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/MCP/Controller.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/Controller.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/ReleaseApproval.php';
+
 $serviceAliases = array(
+    'Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter' => array(
+        'refreshNativeUpdateNoticeAction' => 'Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapterActions::refresh_native_update_notice_action',
+        'refreshNativeUpdateNotice' => 'Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapterActions::refresh_native_update_notice',
+        'pluginActionLinks' => 'Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapterActions::plugin_action_links',
+        'forceNativeUpdateCheck' => 'Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapterActions::force_native_update_check',
+        'verifiedNativeDownload' => 'Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapterActions::verified_native_download',
+    ),
+    'Webactueel\WordPressConnector\Admin\ElementorJsonImport' => array(
+        'rowActions' => 'Webactueel\WordPressConnector\Admin\ElementorJsonImportMethods::row_actions',
+        'registerImportPages' => 'Webactueel\WordPressConnector\Admin\ElementorJsonImportMethods::register_import_pages',
+        'renderBulkPage' => 'Webactueel\WordPressConnector\Admin\ElementorJsonImportMethods::render_bulk_page',
+        'previewBulk' => 'Webactueel\WordPressConnector\Admin\ElementorJsonImportMethods::preview_bulk',
+        'confirmBulk' => 'Webactueel\WordPressConnector\Admin\ElementorJsonImportMethods::confirm_bulk',
+    ),
+    'Webactueel\WordPressConnector\MCP\Controller' => array(
+        'registerRoutes' => 'Webactueel\WordPressConnector\MCP\MCPControllerMethods::register_routes',
+    ),
+    'Webactueel\WordPressConnector\REST\Controller' => array(
+        'validateRequestId' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_request_id',
+        'registerRoutes' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::register_routes',
+        'uploadAsset' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::upload_asset',
+        'validateAssetPath' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_asset_path',
+    ),
+    'Webactueel\WordPressConnector\Runtime\ProcessedStore' => array(
+        'releaseMutationLock' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::release_mutation_lock',
+    ),
+    'Webactueel\WordPressConnector\Security\OAuthResourceServer' => array(
+        'isConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_configured',
+        'selfUpdateConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::self_update_configured',
+        'wellKnownUrl' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::well_known_url',
+        'registerRoutes' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::register_routes',
+        'resourceMetadata' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::resource_metadata',
+        'challengeHeader' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::challenge_header',
+        'canSelfUpdate' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::can_self_update',
+        'isAuthenticated' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_authenticated',
+    ),
+    'Webactueel\WordPressConnector\Security\ReleaseApproval' => array(
+        'idForFingerprint' => 'Webactueel\WordPressConnector\Security\ReleaseApprovalMethods::id_for_fingerprint',
+    ),
     'Webactueel\WordPressConnector\Adapters\MediaAdapter' => array(
         'mediaList' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_list',
         'mediaGet' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_get',

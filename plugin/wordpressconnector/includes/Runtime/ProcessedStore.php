@@ -9,10 +9,16 @@ declare( strict_types = 1 );
 
 namespace Webactueel\WordPressConnector\Runtime;
 
+require_once __DIR__ . '/trait-processedstoremethods.php';
+
 /**
  * Provides Processed Store behavior for connector request processing.
  */
 final class ProcessedStore {
+	use ProcessedStoreMethods {
+		release_mutation_lock as releaseMutationLock;
+	}
+
 	private const PREFIX   = 'wpconnector_processed_';
 	private const LOCK_KEY = 'wpconnector_mutation_lock';
 	private const LOCK_TTL = 600;
@@ -175,21 +181,6 @@ final class ProcessedStore {
 		}
 
 		return $this->compare_and_swap_lock( $existing, $value ) ? $token : '';
-	}
-
-	/**
-	 * Process the release mutation lock operation in the ProcessedStore component.
-	 *
-	 * @param string $token Input for the operation.
-	 */
-	public function releaseMutationLock( string $token ): void {
-		$existing = get_option( self::LOCK_KEY, '' );
-		$data     = is_string( $existing ) ? json_decode( $existing, true ) : null;
-		if ( ! is_string( $existing ) || ! is_array( $data ) || ! hash_equals( (string) ( $data['token'] ?? '' ), $token ) ) {
-			return;
-		}
-
-		$this->delete_lock_if_value( $existing );
 	}
 
 	/**

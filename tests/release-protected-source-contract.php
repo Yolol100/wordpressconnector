@@ -163,11 +163,12 @@ try {
 if (!$invalidSourceRejected) { throw new RuntimeException('Must refuse an unpinned release commit.'); }
 // The native Plugins update must not accept a ZIP whose owner-published
 // SHA-256/checksum asset agrees with the ZIP but whose bytes disagree with main.
-$source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
-$nativeStart = strpos($source, 'public function verifiedNativeDownload(');
-$nativeEnd = strpos($source, 'public function check(', $nativeStart ?: 0);
-if (false === $nativeStart || false === $nativeEnd
-    || false === strpos(substr($source, $nativeStart, $nativeEnd - $nativeStart), 'download_protected_source_package( $release )')) {
+$nativeCallback = new ReflectionMethod(ConnectorUpdateAdapter::class, 'verifiedNativeDownload');
+$nativeSourceLines = file($nativeCallback->getFileName());
+if (!is_array($nativeSourceLines) || !$nativeCallback->isPublic()
+    || false === strpos(implode('', array_slice($nativeSourceLines,
+        $nativeCallback->getStartLine() - 1, $nativeCallback->getEndLine() - $nativeCallback->getStartLine() + 1)),
+        'download_protected_source_package( $release )')) {
     throw new RuntimeException('Native Update Now does not use the protected-source verifier.');
 }
 $protectedDownload = new ReflectionMethod(ConnectorUpdateAdapter::class, 'download_protected_source_package');
