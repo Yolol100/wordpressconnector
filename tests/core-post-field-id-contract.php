@@ -30,7 +30,8 @@ $GLOBALS['post_insert_fields'] = null;
 $GLOBALS['post_update_fields'] = null;
 function post_type_exists($type): bool { return in_array($type, array('post', 'page'), true); }
 function wp_slash($value) { return $value; }
-function is_wp_error($value): bool { return false; }
+class WP_Error { public function get_error_message(): string { return 'qa_private_provider_diagnostic_9c31'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
 function get_post($id) {
     if (! is_int($id)) { throw new RuntimeException('Post lookup used a coerced ID.'); }
     return $GLOBALS['posts'][$id] ?? null;
@@ -39,6 +40,7 @@ function get_post_thumbnail_id($id): int { return 0; }
 function get_permalink($id): string { return 'https://example.test/?p=' . $id; }
 function wp_insert_post($fields, $wp_error = false) {
     ++$GLOBALS['post_creates'];
+    if (isset($GLOBALS['post_provider_result'])) { return $GLOBALS['post_provider_result']; }
     $GLOBALS['post_insert_fields'] = $fields;
     $post = new WP_Post();
     $post->ID = 303;
@@ -51,6 +53,7 @@ function wp_insert_post($fields, $wp_error = false) {
 }
 function wp_update_post($fields, $wp_error = false) {
     ++$GLOBALS['post_updates'];
+    if (isset($GLOBALS['post_provider_result'])) { return $GLOBALS['post_provider_result']; }
     $GLOBALS['post_update_fields'] = $fields;
     $post = get_post($fields['ID']);
     if (! $post) { throw new RuntimeException('Update target missing.'); }
@@ -177,4 +180,29 @@ if (($restored['after']['author'] ?? null) !== 7
     || $GLOBALS['post_updates'] !== 2) {
     throw new RuntimeException('Post update rollback no longer restores valid IDs.');
 }
-echo "Core post author and parent exact ID contract OK\n";
+// Provider failure text can contain data from third-party hooks or a database.
+$beforeState = serialize($GLOBALS['posts']);
+$cases = array(array('postCreate', $createPayload, 'WordPress post creation failed.'), array('postUpdate', $updatePayload, 'WordPress post update failed.'));
+foreach ($cases as $case) {
+    list($method, $payload, $expected) = $case;
+    $badResults = array(new WP_Error(), 0, -1, '202');
+    if ('postUpdate' === $method) { $badResults[] = 303; }
+    foreach ($badResults as $providerResult) {
+        $GLOBALS['post_provider_result'] = $providerResult;
+        $rejected = false;
+        try { $adapter->$method($payload, array('dry_run' => false)); }
+        catch (RuntimeException $error) { $rejected = $expected === $error->getMessage(); }
+        catch (Throwable $error) { $rejected = false; }
+        if (!$rejected || $beforeState !== serialize($GLOBALS['posts'])) {
+            throw new LogicException('Invalid post provider result was not safely rejected: ' . $method);
+        }
+    }
+}
+unset($GLOBALS['post_provider_result']);
+try {
+    $adapter->postCreate(array('type' => 'qa_private_provider_diagnostic_9c31'), array('dry_run' => true));
+    throw new LogicException('Unknown post type was accepted.');
+} catch (RuntimeException $error) {
+    if ('Unknown post type.' !== $error->getMessage()) { throw $error; }
+}
+echo "Core post author, parent and provider result contract OK\n";

@@ -383,7 +383,7 @@ final class CoreAdapter {
 		}
 
 		if ( ! post_type_exists( $fields['post_type'] ) ) {
-			throw new RuntimeException( 'Unknown post type: ' . $fields['post_type'] );
+			throw new RuntimeException( 'Unknown post type.' );
 		}
 		Policy::assertReadablePostType( $fields['post_type'] );
 
@@ -400,8 +400,8 @@ final class CoreAdapter {
 		}
 
 		$id = wp_insert_post( wp_slash( $fields ), true );
-		if ( is_wp_error( $id ) ) {
-			throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) || ! is_int( $id ) || $id <= 0 ) {
+			throw new RuntimeException( 'WordPress post creation failed.' );
 		}
 
 		$post = get_post( (int) $id );
@@ -443,8 +443,8 @@ final class CoreAdapter {
 		}
 
 		$updated = wp_update_post( wp_slash( $fields ), true );
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || $fields['ID'] !== $updated ) {
+			throw new RuntimeException( 'WordPress post update failed.' );
 		}
 
 		$result['after']     = $this->post_snapshot( get_post( (int) $updated ) );
@@ -781,7 +781,7 @@ final class CoreAdapter {
 	public function termList( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : 'category';
 		if ( ! taxonomy_exists( $taxonomy ) ) {
-			throw new RuntimeException( 'Unknown taxonomy: ' . $taxonomy );
+			throw new RuntimeException( 'Unknown taxonomy.' );
 		}
 		$taxonomy_object = get_taxonomy( $taxonomy );
 		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
@@ -796,7 +796,7 @@ final class CoreAdapter {
 		);
 		$terms = get_terms( $args );
 		if ( is_wp_error( $terms ) ) {
-			throw new RuntimeException( $terms->get_error_message() );
+			throw new RuntimeException( 'WordPress term listing failed.' );
 		}
 		return array( 'terms' => array_map( array( $this, 'term_snapshot' ), $terms ) );
 	}
@@ -866,7 +866,7 @@ final class CoreAdapter {
 		}
 		$created = wp_insert_term( $name, $taxonomy, $args );
 		if ( is_wp_error( $created ) ) {
-			throw new RuntimeException( $created->get_error_message() );
+			throw new RuntimeException( 'WordPress term creation failed.' );
 		}
 		$id = (int) $created['term_id'];
 		return array(
@@ -919,7 +919,7 @@ final class CoreAdapter {
 		}
 		$updated = wp_update_term( $id, $taxonomy, $args );
 		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+			throw new RuntimeException( 'WordPress term update failed.' );
 		}
 		$result['after']     = $this->term_snapshot( get_term( $id, $taxonomy ) );
 		$result['_rollback'] = array(
@@ -958,8 +958,11 @@ final class CoreAdapter {
 			return $result;
 		}
 		$deleted = wp_delete_term( $id, $taxonomy );
-		if ( is_wp_error( $deleted ) || false === $deleted ) {
-			throw new RuntimeException( is_wp_error( $deleted ) ? $deleted->get_error_message() : 'Term delete failed.' );
+		if ( 0 === $deleted ) {
+			throw new RuntimeException( 'Default taxonomy term cannot be deleted.' );
+		}
+		if ( true !== $deleted ) {
+			throw new RuntimeException( 'Term delete failed.' );
 		}
 		$result['_rollback'] = array(
 			'action'  => 'term.create',
@@ -1003,7 +1006,7 @@ final class CoreAdapter {
 		}
 		$before = wp_get_object_terms( $object_id, $taxonomy, array( 'fields' => 'ids' ) );
 		if ( is_wp_error( $before ) ) {
-			throw new RuntimeException( $before->get_error_message() );
+			throw new RuntimeException( 'WordPress term assignment lookup failed.' );
 		}
 		$result = array(
 			'before'               => $before,
@@ -1015,7 +1018,7 @@ final class CoreAdapter {
 		}
 		$assigned = wp_set_object_terms( $object_id, $term_ids, $taxonomy, $append );
 		if ( is_wp_error( $assigned ) ) {
-			throw new RuntimeException( $assigned->get_error_message() );
+			throw new RuntimeException( 'WordPress term assignment failed.' );
 		}
 		$result['_rollback'] = array(
 			'action'  => 'term.assign',
