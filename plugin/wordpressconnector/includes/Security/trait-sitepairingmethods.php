@@ -60,29 +60,6 @@ trait SitePairingMethods {
 	}
 
 	/**
-	 * Process the enable for administrator operation in the SitePairing component.
-	 *
-	 * @param int $administratorId Input for the operation.
-	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 */
-	public static function enable_for_administrator( int $administratorId ): void {
-		$administrator_id = self::validated_administrator_id( $administratorId );
-		$state            = array(
-			'enabled'          => 1,
-			'audience_sha256'  => self::fingerprint(),
-			'administrator_id' => $administrator_id,
-		);
-		update_option( self::OPTION, $state, false );
-		// A WordPress option update can be unchanged, fail, or be filtered.
-		// Only the exact stored approval and current administrator rights count.
-		if ( get_option( self::OPTION, null ) !== $state
-			|| self::pairedAdministratorId() !== $state['administrator_id'] ) {
-			throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
-		}
-	}
-
-	/**
 	 * Validate the exact administrator before writing site-bound approval.
 	 *
 	 * @param int $administrator_id Administrator to validate.

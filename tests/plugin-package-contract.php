@@ -6,9 +6,7 @@ $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
-$assetStoreImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
-if (!is_string($assetStore) || !is_string($assetStoreImplementation)) { throw new RuntimeException('Missing canonical assetstore source.'); }
-$assetStore .= $assetStoreImplementation;
+if (!is_string($assetStore)) { throw new RuntimeException('Missing assetstore source.'); }
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/class-plugin.php');
 $docs = file_get_contents($root . '/docs/PLUGIN-PACKAGE-REST.md');

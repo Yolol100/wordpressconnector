@@ -21,7 +21,6 @@ require_once __DIR__ . '/trait-oauthresourceservermethods.php';
  */
 final class OAuthResourceServer {
 	use OAuthResourceServerMethods {
-		serve_well_known as serveWellKnown;
 		is_configured as isConfigured;
 		self_update_configured as selfUpdateConfigured;
 		well_known_url as wellKnownUrl;
@@ -379,5 +378,40 @@ final class OAuthResourceServer {
 		wp_set_current_user( $config['user_id'] );
 		$this->authenticated = true;
 		return true;
+	}
+
+	/**
+	 * Serve the exact RFC 9728 URL early, without an activation-only rewrite.
+	 * WordPress must receive the .well-known request from the web server.
+	 */
+	public function serveWellKnown(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw request URI is used only in strict canonical path/query comparisons, never output or interpreted as code.
+		$uri = $_SERVER['REQUEST_URI'] ?? '';
+		if ( ! is_string( $uri ) || '' === $uri ) {
+			return;
+		}
+		$url = self::wellKnownUrl();
+		if ( '' === $url
+			|| wp_parse_url( $uri, PHP_URL_PATH ) !== wp_parse_url( $url, PHP_URL_PATH )
+			|| wp_parse_url( $uri, PHP_URL_QUERY ) !== wp_parse_url( $url, PHP_URL_QUERY ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Exact HTTP method literal (GET) comparison; unexpected values are rejected.
+		$method = $_SERVER['REQUEST_METHOD'] ?? '';
+		if ( 'GET' !== $method ) {
+			status_header( 405 );
+			header( 'Allow: GET', true );
+			exit;
+		}
+		$metadata = self::metadata();
+		if ( ! is_ssl() || array() === $metadata ) {
+			status_header( 404 );
+			exit;
+		}
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8', true );
+		status_header( 200 );
+		echo wp_json_encode( $metadata, JSON_UNESCAPED_SLASHES );
+		exit;
 	}
 }

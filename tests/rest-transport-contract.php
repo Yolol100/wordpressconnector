@@ -8,9 +8,7 @@ $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes
 if ($implementation === false || !is_string($controller)) { throw new RuntimeException('Missing canonical implementation: REST/trait-restcontrollermethods.php'); }
 $controller .= $implementation;
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
-$assetStoreImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
-if (!is_string($assetStore) || !is_string($assetStoreImplementation)) { throw new RuntimeException('Missing canonical assetstore source.'); }
-$assetStore .= $assetStoreImplementation;
+if (!is_string($assetStore)) { throw new RuntimeException('Missing assetstore source.'); }
 $settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
 $settingsImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
 if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }

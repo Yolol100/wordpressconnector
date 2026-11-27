@@ -135,9 +135,7 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
 $adapterSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapterSource .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
-$assetSourceImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
-if (!is_string($assetSource) || !is_string($assetSourceImplementation)) { throw new RuntimeException('Missing canonical assetstore source.'); }
-$assetSource .= $assetSourceImplementation;
+if (!is_string($assetSource)) { throw new RuntimeException('Missing assetstore source.'); }
 $requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-request.php');
 $controllerSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-controller.php');
 $controllerImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-restcontrollermethods.php');
