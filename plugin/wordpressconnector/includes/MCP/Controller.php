@@ -18,10 +18,16 @@ use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
+require_once __DIR__ . '/trait-mcpcontrollermethods.php';
+
 /**
  * Implements Controller handling for the connector MCP endpoint.
  */
 final class Controller {
+	use MCPControllerMethods {
+		register_routes as registerRoutes;
+	}
+
 	private const NAMESPACE             = 'webactueel-wordpress-connector/v1';
 	private const ROUTE                 = '/mcp';
 	private const MODERN_VERSION        = '2026-07-28';
@@ -77,21 +83,6 @@ final class Controller {
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'registerRoutes' ) );
-	}
-
-	/**
-	 * Register the supported REST and MCP routes.
-	 */
-	public function registerRoutes(): void {
-		register_rest_route(
-			self::NAMESPACE,
-			self::ROUTE,
-			array(
-				'methods'             => \WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'handle' ),
-				'permission_callback' => array( $this, 'authorize' ),
-			)
-		);
 	}
 
 	/**

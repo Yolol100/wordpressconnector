@@ -20,6 +20,7 @@ $forms=$read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.
 $export=$read('plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php');
 $export.=$read('plugin/wordpressconnector/includes/Admin/trait-elementorjsonexportmethods.php');
 $import=$read('plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php');
+$import.=$read('plugin/wordpressconnector/includes/Admin/trait-elementorjsonimportmethods.php');
 $settings=$read('plugin/wordpressconnector/includes/Admin/class-settings.php');
 $settings.=$read('plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
 $catalog=$read('docs/ACTION-CATALOG.md');

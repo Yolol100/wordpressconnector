@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
+$implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-restcontrollermethods.php');
+if ($implementation === false || !is_string($controller)) { throw new RuntimeException('Missing canonical implementation: REST/trait-restcontrollermethods.php'); }
+$controller .= $implementation;
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
 $settingsImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');

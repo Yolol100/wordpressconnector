@@ -13,11 +13,24 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Security;
 
+require_once __DIR__ . '/trait-oauthresourceservermethods.php';
+
 /**
  * Authenticate native site-bound OAuth grants or externally issued bearers
  * through trusted introspection and explicit WordPress account binding.
  */
 final class OAuthResourceServer {
+	use OAuthResourceServerMethods {
+		is_configured as isConfigured;
+		self_update_configured as selfUpdateConfigured;
+		well_known_url as wellKnownUrl;
+		register_routes as registerRoutes;
+		resource_metadata as resourceMetadata;
+		challenge_header as challengeHeader;
+		can_self_update as canSelfUpdate;
+		is_authenticated as isAuthenticated;
+	}
+
 	private const NAMESPACE               = 'webactueel-wordpress-connector/v1';
 	private const SCOPE                   = 'wpconnector:read';
 	private const UPDATE_SCOPE            = 'wpconnector:update';
@@ -117,47 +130,9 @@ final class OAuthResourceServer {
 		return $data;
 	}
 
-	/** Whether the site owner has configured (not proven) an OAuth provider. */
-	public static function isConfigured(): bool {
-		return null !== self::config();
-	}
-
-	/**
-	 * Site-owner opt-in for ChatGPT-initiated updates of this Connector only.
-	 * This never enables arbitrary PHP/filesystem modifications.
-	 */
-	public static function selfUpdateConfigured(): bool {
-		return self::isConfigured()
-			&& ! ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::is_enabled() )
-			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' )
-			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' );
-	}
-
 	/** Exact OAuth audience used by this site and its MCP resource. */
 	public static function resource(): string {
 		return rest_url( self::NAMESPACE . '/mcp' );
-	}
-
-	/**
-	 * RFC 9728 well-known discovery URL for the exact protected MCP URI.
-	 * The host's web server must forward this route to WordPress.
-	 */
-	public static function wellKnownUrl(): string {
-		$parts = wp_parse_url( self::resource() );
-		if ( ! is_array( $parts ) || 'https' !== ( $parts['scheme'] ?? null )
-			|| empty( $parts['host'] )
-			|| ( isset( $parts['path'] ) && ! is_string( $parts['path'] ) )
-			|| isset( $parts['fragment'] ) || isset( $parts['user'] )
-			|| isset( $parts['pass'] ) ) {
-			return '';
-		}
-		$port = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
-		// RFC 9728 removes the terminating slash after the authority before
-		// inserting the well-known segment, including for query-only REST.
-		$path  = '/' === ( $parts['path'] ?? '' ) ? '' : ( $parts['path'] ?? '' );
-		$query = isset( $parts['query'] ) ? '?' . $parts['query'] : '';
-		return 'https://' . $parts['host'] . $port
-			. '/.well-known/oauth-protected-resource' . $path . $query;
 	}
 
 	/** RFC 9728 resource metadata; the authorization server lives elsewhere. */
@@ -185,19 +160,6 @@ final class OAuthResourceServer {
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'registerRoutes' ) );
 		add_action( 'init', array( $this, 'serveWellKnown' ), 1 );
-	}
-
-	/** REST routes preserve the plugin's existing canonical namespace. */
-	public function registerRoutes(): void {
-		register_rest_route(
-			self::NAMESPACE,
-			'/oauth-resource',
-			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'resourceMetadata' ),
-				'permission_callback' => '__return_true',
-			)
-		);
 	}
 
 	/**
@@ -233,28 +195,6 @@ final class OAuthResourceServer {
 		status_header( 200 );
 		echo wp_json_encode( $metadata, JSON_UNESCAPED_SLASHES );
 		exit;
-	}
-
-	/**
-	 * Public discovery contains only an issuer URI. No usernames or secrets.
-	 *
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function resourceMetadata() {
-		$metadata = self::metadata();
-		if ( ! is_ssl() || array() === $metadata ) {
-			return new \WP_Error( 'wpconnector_oauth_unavailable', 'OAuth is not available for this site.', array( 'status' => 404 ) );
-		}
-		return new \WP_REST_Response( $metadata, 200 );
-	}
-
-	/**
-	 * Exact challenge for the MCP OAuth discovery handshake.
-	 *
-	 * @param bool $include_update Advertise update scope only with explicit opt-in.
-	 */
-	public static function challengeHeader( bool $include_update = false ): string {
-		return self::build_challenge_header( $include_update, false );
 	}
 
 	/**
@@ -344,19 +284,6 @@ final class OAuthResourceServer {
 			}
 		}
 		return true;
-	}
-
-	/**
-	 * Access to the release updater requires the separate OAuth update scope,
-	 * the owner's explicit opt-in and the linked user's update_plugins right.
-	 */
-	public function canSelfUpdate(): bool {
-		return $this->authenticated && $this->update_authorized;
-	}
-
-	/** Did this request actually authenticate using a valid external bearer? */
-	public function isAuthenticated(): bool {
-		return $this->authenticated;
 	}
 
 	/** Authorizes ONLY native-OAuth staging file actions under a separate consented scope. */
