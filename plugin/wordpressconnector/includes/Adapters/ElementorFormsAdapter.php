@@ -624,7 +624,7 @@ final class ElementorFormsAdapter {
 
 		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $required ) {
 			if ( empty( $counts[ $required ] ) ) {
-				throw new RuntimeException( 'V4 Atomic Form is missing required descendant: ' . $required );
+				throw new RuntimeException( 'V4 Atomic Form is missing required descendant: ' . esc_html( $required ) );
 			}
 		}
 		$submit_count = isset( $counts['e-form-submit-button'] ) ? (int) $counts['e-form-submit-button'] : 0;
@@ -668,7 +668,7 @@ final class ElementorFormsAdapter {
 		}
 		foreach ( array( 'settings', 'editor_settings', 'styles', 'elements' ) as $key ) {
 			if ( ! array_key_exists( $key, $node ) || ! is_array( $node[ $key ] ) ) {
-				throw new RuntimeException( 'Atomic element ' . $type . ' must contain array/object key: ' . $key );
+				throw new RuntimeException( 'Atomic element ' . esc_html( $type ) . ' must contain array/object key: ' . esc_html( $key ) );
 			}
 		}
 		if ( array_key_exists( 'interactions', $node ) && ! is_array( $node['interactions'] ) ) {
@@ -715,14 +715,14 @@ final class ElementorFormsAdapter {
 	private function assert_message_has_paragraph( array $form, string $message_type ): void {
 		$message = $this->find_first_by_type( $form, $message_type );
 		if ( ! is_array( $message ) ) {
-			throw new RuntimeException( 'V4 Atomic Form is missing ' . $message_type . '.' );
+			throw new RuntimeException( 'V4 Atomic Form is missing ' . esc_html( $message_type ) . '.' );
 		}
 		foreach ( $message['elements'] as $child ) {
 			if ( is_array( $child ) && 'e-paragraph' === (string) ( $child['elType'] ?? '' ) ) {
 				return;
 			}
 		}
-		throw new RuntimeException( $message_type . ' must contain an e-paragraph child.' );
+		throw new RuntimeException( esc_html( $message_type ) . ' must contain an e-paragraph child.' );
 	}
 
 	/**
@@ -973,7 +973,7 @@ final class ElementorFormsAdapter {
 	private function assert_element_id( array $element, string $context ): void {
 		$id = isset( $element['id'] ) && is_scalar( $element['id'] ) ? (string) $element['id'] : '';
 		if ( '' === $id || ! preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $id ) ) {
-			throw new RuntimeException( 'Invalid or missing Elementor element id in ' . $context . '.' );
+			throw new RuntimeException( 'Invalid or missing Elementor element id in ' . esc_html( $context ) . '.' );
 		}
 	}
 

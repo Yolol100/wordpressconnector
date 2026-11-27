@@ -140,7 +140,7 @@ final class YoastAdapter {
 
 		foreach ( $updates as $field => $value ) {
 			if ( ! isset( self::FIELDS[ $field ] ) ) {
-				throw new RuntimeException( 'Unsupported Yoast field: ' . (string) $field );
+				throw new RuntimeException( 'Unsupported Yoast field.' );
 			}
 			if ( null !== $value && ! is_scalar( $value ) ) {
 				throw new RuntimeException( 'Yoast field values must be scalar or null.' );
@@ -178,7 +178,7 @@ final class YoastAdapter {
 		foreach ( $updates as $field => $value ) {
 			$expected = null === $value || '' === (string) $value ? null : $this->sanitize_field( (string) $field, $value );
 			if ( $readback[ $field ] !== $expected ) {
-				throw new RuntimeException( 'Yoast readback verification failed for field: ' . (string) $field );
+				throw new RuntimeException( 'Yoast readback verification failed for field: ' . esc_html( (string) $field ) );
 			}
 		}
 
@@ -244,7 +244,7 @@ final class YoastAdapter {
 		if ( in_array( $field, array( 'canonical', 'redirect', 'opengraph_image', 'twitter_image' ), true ) ) {
 			$clean = esc_url_raw( $value );
 			if ( '' !== $value && '' === $clean ) {
-				throw new RuntimeException( 'Yoast field requires a valid URL: ' . $field );
+				throw new RuntimeException( 'Yoast field requires a valid URL: ' . esc_html( $field ) );
 			}
 			return $clean;
 		}
@@ -252,7 +252,7 @@ final class YoastAdapter {
 		if ( in_array( $field, array( 'opengraph_image_id', 'twitter_image_id', 'primary_category_term_id' ), true ) ) {
 			$id = (int) $value;
 			if ( $id < 1 ) {
-				throw new RuntimeException( 'Yoast field requires a positive integer ID: ' . $field );
+				throw new RuntimeException( 'Yoast field requires a positive integer ID: ' . esc_html( $field ) );
 			}
 			return (string) $id;
 		}
@@ -268,7 +268,7 @@ final class YoastAdapter {
 			$parts   = array_filter( array_map( 'trim', explode( ',', $value ) ) );
 			foreach ( $parts as $part ) {
 				if ( ! in_array( $part, $allowed, true ) ) {
-					throw new RuntimeException( 'Unsupported advanced robots directive: ' . $part );
+					throw new RuntimeException( 'Unsupported advanced robots directive.' );
 				}
 			}
 			return implode( ',', array_values( array_unique( $parts ) ) );
@@ -347,7 +347,7 @@ final class YoastAdapter {
 				}
 				$after_options[ 'company_name' === $key ? 'company_name' : 'org-description' ] = sanitize_text_field( $value );
 			} else {
-				throw new RuntimeException( 'Unsupported site representation field: ' . (string) $key );
+				throw new RuntimeException( 'Unsupported site representation field.' );
 			}
 		}
 

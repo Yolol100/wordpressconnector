@@ -905,11 +905,11 @@ final class AbilitiesAdapter {
 	 */
 	private function catalog_positive_integer( $value, int $max, string $field ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
-			throw new \RuntimeException( $field . ' must be a positive integer.' );
+			throw new \RuntimeException( esc_html( $field ) . ' must be a positive integer.' );
 		}
 		$validated = filter_var( (string) $value, FILTER_VALIDATE_INT );
 		if ( false === $validated || $validated < 1 ) {
-			throw new \RuntimeException( $field . ' must be a positive integer.' );
+			throw new \RuntimeException( esc_html( $field ) . ' must be a positive integer.' );
 		}
 		return min( $max, (int) $validated );
 	}

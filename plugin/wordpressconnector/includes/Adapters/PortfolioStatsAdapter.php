@@ -108,7 +108,7 @@ final class PortfolioStatsAdapter {
 		if ( $description_keys ) {
 			foreach ( array( 'acf_get_field_groups', 'acf_get_field', 'get_field', 'update_field' ) as $function ) {
 				if ( ! function_exists( $function ) ) {
-					throw new RuntimeException( 'Portfolio case text ACF API is unavailable: ' . $function );
+					throw new RuntimeException( 'Portfolio case text ACF API is unavailable: ' . esc_html( $function ) );
 				}
 			}
 			$allowed_parents = array();
@@ -134,7 +134,7 @@ final class PortfolioStatsAdapter {
 				$field_key = $field_map[ $name ];
 				$field     = acf_get_field( $field_key );
 				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text', 'textarea', 'wysiwyg' ), true ) || ! isset( $allowed_parents[ (string) ( $field['parent'] ?? '' ) ] ) ) {
-					throw new RuntimeException( 'Portfolio case description field is missing or outside the target field group: ' . $name );
+					throw new RuntimeException( 'Portfolio case description field is missing or outside the target field group: ' . esc_html( $name ) );
 				}
 				$requested[ $name ] = $value;
 			}
@@ -177,7 +177,7 @@ final class PortfolioStatsAdapter {
 			foreach ( $description_keys as $name ) {
 				$field_key = $field_map[ $name ];
 				if ( false === update_field( $field_key, $requested[ $name ], $post_id ) && get_field( $field_key, $post_id, false ) !== $requested[ $name ] ) {
-					throw new RuntimeException( 'Portfolio case ACF update failed for: ' . $name );
+					throw new RuntimeException( 'Portfolio case ACF update failed for: ' . esc_html( $name ) );
 				}
 			}
 			$after_post = get_post( $post_id );
@@ -185,7 +185,7 @@ final class PortfolioStatsAdapter {
 			foreach ( $requested as $name => $value ) {
 				$actual = 'content' === $name ? ( $after_post instanceof \WP_Post ? (string) $after_post->post_content : null ) : get_field( $field_map[ $name ], $post_id, false );
 				if ( $actual !== $value ) {
-					throw new RuntimeException( 'Portfolio case readback mismatch for: ' . $name );
+					throw new RuntimeException( 'Portfolio case readback mismatch for: ' . esc_html( $name ) );
 				}
 				$after[ $name ] = $actual;
 			}
@@ -268,7 +268,7 @@ final class PortfolioStatsAdapter {
 
 		foreach ( array( 'acf_get_field_groups', 'acf_get_field', 'get_field', 'update_field' ) as $function ) {
 			if ( ! function_exists( $function ) ) {
-				throw new RuntimeException( 'Portfolio stats ACF API is unavailable: ' . $function );
+				throw new RuntimeException( 'Portfolio stats ACF API is unavailable: ' . esc_html( $function ) );
 			}
 		}
 
@@ -306,18 +306,18 @@ final class PortfolioStatsAdapter {
 			}
 			$field = acf_get_field( $field_key );
 			if ( ! is_array( $field ) || 'text' !== (string) ( $field['type'] ?? '' ) ) {
-				throw new RuntimeException( 'Portfolio stats field is missing or is not a text field: ' . $field_key );
+				throw new RuntimeException( 'Portfolio stats field is missing or is not a text field: ' . esc_html( $field_key ) );
 			}
 			$name   = (string) ( $field['name'] ?? '' );
 			$parent = (string) ( $field['parent'] ?? '' );
 			if ( ! in_array( $name, self::ALLOWED_FIELD_NAMES, true ) ) {
-				throw new RuntimeException( 'Field is outside the fixed portfolio stats allowlist: ' . $field_key );
+				throw new RuntimeException( 'Field is outside the fixed portfolio stats allowlist: ' . esc_html( $field_key ) );
 			}
 			if ( isset( $seen_names[ $name ] ) ) {
-				throw new RuntimeException( 'Duplicate portfolio stats field name in one request: ' . $name );
+				throw new RuntimeException( 'Duplicate portfolio stats field name in one request: ' . esc_html( $name ) );
 			}
 			if ( ! isset( $allowed_parents[ $parent ] ) ) {
-				throw new RuntimeException( 'Portfolio stats field does not belong to a field group for the target post: ' . $field_key );
+				throw new RuntimeException( 'Portfolio stats field does not belong to a field group for the target post: ' . esc_html( $field_key ) );
 			}
 			Policy::assertKeyAllowed( $name );
 			$seen_names[ $name ]  = true;
@@ -339,7 +339,7 @@ final class PortfolioStatsAdapter {
 				if ( false === update_field( (string) $field_key, $value, $post_id ) ) {
 					$current = get_field( (string) $field_key, $post_id, false );
 					if ( $current !== $value ) {
-						throw new RuntimeException( 'Portfolio stats ACF update failed for field: ' . (string) $field_key );
+						throw new RuntimeException( 'Portfolio stats ACF update failed for field: ' . esc_html( (string) $field_key ) );
 					}
 				}
 			}
@@ -348,7 +348,7 @@ final class PortfolioStatsAdapter {
 			foreach ( $fields as $field_key => $value ) {
 				$actual = get_field( (string) $field_key, $post_id, false );
 				if ( $actual !== $value ) {
-					throw new RuntimeException( 'Portfolio stats readback mismatch for field: ' . (string) $field_key );
+					throw new RuntimeException( 'Portfolio stats readback mismatch for field: ' . esc_html( (string) $field_key ) );
 				}
 				$after[ (string) $field_key ] = $actual;
 			}

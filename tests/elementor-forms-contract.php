@@ -7,6 +7,8 @@ namespace Elementor {
 }
 
 namespace {
+    require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
     define('ELEMENTOR_VERSION', '4.1.0-test');
     define('ELEMENTOR_PRO_VERSION', '4.1.0-test');
 

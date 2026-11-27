@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 /** Provider-owned REST contract fixture: no WordPress/WooCommerce installation required. */
 $GLOBALS['woocommerce_settings_user_caps'] = array();
 $GLOBALS['woocommerce_settings_options'] = array(

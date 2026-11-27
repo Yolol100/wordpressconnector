@@ -103,7 +103,7 @@ final class ElementorAdapter {
 	public function createDocument( array $payload, array $context ): array {
 		$post_type = isset( $payload['post_type'] ) ? sanitize_key( (string) $payload['post_type'] ) : 'page';
 		if ( ! post_type_exists( $post_type ) ) {
-			throw new RuntimeException( 'Unknown post type: ' . $post_type );
+			throw new RuntimeException( 'Unknown post type.' );
 		}
 		Policy::assertReadablePostType( $post_type );
 
@@ -771,7 +771,7 @@ final class ElementorAdapter {
 		$this->assert_document_readback( $restored, $restored_elements, $snapshot['page_settings'] );
 		foreach ( array( 'edit_mode', 'template_type', 'conditions' ) as $field ) {
 			if ( ! hash_equals( Fingerprint::make( $snapshot[ $field ] ), Fingerprint::make( $restored[ $field ] ) ) ) {
-				throw new RuntimeException( 'Elementor rollback readback failed for: ' . $field );
+				throw new RuntimeException( 'Elementor rollback readback failed for: ' . esc_html( $field ) );
 			}
 		}
 	}
@@ -845,10 +845,10 @@ final class ElementorAdapter {
 				continue;
 			}
 			if ( ! array_key_exists( $key, $actual['page_settings'] ) ) {
-				throw new RuntimeException( 'Elementor document readback is missing page setting: ' . (string) $key );
+				throw new RuntimeException( 'Elementor document readback is missing a requested page setting.' );
 			}
 			if ( ! hash_equals( Fingerprint::make( $expected_value ), Fingerprint::make( $actual['page_settings'][ $key ] ) ) ) {
-				throw new RuntimeException( 'Elementor page setting readback verification failed: ' . (string) $key );
+				throw new RuntimeException( 'Elementor page setting readback verification failed.' );
 			}
 		}
 	}
@@ -923,7 +923,7 @@ final class ElementorAdapter {
 			}
 		}
 		unset( $element );
-		throw new RuntimeException( 'Elementor element not found: ' . $element_id );
+		throw new RuntimeException( 'Elementor element not found.' );
 	}
 
 	/**

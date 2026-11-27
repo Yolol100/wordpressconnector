@@ -205,7 +205,7 @@ final class SiteIdentityAdapter {
 		foreach ( self::KEYS as $key ) {
 			$value = get_option( $key, '' );
 			if ( ! is_scalar( $value ) ) {
-				throw new RuntimeException( 'Unexpected site identity value for: ' . $key );
+				throw new RuntimeException( 'Unexpected site identity value for: ' . esc_html( $key ) );
 			}
 			$result[ $key ] = (string) $value;
 		}

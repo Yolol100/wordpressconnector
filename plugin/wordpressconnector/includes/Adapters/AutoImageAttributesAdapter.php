@@ -101,7 +101,7 @@ final class AutoImageAttributesAdapter {
 		$clean  = array();
 		foreach ( $updates as $key => $value ) {
 			if ( ! is_string( $key ) || ! in_array( $key, self::BOOLEAN_FIELDS, true ) ) {
-				throw new RuntimeException( 'Unsupported Auto Image Attributes setting: ' . (string) $key );
+				throw new RuntimeException( 'Unsupported Auto Image Attributes setting.' );
 			}
 			$clean[ $key ] = $this->boolean_string( $value );
 		}
@@ -133,7 +133,7 @@ final class AutoImageAttributesAdapter {
 		$readback = $this->snapshot();
 		foreach ( $clean as $key => $value ) {
 			if ( ! isset( $readback[ $key ] ) || (string) $readback[ $key ] !== $value ) {
-				throw new RuntimeException( 'Auto Image Attributes readback verification failed for: ' . $key );
+				throw new RuntimeException( 'Auto Image Attributes readback verification failed for: ' . esc_html( $key ) );
 			}
 		}
 

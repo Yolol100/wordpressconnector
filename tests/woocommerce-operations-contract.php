@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 $GLOBALS['woo_ops_store'] = array(
     'shipping_zone'=>array(
         3=>array('id'=>3,'name'=>'Nederland','order'=>0),

@@ -827,7 +827,7 @@ final class PluginSettingsAdapter {
 		$readback = $this->read_profile( $plugin );
 		foreach ( $clean as $key => $value ) {
 			if ( ! array_key_exists( $key, $readback ) || $this->normalize_for_compare( $readback[ $key ] ) !== $this->normalize_for_compare( $value ) ) {
-				throw new RuntimeException( 'Plugin settings readback verification failed for ' . $plugin . ':' . $key . '.' );
+				throw new RuntimeException( 'Plugin settings readback verification failed for ' . esc_html( $plugin ) . ':' . esc_html( $key ) . '.' );
 			}
 		}
 
@@ -862,7 +862,7 @@ final class PluginSettingsAdapter {
 	private function profile( array $payload ): string {
 		$plugin = isset( $payload['plugin'] ) ? sanitize_key( (string) $payload['plugin'] ) : '';
 		if ( ! in_array( $plugin, array( 'wp_rocket', 'imagify', 'really_simple_security', 'joinchat' ), true ) ) {
-			throw new RuntimeException( 'Unsupported plugin settings profile: ' . $plugin . '.' );
+			throw new RuntimeException( 'Unsupported plugin settings profile.' );
 		}
 		return $plugin;
 	}
@@ -925,12 +925,12 @@ final class PluginSettingsAdapter {
 			}
 			Policy::assertKeyAllowed( $key );
 			if ( ! array_key_exists( $key, $before ) ) {
-				throw new RuntimeException( 'Unsupported or unavailable ' . $plugin . ' setting: ' . $key . '.' );
+				throw new RuntimeException( 'Unsupported or unavailable ' . esc_html( $plugin ) . ' setting.' );
 			}
 
 			if ( 'wp_rocket' === $plugin ) {
 				if ( ! isset( self::WP_ROCKET_FIELDS[ $key ] ) ) {
-					throw new RuntimeException( 'Unsupported WP Rocket setting: ' . $key . '.' );
+					throw new RuntimeException( 'Unsupported WP Rocket setting.' );
 				}
 				$clean[ $key ] = $this->sanitize_wp_rocket_value( self::WP_ROCKET_FIELDS[ $key ], $value );
 				continue;
@@ -938,14 +938,14 @@ final class PluginSettingsAdapter {
 
 			if ( 'joinchat' === $plugin ) {
 				if ( ! isset( self::JOINCHAT_FIELDS[ $key ] ) ) {
-					throw new RuntimeException( 'Unsupported Joinchat setting: ' . $key . '.' );
+					throw new RuntimeException( 'Unsupported Joinchat setting.' );
 				}
 				$clean[ $key ] = $this->sanitize_joinchat_value( self::JOINCHAT_FIELDS[ $key ], $value );
 				continue;
 			}
 
 			if ( 'really_simple_security' === $plugin && $this->is_high_risk_security_setting( $key ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ) ) {
-				throw new RuntimeException( 'This Really Simple Security setting requires the connector sensitive-action gate: ' . $key . '.' );
+				throw new RuntimeException( 'This Really Simple Security setting requires the connector sensitive-action gate: ' . esc_html( $key ) . '.' );
 			}
 			$clean[ $key ] = $this->sanitize_like( $before[ $key ], $value );
 		}
@@ -1008,7 +1008,7 @@ final class PluginSettingsAdapter {
 		unset( $updates['api_key'], $updates['version'] );
 		$result = $this->execute_ability( 'imagify/update-settings', $updates );
 		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
-			throw new RuntimeException( isset( $result['error_message'] ) ? (string) $result['error_message'] : 'Imagify settings update failed.' );
+			throw new RuntimeException( 'Imagify settings update failed.' );
 		}
 	}
 
@@ -1028,14 +1028,14 @@ final class PluginSettingsAdapter {
 		}
 		$ability = wp_get_ability( $name );
 		if ( ! is_object( $ability ) || ! method_exists( $ability, 'execute' ) ) {
-			throw new RuntimeException( 'Required WordPress ability is not available: ' . $name . '.' );
+			throw new RuntimeException( 'Required WordPress ability is not available: ' . esc_html( $name ) . '.' );
 		}
 		$result = $ability->execute( $input );
 		if ( is_wp_error( $result ) ) {
 			throw new RuntimeException( 'WordPress ability execution failed.' );
 		}
 		if ( ! is_array( $result ) ) {
-			throw new RuntimeException( 'WordPress ability returned an unsupported result type: ' . $name . '.' );
+			throw new RuntimeException( 'WordPress ability returned an unsupported result type: ' . esc_html( $name ) . '.' );
 		}
 		return Policy::redact( $result );
 	}

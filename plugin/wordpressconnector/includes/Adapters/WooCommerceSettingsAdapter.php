@@ -855,7 +855,7 @@ final class WooCommerceSettingsAdapter {
 	 */
 	private function bounded_int( $value, int $min, int $max, string $field ): int {
 		if ( ! is_int( $value ) || $value < $min || $value > $max ) {
-			throw new RuntimeException( 'WooCommerce settings ' . $field . ' is outside its bounds.' );
+			throw new RuntimeException( 'WooCommerce settings ' . esc_html( $field ) . ' is outside its bounds.' );
 		}
 		return $value;
 	}

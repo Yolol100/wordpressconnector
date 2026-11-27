@@ -99,7 +99,7 @@ final class CacheMaintenanceAdapter {
 
 		$before = $this->layer_state( $layer );
 		if ( empty( $before['available'] ) ) {
-			throw new RuntimeException( 'Requested cache layer is not available: ' . $layer . '.' );
+			throw new RuntimeException( 'Requested cache layer is not available: ' . esc_html( $layer ) . '.' );
 		}
 
 		if ( $regenerate ) {
@@ -165,7 +165,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		if ( true !== $result['readback_verified'] ) {
-			throw new RuntimeException( 'Cache flush verification failed for layer: ' . $layer . '.' );
+			throw new RuntimeException( 'Cache flush verification failed for layer: ' . esc_html( $layer ) . '.' );
 		}
 
 		return $result;
