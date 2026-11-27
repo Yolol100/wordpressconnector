@@ -10,9 +10,11 @@ $GLOBALS['term_assign_last_write'] = null;
 
 function sanitize_key($value): string { return strtolower((string) $value); }
 function taxonomy_exists($taxonomy): bool { return 'category' === $taxonomy; }
-function is_wp_error($value): bool { return false; }
-function wp_get_object_terms($object_id, $taxonomy, $args): array {
+class WP_Error { public function get_error_message(): string { return 'qa_private_provider_diagnostic_9c31'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
+function wp_get_object_terms($object_id, $taxonomy, $args) {
     ++$GLOBALS['term_assign_reads'];
+    if ('read' === ($GLOBALS['term_provider_failure'] ?? '')) { return new WP_Error(); }
     if (101 !== $object_id || 'category' !== $taxonomy || ($args['fields'] ?? '') !== 'ids') {
         throw new RuntimeException('Taxonomy lookup used the wrong object or arguments.');
     }
@@ -20,6 +22,7 @@ function wp_get_object_terms($object_id, $taxonomy, $args): array {
 }
 function wp_set_object_terms($object_id, $term_ids, $taxonomy, $append) {
     ++$GLOBALS['term_assign_writes'];
+    if ('write' === ($GLOBALS['term_provider_failure'] ?? '')) { return new WP_Error(); }
     $GLOBALS['term_assign_last_write'] = array($object_id, $term_ids, $taxonomy, $append);
     return $term_ids;
 }
@@ -92,4 +95,16 @@ $assertRejected($omitted, 'terms must be an array of positive term IDs.');
 if ($GLOBALS['term_assign_writes'] !== 1) {
     throw new RuntimeException('Omitted terms caused an unexpected mutation.');
 }
-echo "Core taxonomy assignment strict-ID and rollback contract OK\n";
+foreach (array('read'=>'WordPress term assignment lookup failed.', 'write'=>'WordPress term assignment failed.') as $mode => $expected) {
+    $GLOBALS['term_provider_failure'] = $mode;
+    $before = $GLOBALS['term_assign_last_write'];
+    $writes = $GLOBALS['term_assign_writes'];
+    $rejected = false;
+    try { $adapter->termAssign($good, array('dry_run'=>false)); }
+    catch (RuntimeException $error) { $rejected = $expected === $error->getMessage(); }
+    if (!$rejected || $before !== $GLOBALS['term_assign_last_write'] || ('read' === $mode && $writes !== $GLOBALS['term_assign_writes'])) {
+        throw new LogicException('Term assignment provider failure was not safely rejected.');
+    }
+}
+unset($GLOBALS['term_provider_failure']);
+echo "Core taxonomy assignment strict-ID, provider result and rollback contract OK\n";

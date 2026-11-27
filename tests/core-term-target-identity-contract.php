@@ -32,9 +32,12 @@ function get_term($id, $taxonomy = '') {
     return 101 === $id && ('category' === $taxonomy || '' === $taxonomy)
         ? $GLOBALS['term_fixture'] : null;
 }
-function is_wp_error($value): bool { return false; }
+class WP_Error { public function get_error_message(): string { return 'qa_private_provider_diagnostic_9c31'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
+function get_terms($args) { return $GLOBALS['term_provider_result'] ?? array($GLOBALS['term_fixture']); }
 function wp_update_term($id, $taxonomy, $args) {
     ++$GLOBALS['term_updates'];
+    if (isset($GLOBALS['term_provider_result'])) { return $GLOBALS['term_provider_result']; }
     if ($id !== 101 || $taxonomy !== 'category') {
         throw new RuntimeException('Taxonomy update target changed.');
     }
@@ -49,10 +52,12 @@ function wp_update_term($id, $taxonomy, $args) {
 }
 function wp_delete_term($id, $taxonomy) {
     ++$GLOBALS['term_deletes'];
+    if (isset($GLOBALS['term_provider_result'])) { return $GLOBALS['term_provider_result']; }
     return 101 === $id && 'category' === $taxonomy;
 }
 function wp_insert_term($name, $taxonomy, $args) {
     ++$GLOBALS['term_creates'];
+    if (isset($GLOBALS['term_provider_result'])) { return $GLOBALS['term_provider_result']; }
     $GLOBALS['term_insert_args'] = $args;
     if ('category' !== $taxonomy || 'Created term' !== $name) {
         throw new RuntimeException('Unexpected term creation target.');
@@ -182,4 +187,36 @@ $no_parent = $adapter->termCreate(
 if (array_key_exists('parent', $no_parent['would_create']['args'])) {
     throw new RuntimeException('Optional parent became mandatory.');
 }
-echo "Core term exact-ID read, update and delete contract OK\n";
+// A protected default term returns zero, not success. Never expose provider text.
+$beforeState = serialize($GLOBALS['term_fixture']);
+$payload = array('id'=>101, 'taxonomy'=>'category', 'name'=>'Created term');
+$cases = array(
+    array('termList', new WP_Error(), 'WordPress term listing failed.'),
+    array('termCreate', new WP_Error(), 'WordPress term creation failed.'),
+    array('termUpdate', new WP_Error(), 'WordPress term update failed.'),
+    array('termDelete', new WP_Error(), 'Term delete failed.'),
+    array('termDelete', false, 'Term delete failed.'),
+    array('termDelete', 0, 'Default taxonomy term cannot be deleted.'),
+);
+foreach ($cases as $case) {
+    list($method, $providerResult, $expected) = $case;
+    $GLOBALS['term_provider_result'] = $providerResult;
+    $rejected = false;
+    try {
+        if ('termList' === $method) { $adapter->termList($payload); }
+        else { $adapter->$method($payload, array('dry_run' => false)); }
+    } catch (RuntimeException $error) { $rejected = $expected === $error->getMessage(); }
+    if (!$rejected || $beforeState !== serialize($GLOBALS['term_fixture'])) {
+        throw new LogicException('Failed term provider result was not safely rejected: ' . $method);
+    }
+}
+unset($GLOBALS['term_provider_result']);
+$listed = $adapter->termList(array('taxonomy'=>'category'));
+if (($listed['terms'][0]['id'] ?? null) !== 101) { throw new LogicException('Valid term listing changed.'); }
+try {
+    $adapter->termList(array('taxonomy'=>'qa_private_provider_diagnostic_9c31'));
+    throw new LogicException('Unknown taxonomy was accepted.');
+} catch (RuntimeException $error) {
+    if ('Unknown taxonomy.' !== $error->getMessage()) { throw $error; }
+}
+echo "Core term exact-ID and provider result contract OK\n";
