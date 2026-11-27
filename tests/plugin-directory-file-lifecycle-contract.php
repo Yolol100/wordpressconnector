@@ -25,6 +25,10 @@ class WP_Filesystem_Base
         if ($recursive) return false;
         if ('false' === $this->chmodBehavior) return false;
         if ('throw' === $this->chmodBehavior) throw new RuntimeException('Injected permission failure.');
+        if ('remove_true' === $this->chmodBehavior) {
+            unlink($path);
+            return true;
+        }
         if ('corrupt_true' === $this->chmodBehavior) {
             file_put_contents($path, 'corrupted fixture bytes');
             return true;
@@ -388,6 +392,63 @@ if ('New file could not be created exclusively; target may now exist or filesyst
     throw new LogicException('Exclusive create race overwrote or cleaned up a competing writer, or leaked a native failure.');
 }
 unlink($root . $racePath);
+
+// A successful chmod result is not proof the newly created path still
+// exists. A disappeared file must produce the connector's bounded readback
+// failure, not a native PHP warning containing a local path.
+$missingReadbackPath = 'wp-content/themes/fixture/assets/disappeared.html';
+$GLOBALS['wp_filesystem']->chmodBehavior = 'remove_true';
+$missingReadbackMessage = '';
+set_error_handler(static function ($severity, $message) {
+    throw new ErrorException($message, 0, $severity);
+});
+try {
+    try {
+        $fs->createText(array('path'=>$missingReadbackPath,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
+    } catch (RuntimeException $error) {
+        $missingReadbackMessage = $error->getMessage();
+    }
+} finally {
+    restore_error_handler();
+    $GLOBALS['wp_filesystem']->chmodBehavior = '';
+}
+if ('New file readback failed; incomplete file was removed.' !== $missingReadbackMessage
+    || file_exists($root . $missingReadbackPath) || is_link($root . $missingReadbackPath)) {
+    throw new LogicException('Disappeared create readback leaked a native warning or reported success.');
+}
+
+// Exact text limit, empty files and oversized before-images must preserve
+// the same content, fingerprints and no-write preview semantics.
+$boundaryPath = 'wp-content/themes/fixture/assets/boundary.html';
+foreach (array('', str_repeat('a', 131072)) as $boundaryContent) {
+    file_put_contents($root . $boundaryPath, $boundaryContent);
+    $boundaryRead = $fs->readText(array('path'=>$boundaryPath));
+    $boundaryWrite = $fs->writeText(array('path'=>$boundaryPath,'content'=>$content),array('dry_run'=>true));
+    $boundaryDelete = $fs->deleteText(array('path'=>$boundaryPath),array('dry_run'=>true));
+    $expectedHash = hash('sha256', $boundaryContent);
+    if ($boundaryRead['content'] !== $boundaryContent
+        || $boundaryRead['file']['sha256'] !== $expectedHash
+        || $boundaryWrite['before']['sha256'] !== $expectedHash
+        || $boundaryDelete['before']['sha256'] !== $expectedHash
+        || file_get_contents($root . $boundaryPath) !== $boundaryContent) {
+        throw new LogicException('Exact size boundary or empty-file semantics changed.');
+    }
+}
+$oversized = str_repeat('b', 131073);
+file_put_contents($root . $boundaryPath, $oversized);
+$providerFailure(static function() use ($fs,$boundaryPath) {
+    $fs->readText(array('path'=>$boundaryPath));
+}, 'Text file exceeds the connector read limit.');
+$providerFailure(static function() use ($fs,$boundaryPath,$content) {
+    $fs->writeText(array('path'=>$boundaryPath,'content'=>$content),array('dry_run'=>true));
+}, 'Existing file exceeds the connector write limit.');
+$providerFailure(static function() use ($fs,$boundaryPath) {
+    $fs->deleteText(array('path'=>$boundaryPath),array('dry_run'=>true));
+}, 'Existing file is unreadable or exceeds safe text limit.');
+if ($oversized !== file_get_contents($root . $boundaryPath)) {
+    throw new LogicException('Oversized before-image was modified.');
+}
+unlink($root . $boundaryPath);
 
 // A failed create must not be reported as cleaned up without actual readback.
 $failurePath = 'wp-content/themes/fixture/assets/failing-create.html';

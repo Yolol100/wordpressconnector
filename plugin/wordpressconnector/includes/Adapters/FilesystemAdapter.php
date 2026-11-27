@@ -164,12 +164,11 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a regular file.' );
 		}
-		$size = filesize( $absolute );
-		if ( false === $size || $size < 0 || $size > self::MAX_TEXT_BYTES ) {
+		$content = $this->read_bounded_local_text( $absolute );
+		if ( is_string( $content ) && strlen( $content ) > self::MAX_TEXT_BYTES ) {
 			throw new RuntimeException( 'Text file exceeds the connector read limit.' );
 		}
-		$content = file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local symlink-safe resolved file with path, size and secret checks, not an HTTP URL.
-		if ( false === $content || ! $this->is_utf8( $content ) ) {
+		if ( ! is_string( $content ) || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'Filesystem file is not readable UTF-8 text.' );
 		}
 		$this->assert_no_embedded_secrets( $content );
@@ -207,12 +206,12 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'filesystem.write_text only replaces existing regular files.' );
 		}
-		$before = file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read a prevalidated local file before write/rollback; HTTP retrieval would change trust and content.
-		if ( false === $before || ! $this->is_utf8( $before ) ) {
-			throw new RuntimeException( 'Existing file is not readable UTF-8 text.' );
-		}
-		if ( strlen( $before ) > self::MAX_TEXT_BYTES ) {
+		$before = $this->read_bounded_local_text( $absolute );
+		if ( is_string( $before ) && strlen( $before ) > self::MAX_TEXT_BYTES ) {
 			throw new RuntimeException( 'Existing file exceeds the connector write limit.' );
+		}
+		if ( ! is_string( $before ) || ! $this->is_utf8( $before ) ) {
+			throw new RuntimeException( 'Existing file is not readable UTF-8 text.' );
 		}
 		$this->assert_no_embedded_secrets( $before );
 		if ( ! array_key_exists( 'content', $payload ) || ! is_string( $payload['content'] ) ) {
@@ -384,7 +383,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'New file permissions could not be set; incomplete file was removed.' );
 		}
 		clearstatcache( true, $absolute );
-		$readback = @file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read back the exact local file for SHA-256 verification after atomic create; not a remote resource.
+		$readback = $this->read_bounded_local_text( $absolute );
 		if ( ! is_string( $readback ) || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ) {
 			$this->remove_failed_create( $filesystem, $absolute );
 			throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
@@ -399,6 +398,52 @@ final class FilesystemAdapter {
 			),
 		);
 		return $result;
+	}
+
+	/**
+	 * Read a validated local file, limiting memory even if the file grows.
+	 *
+	 * One excess byte distinguishes an oversized file from an exact-limit
+	 * file. Callers reject oversize before using the content or its hash.
+	 * Missing, replaced or unreadable paths fail without native diagnostics.
+	 *
+	 * @param string $absolute Previously resolved local file path.
+	 * @return string|null File bytes (at most the limit plus one), or null.
+	 */
+	private function read_bounded_local_text( string $absolute ): ?string {
+		clearstatcache( true, $absolute );
+		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
+			return null;
+		}
+		try {
+			$handle = new \SplFileObject( $absolute, 'rb' );
+			$stat   = $handle->fstat();
+			if ( ! is_array( $stat ) || ( $stat['mode'] & 0170000 ) !== 0100000 ) {
+				return null;
+			}
+			$content   = '';
+			$remaining = self::MAX_TEXT_BYTES + 1;
+			while ( ! $handle->eof() && $remaining > 0 ) {
+				$chunk = $handle->fread( $remaining );
+				if ( ! is_string( $chunk ) || ( '' === $chunk && ! $handle->eof() ) ) {
+					return null;
+				}
+				$content   .= $chunk;
+				$remaining -= strlen( $chunk );
+			}
+			// Refuse a path which disappeared, became a link or was replaced
+			// while the handle was open. Some filesystems report inode zero.
+			clearstatcache( true, $absolute );
+			if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
+				return null;
+			}
+			if ( 0 !== $stat['ino'] && ( new \SplFileInfo( $absolute ) )->getInode() !== $stat['ino'] ) {
+				return null;
+			}
+			return $content;
+		} catch ( Throwable $error ) {
+			return null;
+		}
 	}
 
 	/**
@@ -450,7 +495,7 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Text deletion requires a regular non-symlink file.' );
 		}
-		$before = @file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the existing local file before rollback-aware deletion; WP HTTP is not applicable.
+		$before = $this->read_bounded_local_text( $absolute );
 		if ( ! is_string( $before ) || strlen( $before ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $before ) ) {
 			throw new RuntimeException( 'Existing file is unreadable or exceeds safe text limit.' );
 		}
@@ -475,8 +520,9 @@ final class FilesystemAdapter {
 		}
 		$filesystem = $this->filesystem();
 		clearstatcache( true, $absolute );
-		if ( ! is_file( $absolute ) || is_link( $absolute ) ||
-			! hash_equals( $expected, (string) @hash_file( 'sha256', $absolute ) ) ) {
+		$current = $this->read_bounded_local_text( $absolute );
+		if ( ! is_string( $current ) || strlen( $current ) > self::MAX_TEXT_BYTES ||
+			! hash_equals( $expected, hash( 'sha256', $current ) ) ) {
 			throw new RuntimeException( 'Delete target changed before filesystem action.' );
 		}
 		if ( ! $filesystem->delete( $absolute, false, 'f' ) ) {
