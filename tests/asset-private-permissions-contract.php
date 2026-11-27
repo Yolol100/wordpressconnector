@@ -35,6 +35,18 @@ namespace Webactueel\WordPressConnector\REST {
         return \touch($path);
     }
 
+    // Test the native, nonrecursive directory operation and its readback.
+    function rmdir(string $path): bool
+    {
+        if (($GLOBALS['wpconn_rmdir_path'] ?? null) === $path) {
+            switch ($GLOBALS['wpconn_rmdir_fault'] ?? '') {
+                case 'false': return false;
+                case 'false_success': return true;
+            }
+        }
+        return \rmdir($path);
+    }
+
     // Model a cleanup permission error without weakening the real filesystem.
     function unlink(string $path): bool
     {
@@ -327,6 +339,58 @@ namespace {
     }
     $GLOBALS['deny_wpconn_cleanup'] = false;
     $store->cleanup($id);
+
+    // Preserve exact mode clearing, including setgid/sticky bits which
+    // the Core direct chmod implementation may skip when low bits match.
+    $modeId = 'request-special-mode';
+    $modeRoot = $store->rootForRequest($modeId, true);
+    foreach (array($base, $modeRoot) as $directory) {
+        if (!\chmod($directory, 03700)) {
+            throw new RuntimeException('Could not create special-mode directory fixture.');
+        }
+        clearstatcache(true, $directory);
+        if ((fileperms($directory) & 07777) !== 03700) {
+            throw new RuntimeException('Special-mode fixture was not established.');
+        }
+    }
+    $store->rootForRequest($modeId, true);
+    foreach (array($base, $modeRoot) as $directory) {
+        clearstatcache(true, $directory);
+        if ((fileperms($directory) & 07777) !== 0700) {
+            throw new RuntimeException('Special permission bits survived private directory protection.');
+        }
+    }
+    $store->cleanup($modeId);
+
+    // A lying directory backend must not be mistaken for successful cleanup.
+    foreach (array(false, true) as $isRoot) {
+        foreach (array('false', 'false_success') as $fault) {
+            $cleanupId = 'request-rmdir-' . bin2hex(random_bytes(6));
+            $cleanupRoot = $store->rootForRequest($cleanupId, true);
+            $path = $isRoot ? $cleanupRoot : $cleanupRoot . '/nested';
+            if (!$isRoot && !mkdir($path,0700)) {
+                throw new RuntimeException('Could not create nested directory fixture.');
+            }
+            $GLOBALS['wpconn_rmdir_path'] = $path;
+            $GLOBALS['wpconn_rmdir_fault'] = $fault;
+            $caught = '';
+            try { $store->cleanup($cleanupId); }
+            catch (RuntimeException $error) { $caught = $error->getMessage(); }
+            finally {
+                unset($GLOBALS['wpconn_rmdir_path'], $GLOBALS['wpconn_rmdir_fault']);
+            }
+            $expected = 'false_success' === $fault
+                ? 'Could not verify removal of private request asset directory.'
+                : ('Could not remove private request asset ' . ($isRoot ? 'root.' : 'directory.'));
+            if ($caught !== $expected || !is_dir($path)) {
+                throw new RuntimeException('Directory removal failure/readback contract changed.');
+            }
+            $store->cleanup($cleanupId);
+            if (is_dir($cleanupRoot)) {
+                throw new RuntimeException('Verified directory cleanup did not remove the root.');
+            }
+        }
+    }
 
     // A request-root symlink must never allow deleting another request's files.
     $foreignId = 'request-foreign12345';
