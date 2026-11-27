@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+if (!defined('DAY_IN_SECONDS')) define('DAY_IN_SECONDS', 86400);
 
 require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
@@ -50,7 +51,61 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-run
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/class-assetstore.php';
+
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php';
+
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php';
+
 $serviceAliases = array(
+    'Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter' => array(
+        'handleAssetCleanupLoopback' => 'Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapterMethods::handle_asset_cleanup_loopback',
+    ),
+    'Webactueel\WordPressConnector\Security\GitHubOidc' => array(
+        'cleanupReplayClaims' => 'Webactueel\WordPressConnector\Security\GitHubOidcMethods::cleanup_replay_claims',
+        'expectedAudience' => 'Webactueel\WordPressConnector\Security\GitHubOidcMethods::expected_audience',
+    ),
+    'Webactueel\WordPressConnector\Security\SitePairing' => array(
+        'enableForAdministrator' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::enable_for_administrator',
+        'pairedAdministratorId' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::paired_administrator_id',
+        'approveOnActivation' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::approve_on_activation',
+    ),
+    'Webactueel\WordPressConnector\Security\OAuthResourceServer' => array(
+        'serveWellKnown' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::serve_well_known',
+        'isConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_configured',
+        'selfUpdateConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::self_update_configured',
+        'wellKnownUrl' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::well_known_url',
+        'registerRoutes' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::register_routes',
+        'resourceMetadata' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::resource_metadata',
+        'challengeHeader' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::challenge_header',
+        'canSelfUpdate' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::can_self_update',
+        'isAuthenticated' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_authenticated',
+    ),
+    'Webactueel\WordPressConnector\Security\Policy' => array(
+        'assertActionAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_action_allowed',
+        'assertPublicContentTarget' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_public_content_target',
+        'assertReadablePostType' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_readable_post_type',
+        'assertLocalAssetPath' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_local_asset_path',
+        'setPublicRepositoryContext' => 'Webactueel\WordPressConnector\Security\PolicyMethods::set_public_repository_context',
+        'assertPublicActionTarget' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_public_action_target',
+        'assertPostReadable' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_post_readable',
+        'assertKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_key_allowed',
+        'assertMetaKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_meta_key_allowed',
+        'assertOptionKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_option_key_allowed',
+        'publicRepositoryContext' => 'Webactueel\WordPressConnector\Security\PolicyMethods::public_repository_context',
+    ),
+    'Webactueel\WordPressConnector\Runtime\SnapshotStore' => array(
+        'getRecord' => 'Webactueel\WordPressConnector\Runtime\SnapshotStoreMethods::get_record',
+    ),
+    'Webactueel\WordPressConnector\Runtime\ProcessedStore' => array(
+        'mutationLockStatus' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::mutation_lock_status',
+        'acquireMutationLock' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::acquire_mutation_lock',
+        'releaseMutationLock' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::release_mutation_lock',
+    ),
+    'Webactueel\WordPressConnector\REST\AssetStore' => array(
+        'rootForRequest' => 'Webactueel\WordPressConnector\REST\AssetStoreMethods::root_for_request',
+        'cleanupExpired' => 'Webactueel\WordPressConnector\REST\AssetStoreMethods::cleanup_expired',
+    ),
     'Webactueel\WordPressConnector\Support\Json' => array(
         'readFile' => 'Webactueel\WordPressConnector\Support\JsonMethods::read_file_compat',
         'writeFileAtomic' => 'Webactueel\WordPressConnector\Support\JsonMethods::write_file_atomic_compat',
@@ -103,19 +158,6 @@ $serviceAliases = array(
         'uploadAsset' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::upload_asset',
         'validateAssetPath' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_asset_path',
     ),
-    'Webactueel\WordPressConnector\Runtime\ProcessedStore' => array(
-        'releaseMutationLock' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::release_mutation_lock',
-    ),
-    'Webactueel\WordPressConnector\Security\OAuthResourceServer' => array(
-        'isConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_configured',
-        'selfUpdateConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::self_update_configured',
-        'wellKnownUrl' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::well_known_url',
-        'registerRoutes' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::register_routes',
-        'resourceMetadata' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::resource_metadata',
-        'challengeHeader' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::challenge_header',
-        'canSelfUpdate' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::can_self_update',
-        'isAuthenticated' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_authenticated',
-    ),
     'Webactueel\WordPressConnector\Security\ReleaseApproval' => array(
         'renderForm' => 'Webactueel\WordPressConnector\Security\ReleaseApprovalMethods::render_form_compat',
         'idForFingerprint' => 'Webactueel\WordPressConnector\Security\ReleaseApprovalMethods::id_for_fingerprint',
@@ -128,21 +170,6 @@ $serviceAliases = array(
         'mediaUpdate' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_update',
         'mediaAssign' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_assign',
         'mediaRegenerate' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_regenerate',
-    ),
-    'Webactueel\WordPressConnector\Security\Policy' => array(
-        'assertPublicActionTarget' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_public_action_target',
-        'assertPostReadable' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_post_readable',
-        'assertKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_key_allowed',
-        'assertMetaKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_meta_key_allowed',
-        'assertOptionKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_option_key_allowed',
-        'publicRepositoryContext' => 'Webactueel\WordPressConnector\Security\PolicyMethods::public_repository_context',
-    ),
-    'Webactueel\WordPressConnector\Security\SitePairing' => array(
-        'pairedAdministratorId' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::paired_administrator_id',
-        'approveOnActivation' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::approve_on_activation',
-    ),
-    'Webactueel\WordPressConnector\Security\GitHubOidc' => array(
-        'expectedAudience' => 'Webactueel\WordPressConnector\Security\GitHubOidcMethods::expected_audience',
     ),
     'Webactueel\WordPressConnector\Admin\Settings' => array(
         'unpairedNotice' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::unpaired_notice',

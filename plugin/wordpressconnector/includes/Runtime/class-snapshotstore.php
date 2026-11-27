@@ -9,10 +9,16 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Runtime;
 
+require_once __DIR__ . '/trait-snapshotstoremethods.php';
+
 /**
  * Provides Snapshot Store behavior for connector request processing.
  */
 final class SnapshotStore {
+	use SnapshotStoreMethods {
+		get_record as getRecord;
+	}
+
 	private const PREFIX = 'wpconnector_snapshot_';
 
 	/**
@@ -48,26 +54,6 @@ final class SnapshotStore {
 	public function get( string $requestId ): ?array {
 		$record = $this->getRecord( $requestId );
 		return is_array( $record ) && isset( $record['rollback'] ) && is_array( $record['rollback'] ) ? $record['rollback'] : null;
-	}
-
-	/**
-	 * Retrieve record for the SnapshotStore component.
-	 *
-	 * @param string $requestId Input for the operation.
-	 *
-	 * @return array|null Operation result.
-	 */
-	public function getRecord( string $requestId ): ?array {
-		$value = get_option( self::key( $requestId ), null );
-		if ( ! is_array( $value ) || ! isset( $value['rollback'] ) || ! is_array( $value['rollback'] ) ) {
-			return null;
-		}
-		return array(
-			'created_at'             => isset( $value['created_at'] ) ? (int) $value['created_at'] : 0,
-			'rollback'               => $value['rollback'],
-			'source_action'          => isset( $value['source_action'] ) ? (string) $value['source_action'] : '',
-			'public_repository_mode' => ! empty( $value['public_repository_mode'] ),
-		);
 	}
 
 	/**
