@@ -3,6 +3,9 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $source = file_get_contents($root.'/plugin/wordpressconnector/includes/Adapters/MediaAdapter.php');
 if (! is_string($source)) { throw new RuntimeException('MediaAdapter missing.'); }
+$implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-mediaadapteractions.php');
+if ($implementation === false) { throw new RuntimeException('Missing canonical media implementation.'); }
+$source .= $implementation;
 $compactSource = preg_replace('/\\s+/', '', $source);
 if (! is_string($compactSource)) { throw new RuntimeException('Could not normalize media source.'); }
 

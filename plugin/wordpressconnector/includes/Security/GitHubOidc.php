@@ -11,10 +11,16 @@ namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
+require_once __DIR__ . '/trait-githuboidcmethods.php';
+
 /**
  * Applies Git Hub Oidc safeguards to connector operations.
  */
 final class GitHubOidc {
+	use GitHubOidcMethods {
+		expected_audience as expectedAudience;
+	}
+
 	private const HEADER               = 'x-webactueel-github-oidc';
 	private const ISSUER               = 'https://token.actions.githubusercontent.com';
 	private const JWKS_URL             = 'https://token.actions.githubusercontent.com/.well-known/jwks';
@@ -87,15 +93,6 @@ final class GitHubOidc {
 
 		Policy::setPublicRepositoryContext( 'public' === (string) $claims['repository_visibility'] );
 		return $this->administrator_id();
-	}
-
-	/**
-	 * Process the expected audience operation in the GitHubOidc component.
-	 *
-	 * @return string Operation result.
-	 */
-	public static function expectedAudience(): string {
-		return rtrim( (string) rest_url( 'webactueel-wordpress-connector/v1' ), '/' );
 	}
 
 	/**
