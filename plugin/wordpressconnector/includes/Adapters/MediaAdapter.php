@@ -15,9 +15,11 @@ use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 use Webactueel\WordPressConnector\Support\LocalFileIdentity;
+use Webactueel\WordPressConnector\Support\LocalFilesystem;
 
 require_once __DIR__ . '/trait-mediaadapteractions.php';
 require_once __DIR__ . '/../Support/class-localfileidentity.php';
+require_once __DIR__ . '/../Support/class-localfilesystem.php';
 
 /**
  * Registers and handles Media connector actions.
@@ -314,8 +316,7 @@ final class MediaAdapter {
 	 * @return bool Whether every intended destination is now absent.
 	 */
 	private function remove_created_copies( array &$created ): bool {
-		$filesystem = null;
-		$clean      = true;
+		$clean = true;
 		foreach ( array_reverse( array_keys( $created ) ) as $created_file ) {
 			clearstatcache( true, $created_file );
 			if ( ! file_exists( $created_file ) && ! is_link( $created_file ) ) {
@@ -323,24 +324,7 @@ final class MediaAdapter {
 				continue;
 			}
 			if ( ! LocalFileIdentity::matches( $created_file, $created[ $created_file ]['stat'] ) ||
-				( '/' === DIRECTORY_SEPARATOR && false !== strpos( $created_file, '\\' ) ) ) {
-				$clean = false;
-				continue;
-			}
-			try {
-				if ( null === $filesystem ) {
-					require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
-					require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
-					$filesystem = new \WP_Filesystem_Direct( null );
-				}
-				$filesystem->delete( $created_file, false, 'f' );
-			} catch ( \Throwable $cleanup_error ) {
-				// Reset a failed backend before considering the next owned path.
-				$filesystem = null;
-			}
-			$created[ $created_file ]['handle'] = null;
-			clearstatcache( true, $created_file );
-			if ( file_exists( $created_file ) || is_link( $created_file ) ) {
+				! LocalFilesystem::remove_file( $created_file, $created[ $created_file ]['handle'] ) ) {
 				$clean = false;
 			}
 		}
