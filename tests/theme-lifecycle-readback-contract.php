@@ -7,13 +7,13 @@ namespace {
     if (! mkdir($tmp . '/wp-admin/includes', 0700, true)) {
         throw new \RuntimeException('Could not create theme lifecycle test fixture.');
     }
-    foreach (array('file.php', 'theme.php', 'update.php', 'class-wp-upgrader.php') as $file) {
+    foreach (array('file.php', 'theme.php', 'update.php', 'class-wp-upgrader.php', 'theme-install.php') as $file) {
         if (false === file_put_contents($tmp . '/wp-admin/includes/' . $file, "<?php\n")) {
             throw new \RuntimeException('Could not create WordPress include fixture.');
         }
     }
     register_shutdown_function(static function () use ($tmp): void {
-        foreach (array('file.php', 'theme.php', 'update.php', 'class-wp-upgrader.php') as $file) {
+        foreach (array('file.php', 'theme.php', 'update.php', 'class-wp-upgrader.php', 'theme-install.php') as $file) {
             @unlink($tmp . '/wp-admin/includes/' . $file);
         }
         @rmdir($tmp . '/wp-admin/includes');
@@ -45,7 +45,7 @@ namespace {
 
     final class ThemeLifecycleError
     {
-        public function get_error_message(): string { return 'Simulated filesystem failure'; }
+        public function get_error_message(): string { return 'qa_private_theme_provider_detail_758e'; }
     }
     final class ThemeLifecycleTheme
     {
@@ -61,6 +61,11 @@ namespace {
             return 'Name' === $key ? $this->name : '';
         }
         public function get_template(): string { return $this->name; }
+    }
+    function wp_parse_url($url, $component = -1) { return parse_url($url, $component); }
+    function themes_api($action, $args) {
+        if (!empty($GLOBALS['theme_fixture']['directory_error'])) return new ThemeLifecycleError();
+        return (object) array('slug'=>'new-theme', 'download_link'=>'https://downloads.wordpress.org/theme/new-theme.1.0.zip');
     }
     function sanitize_text_field($value): string { return trim((string) $value); }
     function get_stylesheet(): string { return $GLOBALS['theme_fixture']['active']; }
@@ -111,6 +116,12 @@ namespace {
     class Automatic_Upgrader_Skin {}
     class Theme_Upgrader {
         public function __construct($skin) {}
+        public function install($url) {
+            if (!empty($GLOBALS['theme_fixture']['install_effect'])) {
+                $GLOBALS['theme_fixture']['installed']['new-theme'] = '1.0';
+            }
+            return $GLOBALS['theme_fixture']['install_result'];
+        }
         public function upgrade($stylesheet) {
             ++$GLOBALS['theme_fixture']['upgrade_calls'];
             $result = $GLOBALS['theme_fixture']['upgrade_result'];
@@ -284,5 +295,41 @@ namespace {
         throw new \RuntimeException('Pinned native theme update did not verify the exact version.');
     }
 
-    echo "theme lifecycle readback contract OK\n";
+    $assertProviderError = static function(callable $operation, string $expected): void {
+        try { $operation(); }
+        catch (RuntimeException $error) {
+            if ($expected === $error->getMessage()) return;
+            throw new LogicException('Incorrect theme provider failure diagnostic: ' . $expected);
+        }
+        throw new LogicException('Theme provider failure incorrectly reported as success.');
+    };
+    $GLOBALS['theme_fixture']['active'] = 'active-theme';
+    $GLOBALS['theme_fixture']['delete_result'] = new ThemeLifecycleError();
+    $assertProviderError($delete, 'Theme deletion was not confirmed; filesystem credentials or permissions may be required.');
+    foreach (array(new ThemeLifecycleError(), null, 0, 'true', array()) as $badResult) {
+        $GLOBALS['theme_fixture']['upgrade_result'] = $badResult;
+        $assertProviderError(static function() use($adapter): void {
+            $adapter->themeUpdate(array('stylesheet'=>'candidate-theme'), array('dry_run'=>false));
+        }, 'Theme update failed or no update is available.');
+        if ('2.5' !== $GLOBALS['theme_fixture']['installed']['candidate-theme']) throw new LogicException('Failed theme upgrade changed state.');
+    }
+    $install = static function() use($adapter): array {
+        return $adapter->themeInstall(array('slug'=>'new-theme'), array('dry_run'=>false));
+    };
+    $GLOBALS['theme_fixture']['directory_error'] = true;
+    $assertProviderError($install, 'Official WordPress.org theme package not found.');
+    $GLOBALS['theme_fixture']['directory_error'] = false;
+    $GLOBALS['theme_fixture']['install_effect'] = false;
+    $GLOBALS['theme_fixture']['install_result'] = new ThemeLifecycleError();
+    $assertProviderError($install, 'WordPress theme installation failed; check filesystem permissions.');
+    $GLOBALS['theme_fixture']['install_result'] = true;
+    $assertProviderError($install, 'Theme installer returned success, but the requested WordPress.org slug was not found afterward.');
+    $GLOBALS['theme_fixture']['install_effect'] = true;
+    $installed = $install();
+    if ('new-theme' !== $installed['installed'] || true !== ($installed['readback_verified'] ?? null)
+        || false !== $installed['rollback_supported'] || !wp_get_theme('new-theme')->exists()) {
+        throw new LogicException('Verified theme install changed contract.');
+    }
+
+    echo "theme lifecycle readback and provider result contract OK\n";
 }

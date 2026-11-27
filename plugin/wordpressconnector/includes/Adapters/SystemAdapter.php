@@ -846,10 +846,7 @@ final class SystemAdapter {
 			)
 		);
 		if ( is_wp_error( $result ) || ! is_object( $result ) || ! isset( $result->plugins ) || ! is_array( $result->plugins ) ) {
-			throw new RuntimeException(
-				is_wp_error( $result ) ? $result->get_error_message()
-				: 'WordPress.org plugin directory could not be queried.'
-			);
+			throw new RuntimeException( 'WordPress.org plugin directory could not be queried.' );
 		}
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$installed = get_plugins();
@@ -925,7 +922,7 @@ final class SystemAdapter {
 		// Silent activation is appropriate for Core upgrades, not user-requested activation.
 		$result = activate_plugin( $file, '', $network_wide, false );
 		if ( is_wp_error( $result ) ) {
-			throw new RuntimeException( $result->get_error_message() );
+			throw new RuntimeException( 'Plugin activation failed; check plugin requirements or security restrictions.' );
 		}
 		$active_now = $network_wide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
 		if ( ! $active_now ) {
@@ -1021,7 +1018,7 @@ final class SystemAdapter {
 			)
 		);
 		if ( is_wp_error( $api ) || ! is_object( $api ) || ! is_string( $api->download_link ?? null ) ) {
-			throw new RuntimeException( is_wp_error( $api ) ? $api->get_error_message() : 'Official WordPress.org plugin package not found.' );
+			throw new RuntimeException( 'Official WordPress.org plugin package not found.' );
 		}
 		if ( isset( $api->slug ) && (string) $api->slug !== $slug ) {
 			throw new RuntimeException( 'Plugin directory response identity does not match requested slug.' );
@@ -1036,9 +1033,6 @@ final class SystemAdapter {
 		}
 		$upgrader  = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
 		$installed = $upgrader->install( $url );
-		if ( is_wp_error( $installed ) ) {
-			throw new RuntimeException( $installed->get_error_message() );
-		}
 		if ( true !== $installed ) {
 			throw new RuntimeException( 'WordPress plugin installation failed; check filesystem permissions or existing destination.' );
 		}
@@ -1102,8 +1096,8 @@ final class SystemAdapter {
 		}
 		$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
 		$updated  = $upgrader->upgrade( $file );
-		if ( false === $updated || is_wp_error( $updated ) ) {
-			throw new RuntimeException( is_wp_error( $updated ) ? $updated->get_error_message() : 'Plugin update failed or no update is available.' );
+		if ( true !== $updated ) {
+			throw new RuntimeException( 'Plugin update failed or no update is available.' );
 		}
 		wp_clean_plugins_cache( true );
 		$version = $this->plugin_version( $file );
@@ -1147,9 +1141,6 @@ final class SystemAdapter {
 			);
 		}
 		$deleted = delete_plugins( array( $file ) );
-		if ( is_wp_error( $deleted ) ) {
-			throw new RuntimeException( $deleted->get_error_message() );
-		}
 		if ( true !== $deleted ) {
 			throw new RuntimeException( 'WordPress could not complete plugin deletion; filesystem credentials or server permission may be required.' );
 		}
@@ -1263,7 +1254,7 @@ final class SystemAdapter {
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		$api = themes_api( 'theme_information', array( 'slug' => $slug ) );
 		if ( is_wp_error( $api ) || ! is_object( $api ) || ! is_string( $api->download_link ?? null ) ) {
-			throw new RuntimeException( is_wp_error( $api ) ? $api->get_error_message() : 'Official WordPress.org theme package not found.' );
+			throw new RuntimeException( 'Official WordPress.org theme package not found.' );
 		}
 		if ( isset( $api->slug ) && (string) $api->slug !== $slug ) {
 			throw new RuntimeException( 'Theme directory response identity does not match requested slug.' );
@@ -1278,14 +1269,17 @@ final class SystemAdapter {
 		}
 		$upgrader  = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
 		$installed = $upgrader->install( $url );
-		if ( is_wp_error( $installed ) ) {
-			throw new RuntimeException( $installed->get_error_message() );
-		}
 		if ( true !== $installed ) {
 			throw new RuntimeException( 'WordPress theme installation failed; check filesystem permissions.' );
 		}
+		wp_clean_themes_cache();
+		$installed_theme = wp_get_theme( $slug );
+		if ( ! $installed_theme->exists() || $installed_theme->errors() ) {
+			throw new RuntimeException( 'Theme installer returned success, but the requested WordPress.org slug was not found afterward.' );
+		}
 		return array(
 			'installed'          => $slug,
+			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -1332,8 +1326,8 @@ final class SystemAdapter {
 		}
 		$upgrader = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
 		$updated  = $upgrader->upgrade( $stylesheet );
-		if ( false === $updated || is_wp_error( $updated ) ) {
-			throw new RuntimeException( is_wp_error( $updated ) ? $updated->get_error_message() : 'Theme update failed or no update is available.' );
+		if ( true !== $updated ) {
+			throw new RuntimeException( 'Theme update failed or no update is available.' );
 		}
 		wp_clean_themes_cache();
 		$after   = wp_get_theme( $stylesheet );
@@ -1424,9 +1418,6 @@ final class SystemAdapter {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/theme.php';
 		$deleted = delete_theme( $stylesheet );
-		if ( is_wp_error( $deleted ) ) {
-			throw new RuntimeException( $deleted->get_error_message() );
-		}
 		if ( true !== $deleted ) {
 			throw new RuntimeException( 'Theme deletion was not confirmed; filesystem credentials or permissions may be required.' );
 		}
