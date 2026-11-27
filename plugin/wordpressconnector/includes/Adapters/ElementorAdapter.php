@@ -12,10 +12,13 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\ChainedFailure;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Json;
 use Webactueel\WordPressConnector\Support\Input;
+
+require_once __DIR__ . '/../Support/class-chainedfailure.php';
 
 require_once __DIR__ . '/trait-elementoradapteractions.php';
 
@@ -377,13 +380,14 @@ final class ElementorAdapter {
 			try {
 				$this->restore_snapshot( $before );
 			} catch ( Throwable $rollback_error ) {
-				throw new RuntimeException(
+				$failure = ChainedFailure::create(
 					'Elementor mutation failed and automatic rollback also failed. Manual recovery is required.',
-					0,
 					$error
 				);
+				throw $failure;
 			}
-			throw new RuntimeException( 'Elementor mutation failed; previous snapshot restored: ' . $error->getMessage(), 0, $error );
+			$failure = ChainedFailure::create( 'Elementor mutation failed; previous snapshot restored: ' . $error->getMessage(), $error );
+			throw $failure;
 		}
 	}
 
