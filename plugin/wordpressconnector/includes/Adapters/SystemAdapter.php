@@ -415,6 +415,9 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginDirectorySearch( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( array_diff( array_keys( $payload ), array( 'search', 'page', 'per_page' ) ) ) {
 			throw new RuntimeException( 'Plugin directory search accepts only search, page and per_page.' );
 		}

@@ -69,6 +69,9 @@ final class CustomCssAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$snapshot = $this->snapshot( $this->stylesheet( $payload ) );
 
 		return array(

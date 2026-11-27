@@ -136,6 +136,9 @@ final class YoastSnippetAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( array_keys( $payload ) !== array( 'id' ) ) {
 			throw new RuntimeException( 'Snippet inspect accepts only id.' );
 		}

@@ -72,6 +72,9 @@ final class AutoImageAttributesAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$fields = $this->snapshot();
 		return array(
 			'active'      => defined( 'IAFF_VERSION_NUM' ) || function_exists( 'iaff_get_settings' ),

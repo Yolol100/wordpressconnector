@@ -200,6 +200,9 @@ final class CodeSnippetsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function catalogOnlyInspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( $payload ) {
 			throw new RuntimeException( 'Catalogue preset inspection accepts no payload fields.' );
 		}

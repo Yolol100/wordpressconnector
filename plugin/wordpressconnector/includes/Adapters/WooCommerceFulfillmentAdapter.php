@@ -57,6 +57,9 @@ final class WooCommerceFulfillmentAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspectLocations( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->keys( $payload, array( 'zone_id' ) );
 		$path      = $this->location_path( $payload );
 		$locations = $this->location_snapshot( $this->api( 'GET', $path ) );

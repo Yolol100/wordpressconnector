@@ -20,7 +20,7 @@ function sanitize_key($name): string { return strtolower(preg_replace('/[^a-z0-9
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-pluginsettingsadapter.php';
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
 foreach (array('code_snippets.patch', 'code_snippets.catalog_only.inspect') as $action) {

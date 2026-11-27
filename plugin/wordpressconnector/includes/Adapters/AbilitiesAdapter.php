@@ -81,6 +81,9 @@ final class AbilitiesAdapter {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function catalog( array $payload, array $context ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( ! function_exists( 'wp_get_abilities' ) ) {
 			return array(
 				'available' => false,
@@ -156,6 +159,9 @@ final class AbilitiesAdapter {
 	 * @return array Result of the operation.
 	 */
 	public function readAbility( array $payload, array $context ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		list( $name, $ability ) = $this->resolve_ability( $payload, false );
 		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
 		return $this->execute_and_sanitize( $name, $ability, $input, $this->safe_annotations( $ability ), false );

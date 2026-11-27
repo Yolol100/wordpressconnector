@@ -125,6 +125,9 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function capabilities( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		if ( Policy::publicRepositoryContext() || ! function_exists( 'current_user_can' )
 			|| ! current_user_can( 'manage_options' ) ) {
 			throw new RuntimeException( 'Private Yoast capability discovery requires manage_options.' );
@@ -160,6 +163,9 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function scores( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->assert_private();
 		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'wpseo_manage_options' ) ) {
 			throw new RuntimeException( 'Yoast analysis scores require wpseo_manage_options.' );
@@ -192,6 +198,9 @@ final class YoastNativeAbilitiesAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$id   = $this->assert_post_access( $payload );
 		$data = $this->post_data( $id );
 		return array(

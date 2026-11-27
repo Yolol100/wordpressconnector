@@ -72,6 +72,9 @@ final class OptimizerSettingsAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->keys( $payload, array( 'provider' ) );
 		$provider = $this->provider( $payload );
 		$state    = $this->state( $provider );

@@ -53,7 +53,7 @@ require_once $root . 'Support/Json.php';
 require_once $root . 'Support/class-fingerprint.php';
 require_once $root . 'Security/Policy.php';
 require_once $root . 'Runtime/class-registry.php';
-require_once $root . 'Adapters/PluginSettingsAdapter.php';
+require_once $root . 'Adapters/class-pluginsettingsadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -114,7 +114,7 @@ $expectFailure(array('color' => '#red'), 'RGB hex');
 $expectFailure(array('message_text' => str_repeat('x', 801)), 'length limit');
 $expectFailure(array('secret_token' => 'bad'), 'Secret-like keys cannot be read or written');
 
-$source = (string) file_get_contents($root . 'Adapters/PluginSettingsAdapter.php');
+$source = (string) file_get_contents($root . 'Adapters/class-pluginsettingsadapter.php');
 foreach (array(
     "'elementor-pro/elementor-pro.php'",
     "'classic-editor/classic-editor.php'",

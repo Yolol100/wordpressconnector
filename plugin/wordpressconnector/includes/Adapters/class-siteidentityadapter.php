@@ -72,6 +72,9 @@ final class SiteIdentityAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( $payload ) {
 			throw new RuntimeException( 'Site identity inspect requires an empty payload.' );
 		}

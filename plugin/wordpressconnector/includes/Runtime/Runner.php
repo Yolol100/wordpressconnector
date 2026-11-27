@@ -293,6 +293,9 @@ final class Runner {
 	 * @return array Operation result.
 	 */
 	public function actions( array $payload, array $context ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		return array( 'actions' => $this->registry->catalog() );
 	}
 
@@ -572,6 +575,9 @@ final class Runner {
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	public function mutationStatus( array $payload, array $context ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( array_keys( $payload ) !== array( 'request_id' )
 		|| ! is_string( $payload['request_id'] ?? null )
 		|| 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $payload['request_id'] ) ) {

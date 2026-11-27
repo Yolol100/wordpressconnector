@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/CustomCssAdapter.php';
+$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/class-customcssadapter.php';
 $pluginPath = $root . '/plugin/wordpressconnector/includes/class-plugin.php';
 $bootstrapPath = $root . '/plugin/wordpressconnector/wordpressconnector.php';
 
@@ -60,7 +60,7 @@ if (strpos($plugin, 'new CustomCssAdapter()') === false) {
     exit(1);
 }
 
-if (strpos($bootstrap, "includes/Adapters/CustomCssAdapter.php") === false) {
+if (strpos($bootstrap, "includes/Adapters/class-customcssadapter.php") === false) {
     fwrite(STDERR, "CustomCssAdapter is not loaded by the plugin bootstrap.\n");
     exit(1);
 }

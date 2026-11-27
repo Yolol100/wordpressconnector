@@ -58,6 +58,9 @@ final class ConnectionReadinessAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		if ( array() !== $payload ) {
 			throw new RuntimeException( 'Connection readiness does not accept parameters.' );
 		}

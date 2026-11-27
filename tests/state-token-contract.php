@@ -22,7 +22,7 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/CodeSnip
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Input.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/YoastSnippetAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastsnippetadapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-settings.php';
 
