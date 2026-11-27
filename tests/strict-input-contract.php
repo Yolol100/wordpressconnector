@@ -10,7 +10,7 @@ require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.
 require_once $root . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
 require_once $root . '/plugin/wordpressconnector/includes/REST/Controller.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\REST\AssetStore;
@@ -129,7 +129,7 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
     }, 'plugin package source_path control suffix');
 }
 
-$adapterSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php');
+$adapterSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapterSource .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-request.php');

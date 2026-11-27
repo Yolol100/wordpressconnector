@@ -128,7 +128,10 @@ namespace {
         'Readiness must never write WordPress state or contact external servers.');
 
     $adminSource = (string) file_get_contents(dirname(__DIR__) .
-        '/plugin/wordpressconnector/includes/Admin/Settings.php');
+        '/plugin/wordpressconnector/includes/Admin/class-settings.php');
+    $settingsImplementation = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
+    if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
+    $adminSource .= $settingsImplementation;
     foreach (array(
         'render_connection_recovery_guide()',
         'new ConnectionReadinessAdapter()',

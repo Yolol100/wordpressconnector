@@ -139,6 +139,20 @@ foreach (array_unique($adapterMatches[1]) as $adapterName) {
         exit(1);
     }
     $registrationPaths[] = $adapterPath;
+    $adapterSource = file_get_contents($adapterPath);
+    if ($adapterSource === false) {
+        throw new RuntimeException('Unable to inspect wired adapter implementation.');
+    }
+    if (preg_match_all("~require_once\s+__DIR__\s*\.\s*'/((?:trait-)[a-z0-9-]+\.php)'\s*;~", $adapterSource, $loadedTraits) === false) {
+        throw new RuntimeException('Unable to inspect wired adapter traits.');
+    }
+    foreach (array_unique($loadedTraits[1]) as $traitFile) {
+        $traitPath = $adapterDirectory . '/' . $traitFile;
+        if (!is_file($traitPath)) {
+            throw new RuntimeException('Wired adapter trait source is missing: ' . $traitFile);
+        }
+        $registrationPaths[] = $traitPath;
+    }
 }
 $registrationPaths[] = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
 $registered = array();

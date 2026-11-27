@@ -14,7 +14,7 @@ if (!defined('WPCONNECTOR_FILE')) {
 if (!defined('WPCONNECTOR_VERSION')) {
     define('WPCONNECTOR_VERSION', '1.20.18-test');
 }
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-settings.php';
 
 $GLOBALS['admin_ui_fixture'] = array('allow' => false, 'styles' => array(), 'scripts' => array(), 'data' => array());
 function current_user_can(string $cap): bool {
@@ -57,7 +57,10 @@ $check($scripts[0][4] === true && $data[0][1] === 'WPConnectorAdminUI', 'Foot-lo
 $tabs = array_column($data[0][2]['tabs'], 'name');
 $check($tabs === array('overview','chatgpt','github','advanced'), 'Simple four-tab information architecture.');
 
-$settings = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php');
+$settings = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
+$settingsImplementation = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
+if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
+$settings .= $settingsImplementation;
 $js = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/assets/admin-ui.js');
 $css = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/assets/admin-ui.css');
 foreach ($tabs as $tab) {

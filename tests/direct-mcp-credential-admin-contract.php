@@ -1,7 +1,10 @@
 <?php
 declare(strict_types=1);
 
-$source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php');
+$source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
+$settingsImplementation = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
+if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
+$source .= $settingsImplementation;
 $compactSource = preg_replace('/\\s+/', '', $source);
 if (! is_string($compactSource)) { throw new RuntimeException('Could not normalize direct MCP credential source.'); }
 foreach (array(

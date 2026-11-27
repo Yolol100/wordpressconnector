@@ -8,7 +8,7 @@ Date: 2026-11-22. Source audited: WordPress Connector 1.20.18 development candid
 | Signed GitHub releases and deployment workflow | KEEP | Trusted, versioned packaging and rollback; central MCP is additive, not a replacement. |
 | REST/Controller.php and REST/AssetStore.php | KEEP | Bootstrapped authenticated WordPress REST and GitHub operations. |
 | MCP/Controller.php, OAuthResourceServer.php, NativeOAuthServer.php | KEEP | Per-site ChatGPT OAuth and MCP connection; required as fallback until every client has migrated. |
-| Admin/Settings.php and connection-doctor.js | KEEP, possibly consolidate UI later | Site-specific admin approvals, tests and backwards compatibility. |
+| Admin/class-settings.php and connection-doctor.js | KEEP, possibly consolidate UI later | Site-specific admin approvals, tests and backwards compatibility. |
 | All registered Adapters (WordPress, Elementor, WooCommerce, ACF, Yoast, media, plugins, filesystem) | KEEP | Explicitly registered in Plugin::boot; optional provider absence on one site does not mean dead code. |
 | Runtime Runner, Registry, ProcessedStore, SnapshotStore | KEEP | Authorization, transaction checks, idempotency, recovery and rollback. |
 | Elementor JSON import/export and WP-CLI tools | KEEP | Registered in the plugin bootstrap and used by current workflows. |

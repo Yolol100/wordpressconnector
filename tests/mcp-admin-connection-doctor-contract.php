@@ -7,7 +7,7 @@ namespace {
     if (! defined('WPCONNECTOR_FILE')) define('WPCONNECTOR_FILE', dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
     if (! defined('WPCONNECTOR_VERSION')) define('WPCONNECTOR_VERSION', '1.19.18-test');
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-settings.php';
 
     $GLOBALS['doctor_fixture'] = array('allow' => false, 'scripts' => array(), 'config' => array());
     function current_user_can(string $cap): bool { return $GLOBALS['doctor_fixture']['allow'] && 'manage_options' === $cap; }
@@ -47,7 +47,10 @@ namespace {
         && $config[0][2]['nonce'] === 'fixture-nonce-wp_rest',
         'Admin-only JS enqueue, version and WordPress REST nonce must be correct.');
 
-    $ui = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php');
+    $ui = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
+    $settingsImplementation = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
+    if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
+    $ui .= $settingsImplementation;
     foreach (array('wpconnector-copy-mcp', 'wpconnector-test-mcp', 'wpconnector-mcp-address',
         'aria-live="polite"', 'does NOT connect ChatGPT', 'render_connection_recovery_guide') as $needle) {
         $assert(strpos($ui, $needle) !== false, 'Admin UI missing connection control or evidence limit: ' . $needle);
