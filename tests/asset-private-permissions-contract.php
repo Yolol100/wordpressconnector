@@ -67,6 +67,7 @@ namespace {
 
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
     require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
+    $GLOBALS['wpconn_direct_file_delete'] = '\\Webactueel\\WordPressConnector\\REST\\unlink';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
 
     $store = new \Webactueel\WordPressConnector\REST\AssetStore();

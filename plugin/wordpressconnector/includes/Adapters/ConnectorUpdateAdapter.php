@@ -13,8 +13,10 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\LocalFilesystem;
 
 require_once __DIR__ . '/trait-connectorupdateadapteractions.php';
+require_once __DIR__ . '/../Support/class-localfilesystem.php';
 
 /**
  * Registers and handles Connector Update connector actions.
@@ -274,8 +276,8 @@ final class ConnectorUpdateAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			if ( ! empty( $context['require_release_provenance'] ) ) {
 				$preview_package = $this->download_protected_source_package( $release );
-				if ( file_exists( $preview_package ) ) {
-					wp_delete_file( $preview_package );
+				if ( ! LocalFilesystem::remove_file( $preview_package ) ) {
+					throw new RuntimeException( 'Connector preview package cleanup failed; manual cleanup required.' );
 				}
 			}
 			return array(
@@ -336,9 +338,7 @@ final class ConnectorUpdateAdapter {
 				'rollback_supported' => false,
 			);
 		} finally {
-			if ( is_string( $package ) && file_exists( $package ) ) {
-				@unlink( $package );
-			}
+			LocalFilesystem::remove_file( $package );
 		}
 	}
 
@@ -618,9 +618,9 @@ final class ConnectorUpdateAdapter {
 			$this->verify_protected_source( $release, $package );
 			return $package;
 		} catch ( \Throwable $error ) {
-			if ( file_exists( $package ) ) {
-				wp_delete_file( $package );
-			}
+			// Retain the original verification failure; never redirect cleanup
+			// through the general WordPress file deletion filter.
+			LocalFilesystem::remove_file( $package );
 			throw $error;
 		}
 	}
@@ -688,9 +688,7 @@ final class ConnectorUpdateAdapter {
 
 			return $package;
 		} catch ( \Throwable $error ) {
-			if ( is_string( $package ) && file_exists( $package ) ) {
-				@unlink( $package );
-			}
+			LocalFilesystem::remove_file( $package );
 			throw $error;
 		}
 	}

@@ -24,6 +24,8 @@ function wp_tempnam($name) {
 }
 function wp_delete_file($path) {
     $GLOBALS['source_case']['deleted_downloads'][] = $path;
+    // Model Core's wp_delete_file filter redirect with a disposable sentinel.
+    $path = $GLOBALS['source_case']['delete_redirect'] ?? $path;
     return !file_exists($path) || unlink($path);
 }
 function wp_remote_retrieve_response_code(array $response): int { return (int) $response['response']['code']; }
@@ -94,6 +96,11 @@ function wp_safe_remote_get(string $url, array $opts): array {
     return array('response' => array('code' => 200), 'body' => $body);
 }
 
+require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
+$GLOBALS['wpconn_direct_file_delete'] = static function ($path): bool {
+    $GLOBALS['source_case']['deleted_downloads'][] = $path;
+    return !file_exists($path) || unlink($path);
+};
 require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
 
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
@@ -206,4 +213,26 @@ if (!$deniedTamper || count($GLOBALS['source_case']['deleted_downloads']) !== $c
     || is_file(end($GLOBALS['source_case']['deleted_downloads']))) {
     throw new RuntimeException('Checksum-matching malicious ZIP bypassed native protected-source verification or leaked a temporary file.');
 }
+// A protected temporary package is owned by the updater, not by a
+// general-purpose media deletion filter. It must never delete a different path.
+$sentinel = tempnam(sys_get_temp_dir(), 'protected-delete-sentinel-');
+file_put_contents($sentinel, 'unrelated fixture');
+$GLOBALS['source_case']['delete_redirect'] = $sentinel;
+$rejected = false;
+try {
+    $protectedDownload->invoke($adapter, $makeRelease());
+} catch (RuntimeException $error) {
+    $rejected = true;
+} finally {
+    unset($GLOBALS['source_case']['delete_redirect']);
+}
+$download = end($GLOBALS['source_case']['temporary_downloads']);
+$sentinelIntact = is_file($sentinel) && file_get_contents($sentinel) === 'unrelated fixture';
+$downloadGone = !file_exists($download) && !is_link($download);
+if (is_file($sentinel)) unlink($sentinel);
+if (is_file($download)) unlink($download);
+if (!$rejected || !$sentinelIntact || !$downloadGone) {
+    throw new LogicException('Protected package cleanup allowed a filtered deletion target.');
+}
+
 echo "protected main origin, exact PHP bytes, native source verification and ZIP tamper cases denied\n";

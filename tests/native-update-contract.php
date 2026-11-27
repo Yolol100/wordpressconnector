@@ -91,8 +91,12 @@ namespace {
     }
     function wp_remote_retrieve_response_code(array $response): int { return (int) $response['code']; }
     function wp_remote_retrieve_body(array $response): string { return (string) $response['body']; }
+    require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
+    $GLOBALS['native_update_temp_files'] = array();
     function wp_tempnam(string $filename) {
-        return tempnam(sys_get_temp_dir(), 'connector-native-');
+        $path = tempnam(sys_get_temp_dir(), 'connector-native-');
+        if (is_string($path)) $GLOBALS['native_update_temp_files'][] = $path;
+        return $path;
     }
 
     $root = dirname(__DIR__);
@@ -311,5 +315,14 @@ namespace {
     }
     unset($GLOBALS['test_http_failure']);
 
+    if (count($GLOBALS['native_update_temp_files']) < 2) {
+        throw new RuntimeException('Expected rejected native update download fixtures.');
+    }
+    foreach ($GLOBALS['native_update_temp_files'] as $path) {
+        clearstatcache(true, $path);
+        if (file_exists($path) || is_link($path)) {
+            throw new RuntimeException('Rejected native update left temporary package residue.');
+        }
+    }
     echo "native plugin update offers, single and bulk verified download gates OK\n";
 }
