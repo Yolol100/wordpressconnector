@@ -72,12 +72,12 @@ final class Json {
 	 */
 	public static function readFile( string $path ): array {
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
-			throw new RuntimeException( 'JSON file is not readable: ' . $path );
+			throw new RuntimeException( 'JSON file is not readable.' );
 		}
 
 		$contents = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Validated local readable JSON file; wp_remote_get() only accepts a URL and changes failure semantics.
 		if ( false === $contents ) {
-			throw new RuntimeException( 'Could not read JSON file: ' . $path );
+			throw new RuntimeException( 'Could not read JSON file.' );
 		}
 
 		return self::decode( $contents );
@@ -85,19 +85,19 @@ final class Json {
 
 	/**
 	 * Write file atomic for the Json component.
+	 * Native storage exceptions may also propagate to the caller.
 	 *
 	 * @param string $path Input for the operation.
 	 * @param array  $data Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 * @throws \Throwable If the operation cannot be completed safely.
 	 */
 	public static function writeFileAtomic( string $path, array $data ): void {
 		// Encode before any side effects; never overwrite after partial writes.
 		$encoded   = self::encode( $data ) . PHP_EOL;
 		$directory = dirname( $path );
 		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
-			throw new RuntimeException( 'Could not create output directory: ' . $directory );
+			throw new RuntimeException( 'Could not create output directory.' );
 		}
 
 		$temporary = tempnam( $directory, '.wpconnector-' );
@@ -114,8 +114,22 @@ final class Json {
 				throw new RuntimeException( 'Could not write complete output file.' );
 			}
 		} catch ( \Throwable $error ) {
-			if ( is_file( $temporary ) && ! @unlink( $temporary ) ) {
-				throw new RuntimeException( 'Temporary output file removal failed; manual cleanup required.', 0, $error );
+			$removed = true;
+			try {
+				if ( is_file( $temporary ) && ! @unlink( $temporary ) ) {
+					$removed = false;
+				}
+			} catch ( \Throwable $cleanup_error ) {
+				$removed = false;
+			}
+			// A filesystem backend can report success without removing the file,
+			// or fail after removal. Verify actual absence before reporting recovery.
+			clearstatcache( true, $temporary );
+			if ( file_exists( $temporary ) || is_link( $temporary ) ) {
+				if ( ! $removed ) {
+					throw new RuntimeException( 'Temporary output file removal failed; manual cleanup required.', 0, $error );
+				}
+				throw new RuntimeException( 'Temporary output file cleanup readback failed; manual cleanup required.' );
 			}
 			throw $error;
 		}
