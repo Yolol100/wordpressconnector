@@ -10,7 +10,6 @@ declare( strict_types = 1 );
 namespace Webactueel\WordPressConnector\REST;
 
 use RuntimeException;
-use Webactueel\WordPressConnector\Support\LocalFilesystem;
 
 /**
  * Native aliases preserve the legacy public method contracts.
@@ -37,14 +36,7 @@ trait AssetStoreMethods {
 		if ( $create && ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
 			throw new RuntimeException( 'Could not create request asset root.' );
 		}
-		$identity = $create ? LocalFilesystem::private_identity( $directory, 0700 ) : null;
-		if ( $create && null === $identity ) {
-			throw new RuntimeException( 'Could not secure request asset root directory.' );
-		}
-		if ( $create && ! @chmod( $directory, 0700 ) ) {
-			throw new RuntimeException( 'Could not secure request asset root directory.' );
-		}
-		if ( $create && ! LocalFilesystem::private_mode_matches( $directory, 0700, $identity ) ) {
+		if ( $create && ! $this->secure_directory( $directory ) ) {
 			throw new RuntimeException( 'Could not secure request asset root directory.' );
 		}
 

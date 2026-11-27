@@ -81,14 +81,7 @@ final class AssetStore {
 		}
 		// Validate symlinks before a chmod can follow an escaped path.
 		Policy::assertLocalAssetPath( $parent, $root );
-		$identity = LocalFilesystem::private_identity( $parent, 0700 );
-		if ( null === $identity ) {
-			throw new RuntimeException( 'Could not secure request asset directory.' );
-		}
-		if ( ! @chmod( $parent, 0700 ) ) {
-			throw new RuntimeException( 'Could not secure request asset directory.' );
-		}
-		if ( ! LocalFilesystem::private_mode_matches( $parent, 0700, $identity ) ) {
+		if ( ! $this->secure_directory( $parent ) ) {
 			throw new RuntimeException( 'Could not secure request asset directory.' );
 		}
 
@@ -217,14 +210,7 @@ final class AssetStore {
 			throw new RuntimeException( 'Could not create connector asset base directory.' );
 		}
 		if ( $create ) {
-			$identity = LocalFilesystem::private_identity( $base, 0700 );
-			if ( null === $identity ) {
-				throw new RuntimeException( 'Could not secure connector asset base directory.' );
-			}
-			if ( ! @chmod( $base, 0700 ) ) {
-				throw new RuntimeException( 'Could not secure connector asset base directory.' );
-			}
-			if ( ! LocalFilesystem::private_mode_matches( $base, 0700, $identity ) ) {
+			if ( ! $this->secure_directory( $base ) ) {
 				throw new RuntimeException( 'Could not secure connector asset base directory.' );
 			}
 			$resolved = realpath( $base );
@@ -379,19 +365,57 @@ final class AssetStore {
 		);
 		foreach ( $iterator as $entry ) {
 			if ( $entry->isDir() && ! $entry->isLink() ) {
-				if ( ! @rmdir( $entry->getPathname() ) ) {
-					throw new RuntimeException( 'Could not remove private request asset directory.' );
-				}
-				clearstatcache( true, $entry->getPathname() );
-				if ( file_exists( $entry->getPathname() ) || is_link( $entry->getPathname() ) ) {
-					throw new RuntimeException( 'Could not verify removal of private request asset directory.' );
-				}
+				$this->remove_empty_directory( $entry->getPathname(), false );
 			} elseif ( ! LocalFilesystem::remove_file( $entry->getPathname() ) ) {
 				throw new RuntimeException( 'Could not remove private request asset.' );
 			}
 		}
+		$this->remove_empty_directory( $real, true );
+	}
+
+	/**
+	 * Secure an already validated private directory and verify its identity.
+	 *
+	 * Native chmod clears special bits as well as the ordinary permissions.
+	 * Core's direct filesystem can skip chmod when the low nine bits match.
+	 *
+	 * @param string $base Validated private directory.
+	 * @return bool Whether the same directory has the expected private mode.
+	 */
+	private function secure_directory( string $base ): bool {
+		$identity = LocalFilesystem::private_identity( $base, 0700 );
+		if ( null === $identity ) {
+			return false;
+		}
+		if ( ! @chmod( $base, 0700 ) ) {
+			return false;
+		}
+		return LocalFilesystem::private_mode_matches( $base, 0700, $identity );
+	}
+
+	/**
+	 * Remove exactly one empty directory, never a recursive replacement.
+	 *
+	 * Native rmdir cannot fall back to deleting a non-empty tree. Verify
+	 * absence even if the native operation reports success.
+	 *
+	 * @param string $real Validated directory to remove.
+	 * @param bool   $root Whether this is the request's root directory.
+	 * @throws RuntimeException If the directory cannot be removed or verified.
+	 */
+	private function remove_empty_directory( string $real, bool $root ): void {
+		clearstatcache( true, $real );
+		if ( is_link( $real ) || ! is_dir( $real ) ) {
+			if ( $root ) {
+				throw new RuntimeException( 'Could not remove private request asset root.' );
+			}
+			throw new RuntimeException( 'Could not remove private request asset directory.' );
+		}
 		if ( ! @rmdir( $real ) ) {
-			throw new RuntimeException( 'Could not remove private request asset root.' );
+			if ( $root ) {
+				throw new RuntimeException( 'Could not remove private request asset root.' );
+			}
+			throw new RuntimeException( 'Could not remove private request asset directory.' );
 		}
 		clearstatcache( true, $real );
 		if ( file_exists( $real ) || is_link( $real ) ) {
