@@ -45,7 +45,10 @@ foreach ($serviceAliases as $className => $aliases) {
         $canonical = substr($implementation, strrpos($implementation, '::') + 2);
         $old = new ReflectionMethod($className, $legacy);
         $new = new ReflectionMethod($className, $canonical);
-        if (!$old->isPublic() || $old->getName() !== $legacy ||
+        // PHP 7.4 reflects the original trait method name for native aliases.
+        $reflectedName = PHP_VERSION_ID < 80000 ? $canonical : $legacy;
+        if (!method_exists($className, $legacy) || !method_exists($className, $canonical) ||
+            !$old->isPublic() || $old->getName() !== $reflectedName ||
             $old->getDeclaringClass()->getName() !== $className ||
             $old->isStatic() !== $new->isStatic() ||
             (string)$old->getReturnType() !== (string)$new->getReturnType() ||
