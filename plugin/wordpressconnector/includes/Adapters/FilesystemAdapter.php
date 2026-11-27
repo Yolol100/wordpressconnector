@@ -277,13 +277,20 @@ final class FilesystemAdapter {
 			// A failed write can still truncate the file. Recover before the
 			// Runner loses this local before-image when the action fails.
 			try {
-				$filesystem->put_contents( $absolute, $before, $mode );
-			} catch ( Throwable $recovery_error ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Backend may throw after fully restoring bytes; independent SHA-256 readback below determines recovery success.
-				// Readback below is authoritative even if the backend throws
-				// after writing all original bytes.
+				$recovery_reported = true === $filesystem->put_contents( $absolute, $before, $mode );
+			} catch ( Throwable $recovery_error ) {
+				// A backend can throw after restoring all bytes.
+				$recovery_reported = false;
 			}
-			clearstatcache( true, $absolute );
-			$restored = $filesystem->get_contents( $absolute );
+			try {
+				clearstatcache( true, $absolute );
+				$restored = $filesystem->get_contents( $absolute );
+			} catch ( Throwable $verification_error ) {
+				// No verified rollback can be claimed without authoritative readback.
+				$detail  = $recovery_reported ? ' Recovery write reported success, but verification failed.' : ' Recovery write reported failure and verification failed.';
+				$failure = ChainedFailure::create( $error->getMessage() . $detail . ' Original file state is unverified; manual recovery required.', $error );
+				throw $failure;
+			}
 			if ( ! is_string( $restored ) || ! hash_equals( $before_state['sha256'], hash( 'sha256', $restored ) ) ) {
 				$failure = ChainedFailure::create( $error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', $error );
 				throw $failure;
