@@ -348,56 +348,67 @@ final class FilesystemAdapter {
 		} catch ( Throwable $error ) {
 			throw new RuntimeException( 'New file could not be created exclusively; target may now exist or filesystem permissions may block it.' );
 		}
-		$ok     = true;
-		$offset = 0;
-		$size   = strlen( $content );
+		$created_stat = null;
+		$ok           = true;
+		$offset       = 0;
+		$size         = strlen( $content );
 		try {
-			while ( $offset < $size ) {
-				$written = $handle->fwrite( substr( $content, $offset ) );
-				if ( ! is_int( $written ) || $written <= 0 ) {
-					$ok = false;
-					break;
+			try {
+				$created_stat = $handle->fstat();
+				if ( ! is_array( $created_stat ) || 0 === $created_stat['ino'] ) {
+					throw new RuntimeException( 'New file identity could not be verified.' );
 				}
-				$offset += $written;
-			}
-			if ( ! $handle->fflush() ) {
+				while ( $offset < $size ) {
+					$written = $handle->fwrite( substr( $content, $offset ) );
+					if ( ! is_int( $written ) || $written <= 0 ) {
+						$ok = false;
+						break;
+					}
+					$offset += $written;
+				}
+				if ( ! $handle->fflush() ) {
+					$ok = false;
+				}
+			} catch ( Throwable $error ) {
 				$ok = false;
 			}
-		} catch ( Throwable $error ) {
-			$ok = false;
+			if ( ! $ok || $offset !== $size ) {
+				$this->remove_failed_create( $filesystem, $absolute, is_array( $created_stat ) ? $created_stat : null, $handle );
+				throw new RuntimeException( 'New file write failed; partial content was removed.' );
+			}
+			if ( ! $this->matches_created_file( $absolute, $created_stat ) ) {
+				throw new RuntimeException( 'New file identity changed before permissions could be set; manual recovery required.' );
+			}
+			try {
+				$permissions_ok = $filesystem->chmod( $absolute, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
+			} catch ( Throwable $error ) {
+				$permissions_ok = false;
+			}
+			if ( ! $permissions_ok ) {
+				$this->remove_failed_create( $filesystem, $absolute, is_array( $created_stat ) ? $created_stat : null, $handle );
+				throw new RuntimeException( 'New file permissions could not be set; incomplete file was removed.' );
+			}
+			clearstatcache( true, $absolute );
+			$readback = $this->read_bounded_local_text( $absolute );
+			if ( ! is_string( $readback ) || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ||
+				! $this->matches_created_file( $absolute, $created_stat ) ) {
+				$this->remove_failed_create( $filesystem, $absolute, is_array( $created_stat ) ? $created_stat : null, $handle );
+				throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
+			}
+			$result['after']     = $this->state( $relative, $readback, $absolute );
+			$result['_rollback'] = array(
+				'action'  => 'filesystem.delete_text',
+				'payload' => array(
+					'path'                       => $relative,
+					'expected_sha256'            => hash( 'sha256', $readback ),
+					'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+				),
+			);
+			return $result;
 		} finally {
-			// Close the only handle before verifying or removing partial bytes.
+			// Keep the original inode alive until identity checks finish.
 			unset( $handle );
 		}
-		if ( ! $ok || $offset !== $size ) {
-			$this->remove_failed_create( $filesystem, $absolute );
-			throw new RuntimeException( 'New file write failed; partial content was removed.' );
-		}
-		try {
-			$permissions_ok = $filesystem->chmod( $absolute, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
-		} catch ( Throwable $error ) {
-			$permissions_ok = false;
-		}
-		if ( ! $permissions_ok ) {
-			$this->remove_failed_create( $filesystem, $absolute );
-			throw new RuntimeException( 'New file permissions could not be set; incomplete file was removed.' );
-		}
-		clearstatcache( true, $absolute );
-		$readback = $this->read_bounded_local_text( $absolute );
-		if ( ! is_string( $readback ) || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ) {
-			$this->remove_failed_create( $filesystem, $absolute );
-			throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
-		}
-		$result['after']     = $this->state( $relative, $readback, $absolute );
-		$result['_rollback'] = array(
-			'action'  => 'filesystem.delete_text',
-			'payload' => array(
-				'path'                       => $relative,
-				'expected_sha256'            => hash( 'sha256', $readback ),
-				'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
-			),
-		);
-		return $result;
 	}
 
 	/**
@@ -447,13 +458,49 @@ final class FilesystemAdapter {
 	}
 
 	/**
+	 * Check the identity of the inode created by this operation.
+	 *
+	 * Native stat warnings must not escape with a server path if a file
+	 * disappears between path validation and the local stat call.
+	 *
+	 * @param string     $absolute Previously resolved local file path.
+	 * @param array|null $created_stat Identity captured from the exclusive handle.
+	 * @return bool Whether the current regular non-link path matches.
+	 */
+	private function matches_created_file( string $absolute, ?array $created_stat ): bool {
+		if ( null === $created_stat || 0 === $created_stat['ino'] ) {
+			return false;
+		}
+		clearstatcache( true, $absolute );
+		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
+			return false;
+		}
+		try {
+			$current_handle = new \SplFileObject( $absolute, 'rb' );
+			$current        = $current_handle->fstat();
+			clearstatcache( true, $absolute );
+			return is_array( $current )
+				&& 0100000 === ( $current['mode'] & 0170000 )
+				&& $current['dev'] === $created_stat['dev']
+				&& $current['ino'] === $created_stat['ino']
+				&& ! is_link( $absolute )
+				&& realpath( $absolute ) === $absolute
+				&& ( new \SplFileInfo( $absolute ) )->getInode() === $current['ino'];
+		} catch ( Throwable $error ) {
+			return false;
+		}
+	}
+
+	/**
 	 * Verify cleanup of a failed exclusive file creation.
 	 *
 	 * @param \WP_Filesystem_Base $filesystem Initialized direct filesystem backend.
-	 * @param string              $absolute   Previously validated file path.
+	 * @param string              $absolute     Previously validated file path.
+	 * @param array|null          $created_stat Identity captured from the exclusive handle.
+	 * @param \SplFileObject|null $handle       Original exclusive handle, closed after removal.
 	 * @throws \RuntimeException When cleanup cannot be independently verified.
 	 */
-	private function remove_failed_create( \WP_Filesystem_Base $filesystem, string $absolute ): void {
+	private function remove_failed_create( \WP_Filesystem_Base $filesystem, string $absolute, ?array $created_stat, ?\SplFileObject &$handle ): void {
 		clearstatcache( true, $absolute );
 		if ( ! file_exists( $absolute ) && ! is_link( $absolute ) ) {
 			return;
@@ -461,12 +508,17 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Failed create target is no longer a regular file; manual recovery required.' );
 		}
+		if ( ! $this->matches_created_file( $absolute, $created_stat ) ) {
+			throw new RuntimeException( 'Failed create target identity changed; manual recovery required.' );
+		}
 
 		try {
 			$removed = $filesystem->delete( $absolute, false, 'f' );
 		} catch ( Throwable $error ) {
 			$removed = false;
 		}
+		// Windows may defer deletion until the original handle is closed.
+		$handle = null;
 		// A backend can return false after deletion, or true without deleting.
 		// The independent absence check determines the actual recovery outcome.
 		clearstatcache( true, $absolute );

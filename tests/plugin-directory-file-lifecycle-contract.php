@@ -25,6 +25,15 @@ class WP_Filesystem_Base
         if ($recursive) return false;
         if ('false' === $this->chmodBehavior) return false;
         if ('throw' === $this->chmodBehavior) throw new RuntimeException('Injected permission failure.');
+        if (in_array($this->chmodBehavior, array('replace_true', 'replace_same_true'), true)) {
+            // Keep the original inode alive at a different path, then put
+            // another writer's bytes at the original target.
+            $bytes = 'replace_same_true' === $this->chmodBehavior ? file_get_contents($path) : 'replacement from another writer';
+            if (! rename($path, $path . '.original') || false === file_put_contents($path, $bytes)) {
+                throw new LogicException('Could not set up replacement race fixture.');
+            }
+            return true;
+        }
         if ('remove_true' === $this->chmodBehavior) {
             unlink($path);
             return true;
@@ -415,6 +424,33 @@ try {
 if ('New file readback failed; incomplete file was removed.' !== $missingReadbackMessage
     || file_exists($root . $missingReadbackPath) || is_link($root . $missingReadbackPath)) {
     throw new LogicException('Disappeared create readback leaked a native warning or reported success.');
+}
+
+// A different writer can replace the target after exclusive creation.
+foreach (array('replace_true'=>'replacement from another writer', 'replace_same_true'=>$content) as $mode => $expectedReplacement) {
+    $replacedPath = 'wp-content/themes/fixture/assets/replaced.html';
+    $GLOBALS['wp_filesystem']->chmodBehavior = $mode;
+    $deleteCallsBeforeReplacement = $GLOBALS['wp_filesystem']->deleteCalls;
+    $replacementMessage = '';
+    try {
+        try {
+            $fs->createText(array('path'=>$replacedPath,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
+        } catch (RuntimeException $error) {
+            $replacementMessage = $error->getMessage();
+        }
+        if (false === strpos($replacementMessage, 'manual recovery required')
+            || ! is_file($root . $replacedPath)
+            || file_get_contents($root . $replacedPath) !== $expectedReplacement
+            || file_get_contents($root . $replacedPath . '.original') !== $content
+            || $deleteCallsBeforeReplacement !== $GLOBALS['wp_filesystem']->deleteCalls) {
+            throw new LogicException('Failed-create cleanup removed or accepted a replacement file.');
+        }
+    } finally {
+        $GLOBALS['wp_filesystem']->chmodBehavior = '';
+        foreach (array($root . $replacedPath, $root . $replacedPath . '.original') as $fixturePath) {
+            if (is_file($fixturePath)) unlink($fixturePath);
+        }
+    }
 }
 
 // Exact text limit, empty files and oversized before-images must preserve
