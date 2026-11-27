@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php');
+$adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/class-plugin.php');
@@ -102,7 +103,7 @@ foreach (array('dry-run consumes', 're-upload', 'expected_state_token') as $need
 $themeRequired = array(
     "'theme.install_package'",
     "registerThemePackage(\$registry)",
-    "installThemePackage(array \$payload",
+    "install_theme_package(array \$payload",
     "theme-packages/",
     "expected_stylesheet",
     "current_user_can('install_themes')",

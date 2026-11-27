@@ -12,10 +12,16 @@ namespace Webactueel\WordPressConnector\Admin;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Support\Input;
+require_once __DIR__ . '/trait-elementorjsonexportmethods.php';
+
 /**
  * Supports Elementor Json Export workflows in WordPress administration.
  */
 final class ElementorJsonExport {
+	use ElementorJsonExportMethods {
+		row_actions as rowActions;
+	}
+
 	private const ACTION         = 'wpconnector_export_elementor_json';
 	private const POST_TYPES     = array( 'page', 'post', 'elementor_library' );
 	private const BUNDLE_FORMAT  = 'wordpressconnector/elementor-site-parts-bundle';
@@ -31,28 +37,6 @@ final class ElementorJsonExport {
 		add_filter( 'page_row_actions', array( $this, 'rowActions' ), 99, 2 );
 		add_filter( 'post_row_actions', array( $this, 'rowActions' ), 99, 2 );
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'download' ) );
-	}
-
-	/**
-	 * Process the row actions operation in the ElementorJsonExport component.
-	 *
-	 * @param array    $actions Input for the operation.
-	 * @param \WP_Post $post Input for the operation.
-	 *
-	 * @return array Operation result.
-	 */
-	public function rowActions( array $actions, \WP_Post $post ): array {
-		if ( ! $this->supports_post_type( (string) $post->post_type ) || ! current_user_can( 'edit_post', (int) $post->ID ) || ! $this->is_elementor_document( (int) $post->ID ) ) {
-			return $actions;
-		}
-		if ( 'elementor_library' === (string) $post->post_type && isset( $actions['export-template'] ) ) {
-			return $actions;
-		}
-		$actions['wpconnector_export_elementor_json'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( $this->export_url( (int) $post->ID, false ) ), esc_html__( 'Export Elementor JSON', 'wordpressconnector' ) );
-		if ( in_array( (string) $post->post_type, array( 'page', 'post' ), true ) && class_exists( 'ElementorPro\\Modules\\ThemeBuilder\\Module' ) ) {
-			$actions['wpconnector_export_elementor_site_parts'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( $this->export_url( (int) $post->ID, true ) ), esc_html__( 'Export Elementor + Site Parts', 'wordpressconnector' ) );
-		}
-		return $actions;
 	}
 
 	/**

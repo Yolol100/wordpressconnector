@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php');
+$adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-codesnippetsadapteractions.php');
 $normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
 if (! is_string($normalizedAdapter)) {
     throw new RuntimeException('Could not normalize Code Snippets implementation source.');
@@ -39,8 +40,8 @@ foreach (array('execute_snippet(', 'create_item(') as $needle) {
 
 // The legacy restore_code action accepts stored code for rollback only.
 // Only the new managed creation path must reject untrusted request PHP.
-$guardStart = strpos($adapter, 'public function catalogOnlyEnsure(');
-$guardEnd = strpos($adapter, 'public function catalogOnlyUndo(');
+$guardStart = strpos($adapter, 'public function catalog_only_ensure(');
+$guardEnd = strpos($adapter, 'public function catalog_only_undo(');
 $ensureBody = $guardStart !== false && $guardEnd !== false ? substr($adapter, $guardStart, $guardEnd - $guardStart) : '';
 $normalizedEnsureBody = preg_replace('/\\s+/', '', $ensureBody);
 if ('' === $ensureBody ||

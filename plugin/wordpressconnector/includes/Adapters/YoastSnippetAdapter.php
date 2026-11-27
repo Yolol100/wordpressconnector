@@ -14,11 +14,17 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+require_once __DIR__ . '/trait-yoastsnippetadapteractions.php';
+
 /**
  * Narrow public-GitHub SEO snippet repair. Never exposes Yoast private fields,
  * robots/indexability controls, canonical URLs, focus keywords or redirects.
  */
 final class YoastSnippetAdapter {
+	use YoastSnippetAdapterActions {
+		validate_fields as validateFields;
+	}
+
 	private const KEYS = array(
 		'title'       => '_yoast_wpseo_title',
 		'description' => '_yoast_wpseo_metadesc',
@@ -119,44 +125,6 @@ final class YoastSnippetAdapter {
 	}
 
 	/** Shared server-side validation; request/runner also validate independently. */
-	/**
-	 * Validate fields for the YoastSnippet adapter.
-	 *
-	 * @param mixed $fields Input for the operation.
-	 * @param bool  $restore Input for the operation.
-	 *
-	 * @return array Operation result.
-	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 */
-	public static function validateFields( $fields, bool $restore = false ): array {
-		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 2 || array_keys( $fields ) === range( 0, count( $fields ) - 1 ) ) {
-			throw new RuntimeException( 'Snippet fields must be a nonempty title/description object.' );
-		}
-		$validated = array();
-		foreach ( $fields as $key => $value ) {
-			if ( ! in_array( $key, array( 'title', 'description' ), true ) ) {
-				throw new RuntimeException( 'Unsupported public snippet field.' );
-			}
-			if ( $restore && null === $value ) {
-				$validated[ $key ] = null;
-				continue;
-			}
-			$max = 'title' === $key ? 190 : 320;
-			if ( ! is_string( $value ) || strlen( $value ) < 10 || strlen( $value ) > $max ||
-				trim( $value ) !== $value || preg_match( '/[\x00-\x1f\x7f<>]/', $value ) ||
-				strpos( $value, '%%' ) !== false ) {
-				throw new RuntimeException( 'Snippet text must be plain, bounded and nonempty.' );
-			}
-			$clean = sanitize_text_field( $value );
-			if ( ! hash_equals( $value, $clean ) ) {
-				throw new RuntimeException( 'Snippet text changed after sanitization.' );
-			}
-			$validated[ $key ] = $clean;
-		}
-		return $validated;
-	}
-
 	/**
 	 * Process the inspect operation in the YoastSnippet adapter.
 	 *

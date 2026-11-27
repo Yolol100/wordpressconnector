@@ -15,6 +15,7 @@ foreach (array($adapterPath, $validatorPath, $legacyValidatorPath) as $path) {
 }
 
 $adapter = (string) file_get_contents($adapterPath);
+$adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-acfadapteractions.php');
 $validator = (string) file_get_contents($validatorPath);
 $legacyValidator = (string) file_get_contents($legacyValidatorPath);
 $compactAdapter = preg_replace('/\\s+/', '', $adapter);

@@ -12,10 +12,17 @@ namespace Webactueel\WordPressConnector\Adapters;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 
+require_once __DIR__ . '/trait-abilitiesadapteractions.php';
+
 /**
  * Registers and handles Abilities connector actions.
  */
 final class AbilitiesAdapter {
+	use AbilitiesAdapterActions {
+		execute_ability as executeAbility;
+		execute_approved_ability as executeApprovedAbility;
+	}
+
 	/**
 	 * Register the Abilities adapter actions and handlers.
 	 *
@@ -152,30 +159,6 @@ final class AbilitiesAdapter {
 		list( $name, $ability ) = $this->resolve_ability( $payload, false );
 		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
 		return $this->execute_and_sanitize( $name, $ability, $input, $this->safe_annotations( $ability ), false );
-	}
-
-	/**
-	 * Execute the authorized WordPress ability.
-	 *
-	 * @param array $payload Requested action payload.
-	 * @param array $context Authorized execution context.
-	 *
-	 * @return array Result of the operation.
-	 */
-	public function executeAbility( array $payload, array $context ): array {
-		return $this->execute_mutation( $payload, $context, false );
-	}
-
-	/**
-	 * Execute a provider-approved WordPress ability after authorization.
-	 *
-	 * @param array $payload Requested action payload.
-	 * @param array $context Authorized execution context.
-	 *
-	 * @return array Result of the operation.
-	 */
-	public function executeApprovedAbility( array $payload, array $context ): array {
-		return $this->execute_mutation( $payload, $context, true );
 	}
 
 	/**

@@ -11,10 +11,16 @@ namespace Webactueel\WordPressConnector\Support;
 
 use RuntimeException;
 
+require_once __DIR__ . '/trait-inputmethods.php';
+
 /**
  * Provides Input utilities shared by connector services.
  */
 final class Input {
+	use InputMethods {
+		bool_value as boolValue;
+	}
+
 
 	/**
 	 * Read an optional boolean input using the validated default.
@@ -31,23 +37,6 @@ final class Input {
 		}
 
 		return self::boolValue( $input[ $key ], $key );
-	}
-
-	/**
-	 * Reject values that are not true PHP booleans.
-	 *
-	 * @param mixed  $value Value to validate.
-	 * @param string $label Input field label used for errors.
-	 *
-	 * @return bool Validated input value.
-	 * @throws \RuntimeException When the input is not boolean.
-	 */
-	public static function boolValue( $value, string $label ): bool {
-		if ( ! is_bool( $value ) ) {
-			throw new RuntimeException( esc_html( $label ) . ' must be boolean.' );
-		}
-
-		return $value;
 	}
 
 	/**
