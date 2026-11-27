@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';

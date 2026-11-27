@@ -118,7 +118,7 @@ final class Policy {
 		if ( self::publicRepositoryContext() ) {
 			$action = isset( $descriptor['name'] ) ? (string) $descriptor['name'] : '';
 			if ( ! in_array( $action, self::PUBLIC_REPOSITORY_ACTIONS, true ) ) {
-				throw new RuntimeException( 'Action is not allowed in public-repository mode: ' . $action );
+				throw new RuntimeException( 'Action is not allowed in public-repository mode: ' . esc_html( $action ) );
 			}
 		}
 
@@ -146,7 +146,7 @@ final class Policy {
 		if ( ! empty( $descriptor['capability'] ) ) {
 			$capability = (string) $descriptor['capability'];
 			if ( ! function_exists( 'current_user_can' ) || ! current_user_can( $capability ) ) {
-				throw new RuntimeException( 'Current user lacks the required WordPress capability: ' . $capability . '.' );
+				throw new RuntimeException( 'Current user lacks the required WordPress capability: ' . esc_html( $capability ) . '.' );
 			}
 		}
 
@@ -184,11 +184,11 @@ final class Policy {
 			$post_id = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		}
 		if ( $post_id <= 0 ) {
-			throw new RuntimeException( 'Public ' . $action . ' requires a positive post id.' );
+			throw new RuntimeException( 'Public ' . esc_html( $action ) . ' requires a positive post id.' );
 		}
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
-			throw new RuntimeException( 'Public ' . $action . ' target post was not found.' );
+			throw new RuntimeException( 'Public ' . esc_html( $action ) . ' target post was not found.' );
 		}
 		$requires_edit = in_array( $action, array( 'post.update', 'post.literal_replace', 'acf.update', 'elementor.patch_element', 'yoast.snippet.inspect', 'yoast.snippet.update', 'yoast.snippet.restore' ), true );
 		self::assertPublicContentTarget( $post, $requires_edit );

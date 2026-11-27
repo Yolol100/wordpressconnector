@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 final class MockYoastTitlesOption
 {
     public function get_defaults(): array

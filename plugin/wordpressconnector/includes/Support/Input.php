@@ -44,7 +44,7 @@ final class Input {
 	 */
 	public static function boolValue( $value, string $label ): bool {
 		if ( ! is_bool( $value ) ) {
-			throw new RuntimeException( $label . ' must be boolean.' );
+			throw new RuntimeException( esc_html( $label ) . ' must be boolean.' );
 		}
 
 		return $value;

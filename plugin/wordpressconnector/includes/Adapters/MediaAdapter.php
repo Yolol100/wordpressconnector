@@ -429,8 +429,7 @@ final class MediaAdapter {
 			if ( ! $restored ) {
 				throw new RuntimeException(
 					'Image rename aborted and original WordPress attachment state could not be verified. '
-					. 'New image copies have been retained to prevent broken references; restore from backup. '
-					. 'Cause: ' . $error->getMessage(),
+					. 'New image copies have been retained to prevent broken references; restore from backup.',
 					0,
 					$error
 				);

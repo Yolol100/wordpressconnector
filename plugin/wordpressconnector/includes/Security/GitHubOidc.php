@@ -142,7 +142,7 @@ final class GitHubOidc {
 		);
 		foreach ( $expected as $name => $value ) {
 			if ( ! isset( $claims[ $name ] ) || ! is_scalar( $claims[ $name ] ) || ! hash_equals( $value, (string) $claims[ $name ] ) ) {
-				throw new RuntimeException( 'GitHub OIDC claim is not trusted: ' . $name . '.' );
+				throw new RuntimeException( 'GitHub OIDC claim is not trusted: ' . esc_html( $name ) . '.' );
 			}
 		}
 
@@ -439,10 +439,10 @@ final class GitHubOidc {
 		try {
 			$decoded = json_decode( $json, true, 32, JSON_THROW_ON_ERROR );
 		} catch ( \JsonException $error ) {
-			throw new RuntimeException( 'GitHub OIDC ' . $label . ' is invalid JSON.' );
+			throw new RuntimeException( 'GitHub OIDC ' . esc_html( $label ) . ' is invalid JSON.' );
 		}
 		if ( ! is_array( $decoded ) ) {
-			throw new RuntimeException( 'GitHub OIDC ' . $label . ' must be an object.' );
+			throw new RuntimeException( 'GitHub OIDC ' . esc_html( $label ) . ' must be an object.' );
 		}
 		return $decoded;
 	}
@@ -459,11 +459,11 @@ final class GitHubOidc {
 	 */
 	private function decode_base64_url( string $value, string $label ): string {
 		if ( '' === $value || false !== strpos( $value, '=' ) || ! preg_match( '/^[A-Za-z0-9_-]+\z/', $value ) ) {
-			throw new RuntimeException( 'GitHub OIDC ' . $label . ' is not valid base64url.' );
+			throw new RuntimeException( 'GitHub OIDC ' . esc_html( $label ) . ' is not valid base64url.' );
 		}
 		$remainder = strlen( $value ) % 4;
 		if ( 1 === $remainder ) {
-			throw new RuntimeException( 'GitHub OIDC ' . $label . ' has invalid base64url length.' );
+			throw new RuntimeException( 'GitHub OIDC ' . esc_html( $label ) . ' has invalid base64url length.' );
 		}
 		$padded = strtr( $value, '-_', '+/' );
 		if ( $remainder > 0 ) {
@@ -472,7 +472,7 @@ final class GitHubOidc {
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Signed GitHub JWT/JWK uses strictly validated base64url; not obfuscated code.
 		$decoded = base64_decode( $padded, true );
 		if ( false === $decoded ) {
-			throw new RuntimeException( 'GitHub OIDC ' . $label . ' could not be decoded.' );
+			throw new RuntimeException( 'GitHub OIDC ' . esc_html( $label ) . ' could not be decoded.' );
 		}
 		return $decoded;
 	}
@@ -512,7 +512,7 @@ final class GitHubOidc {
 	 */
 	private function integer_claim( array $claims, string $name ): int {
 		if ( ! array_key_exists( $name, $claims ) || ( ! is_int( $claims[ $name ] ) && ! ctype_digit( (string) $claims[ $name ] ) ) ) {
-			throw new RuntimeException( 'GitHub OIDC time claim is invalid: ' . $name . '.' );
+			throw new RuntimeException( 'GitHub OIDC time claim is invalid: ' . esc_html( $name ) . '.' );
 		}
 		return (int) $claims[ $name ];
 	}

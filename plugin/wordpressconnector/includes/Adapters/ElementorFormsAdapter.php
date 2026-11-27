@@ -250,7 +250,7 @@ final class ElementorFormsAdapter {
 				$this->restore_snapshot( $before );
 			} catch ( Throwable $rollback_error ) {
 				throw new RuntimeException(
-					'Elementor form mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollback_error->getMessage(),
+					'Elementor form mutation failed and automatic rollback also failed. Manual recovery is required.',
 					0,
 					$error
 				);

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';

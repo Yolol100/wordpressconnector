@@ -701,14 +701,14 @@ final class FilesystemAdapter {
 			try {
 				token_get_all( $content, TOKEN_PARSE );
 			} catch ( ParseError $error ) {
-				throw new RuntimeException( 'Replacement PHP failed parser validation: ' . $error->getMessage() );
+				throw new RuntimeException( 'Replacement PHP failed parser validation.' );
 			}
 		}
 		if ( 'json' === $extension ) {
 			try {
 				json_decode( $content, true, 512, JSON_THROW_ON_ERROR );
 			} catch ( \JsonException $error ) {
-				throw new RuntimeException( 'Replacement JSON failed validation: ' . $error->getMessage() );
+				throw new RuntimeException( 'Replacement JSON failed validation.' );
 			}
 		}
 	}

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 define('ABSPATH', __DIR__ . '/');
 define('HOUR_IN_SECONDS', 3600);
 $GLOBALS['wpconnector_transients'] = array();
