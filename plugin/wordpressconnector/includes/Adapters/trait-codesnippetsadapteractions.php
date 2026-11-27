@@ -214,4 +214,34 @@ trait CodeSnippetsAdapterActions {
 		$result['readback_verified'] = true;
 		return $result;
 	}
+
+	/**
+	 * Process the catalog only inspect operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	public function catalog_only_inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
+		if ( $payload ) {
+			throw new RuntimeException( 'Catalogue preset inspection accepts no payload fields.' );
+		}
+		$this->catalog_provider();
+		$code    = $this->catalog_code();
+		$snippet = $this->catalog_find();
+		$this->catalog_guard( $snippet, $code );
+		$state = self::catalog_state( $snippet );
+		return array(
+			'snippet'              => $state,
+			'source_sha256'        => hash( 'sha256', $code ),
+			'fingerprint'          => Fingerprint::make( $state ),
+			'_current_fingerprint' => Fingerprint::make( $state ),
+		);
+	}
 }

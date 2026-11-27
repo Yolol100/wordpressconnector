@@ -141,4 +141,22 @@ trait YoastAdapterActions {
 			'fields'   => $fields,
 		);
 	}
+
+	/**
+	 * Patch only the organization fields Yoast owns, never the full wpseo_titles option.
+	 * The WordPress media library is the only accepted source for a logo.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 */
+	public function inspect_site_representation( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
+		$fields = $this->site_representation_snapshot();
+		return array(
+			'fields'      => $fields,
+			'fingerprint' => Fingerprint::make( $fields ),
+		);
+	}
 }

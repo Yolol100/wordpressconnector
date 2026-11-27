@@ -140,4 +140,26 @@ trait WooCommerceFulfillmentAdapterActions {
 			'id'                        => $id,
 		);
 	}
+
+	/**
+	 * Inspect locations for the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
+	public function inspect_locations( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
+		$this->keys( $payload, array( 'zone_id' ) );
+		$path      = $this->location_path( $payload );
+		$locations = $this->location_snapshot( $this->api( 'GET', $path ) );
+		return array(
+			'zone_id'     => $payload['zone_id'],
+			'locations'   => $locations,
+			'fingerprint' => Fingerprint::make( $locations ),
+		);
+	}
 }

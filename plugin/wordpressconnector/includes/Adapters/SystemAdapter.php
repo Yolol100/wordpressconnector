@@ -21,6 +21,7 @@ require_once __DIR__ . '/trait-systemadapteractions.php';
  */
 final class SystemAdapter {
 	use SystemAdapterActions {
+		plugin_directory_search as pluginDirectorySearch;
 		user_list as userList;
 		user_get as userGet;
 		user_create as userCreate;
@@ -402,94 +403,6 @@ final class SystemAdapter {
 		);
 		$checks['ok']               = $checks['wordpress_bootstrap'] && $checks['database'];
 		return $checks;
-	}
-
-	/**
-	 * Handle the plugin directory search connector action.
-	 *
-	 * @param array $payload Request parameters.
-	 * @param array $context Execution context, including dry-run state.
-	 *
-	 * @return array Result of this operation.
-	 *
-	 * @throws \RuntimeException When validation or the requested operation fails.
-	 */
-	public function pluginDirectorySearch( array $payload, array $context = array() ): array {
-		// Registry supplies execution context; this read does not consume it.
-		unset( $context );
-
-		if ( array_diff( array_keys( $payload ), array( 'search', 'page', 'per_page' ) ) ) {
-			throw new RuntimeException( 'Plugin directory search accepts only search, page and per_page.' );
-		}
-		$search = isset( $payload['search'] ) && is_string( $payload['search'] )
-			? trim( sanitize_text_field( $payload['search'] ) ) : '';
-		if ( strlen( $search ) < 2 || strlen( $search ) > 70 || preg_match( '/[\x00-\x1F\x7F<>]/', $search ) ) {
-			throw new RuntimeException( 'Plugin directory query must contain 2–70 plain-text bytes.' );
-		}
-		$page  = isset( $payload['page'] ) && is_int( $payload['page'] ) ? $payload['page'] : 1;
-		$limit = isset( $payload['per_page'] ) && is_int( $payload['per_page'] ) ? $payload['per_page'] : 10;
-		if ( $page < 1 || $page > 20 || $limit < 1 || $limit > 20 ) {
-			throw new RuntimeException( 'Plugin directory pagination is out of bounds.' );
-		}
-		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
-		$result = plugins_api(
-			'query_plugins',
-			array(
-				'search'   => $search,
-				'page'     => $page,
-				'per_page' => $limit,
-				'fields'   => array(
-					'sections'          => false,
-					'description'       => false,
-					'short_description' => true,
-				),
-			)
-		);
-		if ( is_wp_error( $result ) || ! is_object( $result ) || ! isset( $result->plugins ) || ! is_array( $result->plugins ) ) {
-			throw new RuntimeException( 'WordPress.org plugin directory could not be queried.' );
-		}
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$installed = get_plugins();
-		$items     = array();
-		foreach ( array_slice( $result->plugins, 0, $limit ) as $plugin ) {
-			if ( ! is_object( $plugin ) ) {
-				continue;
-			}
-			$slug = isset( $plugin->slug ) ? (string) $plugin->slug : '';
-			if ( ! preg_match( '/^[a-z0-9][a-z0-9-]{0,79}\z/', $slug ) ) {
-				continue;
-			}
-			$matches = array();
-			foreach ( $installed as $file => $meta ) {
-				if ( dirname( $file ) === $slug || $file === $slug . '.php' ) {
-					$matches[] = $file;
-				}
-			}
-			$items[] = array(
-				'slug'                   => $slug,
-				'name'                   => sanitize_text_field( (string) ( $plugin->name ?? $slug ) ),
-				'version'                => sanitize_text_field( (string) ( $plugin->version ?? '' ) ),
-				'short_description'      => substr( sanitize_text_field( (string) ( $plugin->short_description ?? '' ) ), 0, 240 ),
-				'requires'               => sanitize_text_field( (string) ( $plugin->requires ?? '' ) ),
-				'requires_php'           => sanitize_text_field( (string) ( $plugin->requires_php ?? '' ) ),
-				'tested'                 => sanitize_text_field( (string) ( $plugin->tested ?? '' ) ),
-				'active_installs'        => isset( $plugin->active_installs ) ? (int) $plugin->active_installs : null,
-				'already_installed'      => ! empty( $matches ),
-				'installed_plugin_files' => $matches,
-				'directory_url'          => 'https://wordpress.org/plugins/' . $slug . '/',
-			);
-		}
-		return array(
-			'source'        => 'WordPress.org plugins_api (filterable by installed plugins)',
-			'query'         => $search,
-			'page'          => $page,
-			'plugins'       => $items,
-			'results_total' => isset( $result->info ) && is_array( $result->info ) && isset( $result->info['results'] )
-				? (int) $result->info['results']
-				: ( isset( $result->info ) && is_object( $result->info ) && isset( $result->info->results )
-					? (int) $result->info->results : null ),
-			'read_only'     => true,
-		);
 	}
 
 	/**

@@ -5,11 +5,13 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $system = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
 $runner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+$runnerImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/trait-runnermethods.php');
 
-if (false === $system || false === $runner) {
+if (false === $system || false === $runner || false === $runnerImplementation) {
     fwrite(STDERR, "Unable to read runtime preflight sources.\n");
     exit(1);
 }
+$runner .= $runnerImplementation;
 $compactSystem = preg_replace('/\\s+/', '', $system);
 if (! is_string($compactSystem)) {
     throw new RuntimeException('Could not normalize runtime preflight source.');

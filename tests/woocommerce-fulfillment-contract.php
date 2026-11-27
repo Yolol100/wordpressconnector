@@ -109,7 +109,7 @@ function rest_do_request($r){
 }
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
 foreach(array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php',
-    'Runtime/class-registry.php','Adapters/WooCommerceFulfillmentAdapter.php')as $file)require $root.$file;
+    'Runtime/class-registry.php','Adapters/class-woocommercefulfillmentadapter.php')as $file)require $root.$file;
 $registry=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapter())->register($registry);
 $d=$registry->descriptor('woocommerce.fulfillment.create');

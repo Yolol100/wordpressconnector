@@ -30,7 +30,9 @@ foreach ($blockedListings as $path) { try { FilesystemPolicy::assertListable($pa
 if (FilesystemPolicy::assertListable('.') !== '.') { fwrite(STDERR, "WordPress root listing contract failed.\n"); exit(1); }
 if (FilesystemPolicy::assertReadableText('wp-admin/includes/file.php') !== 'wp-admin/includes/file.php') { fwrite(STDERR, "Read-only core inspection contract failed.\n"); exit(1); }
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
-if ($adapter === false) { exit(1); }
+$filesystemImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-filesystemadapteractions.php');
+if ($adapter === false || $filesystemImplementation === false) { exit(1); }
+$adapter .= $filesystemImplementation;
 foreach (array('mk_file_folder_manager_action_callback','elFinderConnector','shell_exec(','exec(','passthru(','proc_open(','popen(') as $forbidden) { if (strpos($adapter, $forbidden) !== false) { fwrite(STDERR, "Forbidden filesystem adapter primitive/protocol found: {$forbidden}\n"); exit(1); } }
 // The same WordPress Filesystem backend must read back both successful
 // writes and attempted recovery; raw PHP reads can bypass the write API.
