@@ -202,6 +202,80 @@ namespace {
     $scenarios++;
     if ($redacted['token'] !== '[redacted]' || $redacted['nested']['api_key'] !== '[redacted]' || $redacted['nested']['label'] !== 'ok') { fwrite(STDERR, "Redaction failed.\n"); exit(1); }
 
+    // Reject malformed schema data without reflecting arbitrary caller input.
+    $opaque = 'qa_opaque_form_marker_8c31';
+    $reject = static function (callable $call, string $expected) use ($opaque, &$scenarios): void {
+        ++$scenarios;
+        try {
+            $call();
+        } catch (\RuntimeException $error) {
+            if (false !== strpos($error->getMessage(), $expected)
+                && false === strpos($error->getMessage(), $opaque)) {
+                return;
+            }
+            throw new \LogicException('Unexpected or reflected Elementor diagnostic: ' . $expected);
+        }
+        throw new \LogicException('Malformed Elementor schema accepted: ' . $expected);
+    };
+    set_error_handler(static function (int $severity, string $message): bool {
+        throw new \ErrorException($message, 0, $severity);
+    });
+    try {
+        foreach (array('_id', 'custom_id') as $field) {
+            $bad = $v3;
+            $bad['settings']['form_fields'][0][$field] = $opaque;
+            $bad['settings']['form_fields'][1][$field] = $opaque;
+            $reject(static function () use ($invoke, $bad, $caps): void {
+                $invoke('validate_classic_form', array($bad, $caps['classic']));
+            }, 'Duplicate V3 form field ' . $field);
+            $bad = $v3;
+            $bad['settings']['form_fields'][0][$field] = array($opaque);
+            $reject(static function () use ($invoke, $bad, $caps): void {
+                $invoke('validate_classic_form', array($bad, $caps['classic']));
+            }, 'V3 form field ' . $field . ' must be scalar');
+        }
+        foreach (array($opaque, array($opaque)) as $value) {
+            $bad = $v3;
+            $bad['settings']['submit_actions'][] = $value;
+            $reject(static function () use ($invoke, $bad, $caps): void {
+                $invoke('validate_classic_form', array($bad, $caps['classic']));
+            }, 'not registered');
+        }
+        $bad = $v4;
+        $bad['elements'][] = $node('unknown2', 'e-' . $opaque);
+        $reject(static function () use ($invoke, $bad, $caps): void {
+            $invoke('validate_atomic_form', array($bad, $caps['atomic']));
+        }, 'not registered');
+        $bad = $v4;
+        $bad['elements'][0]['elType'] = array($opaque);
+        $reject(static function () use ($invoke, $bad, $caps): void {
+            $invoke('validate_atomic_form', array($bad, $caps['atomic']));
+        }, 'registered Atomic e-*');
+        $bad = $v4;
+        $bad['version'] = array($opaque);
+        $reject(static function () use ($invoke, $bad, $caps): void {
+            $invoke('validate_atomic_form', array($bad, $caps['atomic']));
+        }, 'missing its schema version');
+        foreach (array($opaque, array('value' => array())) as $value) {
+            $bad = $v4;
+            $bad['settings'][$opaque] = $value;
+            $reject(static function () use ($invoke, $bad, $caps): void {
+                $invoke('validate_atomic_form', array($bad, $caps['atomic']));
+            }, is_array($value) ? 'missing $$type/value' : 'must be a typed prop object');
+        }
+        $duplicate = array($node($opaque, 'e-flexbox'), $node($opaque, 'e-flexbox'));
+        $reject(static function () use ($invoke, $duplicate): void {
+            $invoke('assert_unique_element_ids', array($duplicate));
+        }, 'Duplicate Elementor element id');
+        $bad = $v4;
+        $bad['elements'][0]['id'] = array($opaque);
+        $reject(static function () use ($invoke, $bad, $caps): void {
+            $invoke('validate_atomic_form', array($bad, $caps['atomic']));
+        }, 'Invalid or missing Elementor element id');
+    } finally {
+        restore_error_handler();
+    }
+
     $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
     if (! is_string($source)) { throw new RuntimeException('Elementor Forms source is unavailable.'); }
     $normalizedSource = preg_replace('/\\s+/', '', $source);
