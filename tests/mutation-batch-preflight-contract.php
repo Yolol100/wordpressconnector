@@ -34,9 +34,15 @@ function current_user_can(string $capability): bool
         || ('delete_plugins' === $capability && ! empty($GLOBALS['test_allow_delete']));
 }
 
-function wp_json_encode($value): string
+function wp_json_encode($value, int $flags = 0)
 {
-    return json_encode($value, JSON_THROW_ON_ERROR);
+    if (!empty($GLOBALS['test_fail_compensation_encoding']) && $flags !== 0) {
+        if ($GLOBALS['test_fail_compensation_encoding'] === 'throw') {
+            throw new RuntimeException('Synthetic encoder failure');
+        }
+        return false;
+    }
+    return json_encode($value, $flags | JSON_THROW_ON_ERROR);
 }
 
 Policy::setPublicRepositoryContext(false);
@@ -57,7 +63,7 @@ $registry->register('test.admin', static function (array $payload, array $contex
 }, array('mutation' => true, 'privileged' => true, 'capability' => 'delete_plugins'));
 $registry->register('test.undo', static function () use (&$rollbackState): array {
     --$rollbackState;
-    return array('restored' => true);
+    return array('restored' => true, 'detail' => '<b>restored & ready</b>', 'nested' => array('api_key' => 'fixture-secret'));
 }, array('mutation' => true));
 $registry->register('test.reversible', static function (array $payload, array $context) use (&$rollbackState): array {
     if (! empty($context['dry_run'])) {
@@ -67,7 +73,7 @@ $registry->register('test.reversible', static function (array $payload, array $c
     return array('updated' => true, '_rollback' => array('action' => 'test.undo', 'payload' => array()));
 }, array('mutation' => true));
 $registry->register('test.fail', static function (): array {
-    throw new RuntimeException('Simulated provider failure');
+    throw new RuntimeException('Simulated provider failure <unsafe>');
 }, array('mutation' => true));
 $registry->register('wordpress.ability.execute_approved', static function () use (&$writes): array {
     ++$writes;
@@ -148,12 +154,47 @@ try {
         array('action' => 'test.fail', 'payload' => array()),
     ));
 } catch (RuntimeException $error) {
+    $prefix = 'Batch failed at operation 1: Simulated provider failure &lt;unsafe&gt; Compensation attempted: ';
+    $message = $error->getMessage();
+    $previous = $error->getPrevious();
+    if (get_class($error) !== RuntimeException::class || !($previous instanceof RuntimeException)
+        || $previous->getMessage() !== 'Simulated provider failure <unsafe>' || strpos($message, $prefix) !== 0
+        || strpos($message, 'fixture-secret') !== false || strpos($message, '<b>') !== false) {
+        throw new LogicException('Batch diagnostic lost its cause or exposed raw markup/secret keys.');
+    }
+    $receipt = json_decode(substr($message, strlen($prefix)), true, 512, JSON_THROW_ON_ERROR);
+    if (($receipt[0]['result']['detail'] ?? null) !== '<b>restored & ready</b>'
+        || ($receipt[0]['result']['nested']['api_key'] ?? null) !== '[redacted]'
+        || ($receipt[0]['ok'] ?? false) !== true) {
+        throw new LogicException('Compensation diagnostic no longer contains valid structured JSON.');
+    }
     $failed = true;
 }
 if (! $failed || 0 !== $rollbackState) {
     throw new RuntimeException('Runtime failure must continue compensating an earlier reversible mutation.');
 }
 
+
+foreach (array('false', 'throw') as $encodingFault) {
+    $GLOBALS['test_fail_compensation_encoding'] = $encodingFault;
+    $caught = null;
+    try {
+        $run(array(
+            array('action' => 'test.reversible', 'payload' => array()),
+            array('action' => 'test.fail', 'payload' => array()),
+        ));
+    } catch (RuntimeException $error) {
+        $caught = $error;
+    } finally {
+        unset($GLOBALS['test_fail_compensation_encoding']);
+    }
+    if (!$caught || !($caught->getPrevious() instanceof RuntimeException)
+        || $caught->getPrevious()->getMessage() !== 'Simulated provider failure <unsafe>'
+        || strpos($caught->getMessage(), 'Compensation attempted: [unavailable]') === false
+        || 0 !== $rollbackState) {
+        throw new LogicException('Encoding fault replaced the provider failure or skipped compensation.');
+    }
+}
 
 // An earlier leaf may revoke a capability after preflight. Check again at
 // execution time, then compensate the earlier reversible change.

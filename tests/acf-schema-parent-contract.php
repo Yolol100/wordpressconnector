@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$source = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/AcfAdapter.php');
+$source = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-acfadapter.php');
 $source .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-acfadapteractions.php');
 $sourceCompact = preg_replace('/\\s+/', '', $source);
 if (! is_string($sourceCompact)) { throw new RuntimeException('Could not normalize ACF schema source.'); }

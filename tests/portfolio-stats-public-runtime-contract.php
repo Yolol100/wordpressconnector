@@ -146,7 +146,7 @@ require_once $root . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/PortfolioStatsAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;

@@ -18,7 +18,7 @@ foreach (array(
     'Runtime/ProcessedStore.php',
     'Runtime/Runner.php',
     'Adapters/class-customcssadapter.php',
-    'Adapters/PortfolioStatsAdapter.php',
+    'Adapters/class-portfoliostatsadapter.php',
 ) as $path) {
     require_once $root . $path;
 }

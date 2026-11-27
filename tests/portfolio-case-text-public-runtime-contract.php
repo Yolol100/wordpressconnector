@@ -70,7 +70,7 @@ require_once $root.'/plugin/wordpressconnector/includes/Runtime/class-result.php
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once $root.'/plugin/wordpressconnector/includes/Adapters/PortfolioStatsAdapter.php';
+require_once $root.'/plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/Runner.php';
 
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;

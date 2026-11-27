@@ -6,7 +6,7 @@ $import = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/E
 $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-elementorjsonimportmethods.php');
 if ($implementation === false || !is_string($import)) { throw new RuntimeException('Missing canonical implementation: Admin/trait-elementorjsonimportmethods.php'); }
 $import .= $implementation;
-$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
+$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php');
 $adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-elementoradapteractions.php');
 if (! is_string($import) || ! is_string($adapter)) {
     throw new RuntimeException('Elementor bulk import sources are unavailable.');

@@ -196,7 +196,7 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Jso
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-acfadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\AcfAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;
