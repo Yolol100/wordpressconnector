@@ -39,7 +39,7 @@ $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 require $root . 'Support/Json.php';
 require $root . 'Support/Fingerprint.php';
 require $root . 'Security/Policy.php';
-require $root . 'Runtime/Registry.php';
+require $root . 'Runtime/class-registry.php';
 require $root . 'Adapters/YoastAdapter.php';
 
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;

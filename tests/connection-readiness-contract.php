@@ -14,7 +14,7 @@ namespace Webactueel\WordPressConnector\Security {
 
 namespace {
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectionReadinessAdapter.php';
 
     $GLOBALS['setup_readiness'] = array(

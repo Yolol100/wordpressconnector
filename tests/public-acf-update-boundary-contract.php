@@ -75,7 +75,7 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Req
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-result.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
 
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;

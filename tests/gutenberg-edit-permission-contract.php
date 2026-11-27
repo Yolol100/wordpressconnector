@@ -86,7 +86,7 @@ foreach ( array(
 	'Support/Fingerprint.php',
 	'Support/Input.php',
 	'Security/Policy.php',
-	'Adapters/GutenbergAdapter.php',
+	'Adapters/class-gutenbergadapter.php',
 ) as $source ) {
 	require_once $root . '/plugin/wordpressconnector/includes/' . $source;
 }

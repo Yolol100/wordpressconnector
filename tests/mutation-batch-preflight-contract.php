@@ -13,7 +13,7 @@ foreach (array(
     'Support/Json.php',
     'Support/Fingerprint.php',
     'Security/Policy.php',
-    'Runtime/Registry.php',
+    'Runtime/class-registry.php',
     'Runtime/class-diagnostics.php',
     'Runtime/SnapshotStore.php',
     'Runtime/ProcessedStore.php',

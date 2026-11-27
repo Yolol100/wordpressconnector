@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';

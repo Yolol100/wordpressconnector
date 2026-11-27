@@ -19,7 +19,7 @@ function is_plugin_active($name): bool { return true; }
 function sanitize_key($name): string { return strtolower(preg_replace('/[^a-z0-9_-]/i', '', $name)); }
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php';
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();

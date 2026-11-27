@@ -122,9 +122,20 @@ if (preg_match_all('/new\s+([A-Za-z][A-Za-z0-9_]*Adapter)\s*\(/', $pluginSource,
 }
 $registrationPaths = array();
 foreach (array_unique($adapterMatches[1]) as $adapterName) {
-    $adapterPath = $adapterDirectory . '/' . $adapterName . '.php';
-    if (! is_file($adapterPath)) {
-        fwrite(STDERR, "Wired Connector adapter source is missing: {$adapterName}\n");
+    // During the migration a class may have either its legacy path or its
+    // canonical WPCS path, but never both. The bootstrap must load that file.
+    $candidatePaths = array_filter(array(
+        $adapterDirectory . '/' . $adapterName . '.php',
+        $adapterDirectory . '/class-' . strtolower($adapterName) . '.php',
+    ), 'is_file');
+    if (count($candidatePaths) !== 1) {
+        fwrite(STDERR, "Wired Connector adapter source is missing or ambiguous: {$adapterName}\n");
+        exit(1);
+    }
+    $adapterPath = reset($candidatePaths);
+    $bootstrapSource = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
+    if ($bootstrapSource === false || strpos($bootstrapSource, "'includes/Adapters/" . basename($adapterPath) . "'") === false) {
+        fwrite(STDERR, "Wired Connector adapter source is not loaded by bootstrap: {$adapterName}\n");
         exit(1);
     }
     $registrationPaths[] = $adapterPath;

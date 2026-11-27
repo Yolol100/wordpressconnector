@@ -102,10 +102,97 @@ function wp_update_nav_menu_item($menu_id, $item_id, $args) {
 
 $root = dirname(__DIR__);
 foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php',
-    'Security/Policy.php', 'Adapters/CoreAdapter.php') as $path) {
+    'Security/Policy.php', 'Adapters/class-coreadapter.php') as $path) {
     require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 }
 $adapter = new \Webactueel\WordPressConnector\Adapters\CoreAdapter();
+$aliases = array(
+    'postList' => 'post_list',
+    'postGet' => 'post_get',
+    'postCreate' => 'post_create',
+    'postUpdate' => 'post_update',
+    'postLiteralReplace' => 'post_literal_replace',
+    'postTrash' => 'post_trash',
+    'postRestore' => 'post_restore',
+    'postRevisions' => 'post_revisions',
+    'postRestoreRevision' => 'post_restore_revision',
+    'metaGet' => 'meta_get',
+    'metaUpdate' => 'meta_update',
+    'metaDelete' => 'meta_delete',
+    'termList' => 'term_list',
+    'termGet' => 'term_get',
+    'termCreate' => 'term_create',
+    'termUpdate' => 'term_update',
+    'termDelete' => 'term_delete',
+    'termAssign' => 'term_assign',
+    'menuList' => 'menu_list',
+    'menuGet' => 'menu_get',
+    'menuCreate' => 'menu_create',
+    'menuUpdate' => 'menu_update',
+    'menuDelete' => 'menu_delete',
+    'menuItemUpsert' => 'menu_item_upsert',
+    'menuLocationSet' => 'menu_location_set',
+    'optionGet' => 'option_get',
+    'optionUpdate' => 'option_update',
+    'optionDelete' => 'option_delete',
+    'networkOptionGet' => 'network_option_get',
+    'networkOptionUpdate' => 'network_option_update',
+    'networkOptionDelete' => 'network_option_delete',
+    'themeModGet' => 'theme_mod_get',
+    'themeModUpdate' => 'theme_mod_update',
+    'themeModRemove' => 'theme_mod_remove',
+    'commentList' => 'comment_list',
+    'commentGet' => 'comment_get',
+    'commentUpdate' => 'comment_update',
+    'commentTrash' => 'comment_trash',
+);
+$class = new ReflectionClass($adapter);
+$traitAliases = $class->getTraitAliases();
+if (count($traitAliases) !== count($aliases)) throw new RuntimeException('Legacy Core action aliases are incomplete.');
+foreach ($aliases as $legacy => $canonical) {
+    if (!method_exists($adapter, $legacy) || !is_callable(array($adapter, $legacy)) ||
+        !method_exists($adapter, $canonical) || !is_callable(array($adapter, $canonical)) ||
+        ($traitAliases[$legacy] ?? '') !== 'Webactueel\\WordPressConnector\\Adapters\\CoreAdapterActions::'.$canonical) {
+        throw new RuntimeException('Core public method compatibility failed: '.$legacy);
+    }
+    $old = new ReflectionMethod($adapter, $legacy);
+    $new = new ReflectionMethod($adapter, $canonical);
+    // PHP 7.4 reports the original trait method name when reflecting an alias.
+    // The alias must still exist, be callable and retain its complete signature.
+    $reflectedName = PHP_VERSION_ID < 80000 ? $canonical : $legacy;
+    if ($old->getName() !== $reflectedName || $old->getDeclaringClass()->getName() !== $class->getName() ||
+        !$old->isPublic() || $old->isStatic() !== $new->isStatic() ||
+        (string)$old->getReturnType() !== (string)$new->getReturnType() ||
+        count($old->getParameters()) !== count($new->getParameters())) {
+        throw new RuntimeException('Core method reflection contract changed: '.$legacy);
+    }
+    foreach ($old->getParameters() as $index => $parameter) {
+        $other = $new->getParameters()[$index];
+        if ($parameter->getName() !== $other->getName() ||
+            (string)$parameter->getType() !== (string)$other->getType() ||
+            $parameter->isOptional() !== $other->isOptional() ||
+            $parameter->isPassedByReference() !== $other->isPassedByReference() ||
+            $parameter->isDefaultValueAvailable() !== $other->isDefaultValueAvailable() ||
+            ($parameter->isDefaultValueAvailable() && $parameter->getDefaultValue() !== $other->getDefaultValue())) {
+            throw new RuntimeException('Core named argument contract changed: '.$legacy);
+        }
+    }
+}
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
+$registry = new \Webactueel\WordPressConnector\Runtime\Registry();
+$adapter->register($registry);
+$registered = array();
+foreach ($registry->catalog() as $action => $metadata) {
+    $handler = $registry->descriptor($action)['handler'];
+    if ($handler[0] !== $adapter || !in_array($handler[1], $aliases, true)) {
+        throw new RuntimeException('Core action did not register its canonical implementation: '.$action);
+    }
+    $registered[] = $handler[1];
+}
+if (count($registered) !== count($aliases) || count(array_unique($registered)) !== count($aliases)) {
+    throw new RuntimeException('Core action registration count changed.');
+}
+
 $invalid = array(true, false, 101.5, -101, 0, '0', '101junk', '1.01e2',
     ' 101', "101\n", '9999999999999999999999999', array(101));
 foreach ($invalid as $id) {
