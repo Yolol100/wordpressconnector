@@ -9,7 +9,7 @@ function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/DiscoveryAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-discoveryadapter.php';
 
 final class ContractRestServer
 {

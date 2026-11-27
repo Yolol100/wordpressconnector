@@ -19,6 +19,7 @@ require_once __DIR__ . '/trait-abilitiesadapteractions.php';
  */
 final class AbilitiesAdapter {
 	use AbilitiesAdapterActions {
+		read_ability as readAbility;
 		execute_ability as executeAbility;
 		execute_approved_ability as executeApprovedAbility;
 	}
@@ -148,23 +149,6 @@ final class AbilitiesAdapter {
 		}
 
 		return $response;
-	}
-
-	/**
-	 * Read the requested WordPress ability without modifying state.
-	 *
-	 * @param array $payload Requested action payload.
-	 * @param array $context Authorized execution context.
-	 *
-	 * @return array Result of the operation.
-	 */
-	public function readAbility( array $payload, array $context ): array {
-		// Registry supplies execution context; this read does not consume it.
-		unset( $context );
-
-		list( $name, $ability ) = $this->resolve_ability( $payload, false );
-		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
-		return $this->execute_and_sanitize( $name, $ability, $input, $this->safe_annotations( $ability ), false );
 	}
 
 	/**

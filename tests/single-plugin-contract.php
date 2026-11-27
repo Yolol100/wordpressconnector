@@ -31,7 +31,7 @@ $normalizedForms=preg_replace('/\s+/','',$forms);
 if(!is_string($normalizedExport)||!is_string($normalizedImport)||!is_string($normalizedCapabilities)||!is_string($normalizedForms)) {
     exit(1);
 }
-foreach(array('includes/Security/GitHubOidc.php','includes/Adapters/AbilitiesAdapter.php','includes/Adapters/CacheMaintenanceAdapter.php','includes/Adapters/CodeSnippetsAdapter.php','includes/Adapters/ElementorCapabilitiesAdapter.php','includes/Adapters/ElementorFormsAdapter.php','includes/Admin/ElementorJsonExport.php','includes/Admin/ElementorJsonImport.php','includes/Adapters/YoastAdapter.php') as $relative) {
+foreach(array('includes/Security/GitHubOidc.php','includes/Adapters/AbilitiesAdapter.php','includes/Adapters/CacheMaintenanceAdapter.php','includes/Adapters/CodeSnippetsAdapter.php','includes/Adapters/ElementorCapabilitiesAdapter.php','includes/Adapters/ElementorFormsAdapter.php','includes/Admin/ElementorJsonExport.php','includes/Admin/ElementorJsonImport.php','includes/Adapters/class-yoastadapter.php') as $relative) {
     if(strpos($main,$relative)===false) {
         fwrite(STDERR,"Main plugin bootstrap is missing {$relative}.\n");
         exit(1);

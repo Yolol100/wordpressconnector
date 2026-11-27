@@ -40,7 +40,7 @@ require $root . 'Support/Json.php';
 require $root . 'Support/class-fingerprint.php';
 require $root . 'Security/Policy.php';
 require $root . 'Runtime/class-registry.php';
-require $root . 'Adapters/YoastAdapter.php';
+require $root . 'Adapters/class-yoastadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;

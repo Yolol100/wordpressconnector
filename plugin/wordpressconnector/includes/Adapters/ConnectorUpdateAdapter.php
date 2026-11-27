@@ -21,6 +21,7 @@ require_once __DIR__ . '/trait-connectorupdateadapteractions.php';
  */
 final class ConnectorUpdateAdapter {
 	use ConnectorUpdateAdapterActions {
+		native_update_offer as nativeUpdateOffer;
 		refresh_native_update_notice_action as refreshNativeUpdateNoticeAction;
 		refresh_native_update_notice as refreshNativeUpdateNotice;
 		plugin_action_links as pluginActionLinks;
@@ -126,36 +127,6 @@ final class ConnectorUpdateAdapter {
 				: __( 'WordPress Connector: GitHub update check failed; verify outbound HTTPS, firewall and GitHub availability. Nothing was installed.', 'wordpressconnector' )
 			) .
 			'</p></div>';
-	}
-
-	/**
-	 * Offer only this plugin's canonical release to WordPress's native updater.
-	 * Other plugins using GitHub's update hostname must remain untouched.
-	 *
-	 * @param array|false $update     Existing native offer or false.
-	 * @param array       $plugin_data Validated plugin metadata.
-	 * @param string      $plugin_file Validated plugin file value.
-	 * @param array       $locales    Validated locales value.
-	 *
-	 * @return array|false
-	 */
-	public function nativeUpdateOffer( $update, array $plugin_data, string $plugin_file, array $locales ) {
-		// WordPress supplies locales to this filter; release identity is locale-independent.
-		unset( $locales );
-
-		if ( self::PLUGIN_FILE !== $plugin_file || self::UPDATE_URI !== ( $plugin_data['UpdateURI'] ?? '' ) ) {
-			return $update;
-		}
-
-		try {
-			return $this->native_offer_from_release(
-				$this->release(),
-				isset( $plugin_data['Version'] ) ? (string) $plugin_data['Version'] : ''
-			);
-		} catch ( \Throwable $error ) {
-			// A missing or invalid canonical release must never create an update offer.
-			return false;
-		}
 	}
 
 	/**

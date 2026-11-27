@@ -21,6 +21,7 @@ require_once __DIR__ . '/trait-yoastadapteractions.php';
  */
 final class YoastAdapter {
 	use YoastAdapterActions {
+		inspect_site_representation as inspectSiteRepresentation;
 		update_site_representation as updateSiteRepresentation;
 		restore_site_representation as restoreSiteRepresentation;
 	}
@@ -291,24 +292,6 @@ final class YoastAdapter {
 		}
 
 		return sanitize_text_field( $value );
-	}
-
-	/**
-	 * Patch only the organization fields Yoast owns, never the full wpseo_titles option.
-	 * The WordPress media library is the only accepted source for a logo.
-	 *
-	 * @param array $payload Validated action payload.
-	 * @param array $context Authorized execution context.
-	 */
-	public function inspectSiteRepresentation( array $payload = array(), array $context = array() ): array {
-		// This read is independent of request input; retain the common registry callback signature.
-		unset( $payload, $context );
-
-		$fields = $this->site_representation_snapshot();
-		return array(
-			'fields'      => $fields,
-			'fingerprint' => Fingerprint::make( $fields ),
-		);
 	}
 
 	/**

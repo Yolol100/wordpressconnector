@@ -89,6 +89,7 @@ $system .= (string) file_get_contents($root . '/plugin/wordpressconnector/includ
 $core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-coreadapter.php');
 $core .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-coreadapteractions.php');
 $filesystem = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
+$filesystem .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-filesystemadapteractions.php');
 $systemCompact = preg_replace('/\\s+/', '', $system);
 $coreCompact = preg_replace('/\\s+/', '', $core);
 $filesystemCompact = preg_replace('/\\s+/', '', $filesystem);

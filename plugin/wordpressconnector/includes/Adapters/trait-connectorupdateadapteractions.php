@@ -182,4 +182,34 @@ trait ConnectorUpdateAdapterActions {
 			return new \WP_Error( 'wordpressconnector_update_integrity', 'WordPress Connector could not verify this update. No files were changed.' );
 		}
 	}
+
+	/**
+	 * Offer only this plugin's canonical release to WordPress's native updater.
+	 * Other plugins using GitHub's update hostname must remain untouched.
+	 *
+	 * @param array|false $update     Existing native offer or false.
+	 * @param array       $plugin_data Validated plugin metadata.
+	 * @param string      $plugin_file Validated plugin file value.
+	 * @param array       $locales    Validated locales value.
+	 *
+	 * @return array|false
+	 */
+	public function native_update_offer( $update, array $plugin_data, string $plugin_file, array $locales ) {
+		// WordPress supplies locales to this filter; release identity is locale-independent.
+		unset( $locales );
+
+		if ( self::PLUGIN_FILE !== $plugin_file || self::UPDATE_URI !== ( $plugin_data['UpdateURI'] ?? '' ) ) {
+			return $update;
+		}
+
+		try {
+			return $this->native_offer_from_release(
+				$this->release(),
+				isset( $plugin_data['Version'] ) ? (string) $plugin_data['Version'] : ''
+			);
+		} catch ( \Throwable $error ) {
+			// A missing or invalid canonical release must never create an update offer.
+			return false;
+		}
+	}
 }

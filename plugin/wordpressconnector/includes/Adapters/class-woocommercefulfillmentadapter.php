@@ -20,6 +20,7 @@ require_once __DIR__ . '/trait-woocommercefulfillmentadapteractions.php';
  */
 final class WooCommerceFulfillmentAdapter {
 	use WooCommerceFulfillmentAdapterActions {
+		inspect_locations as inspectLocations;
 		update_locations as updateLocations;
 		restore_locations as restoreLocations;
 		restore_created as restoreCreated;
@@ -46,28 +47,6 @@ final class WooCommerceFulfillmentAdapter {
 		$registry->register( 'woocommerce.fulfillment.locations.restore', array( $this, 'restoreLocations' ), $write );
 		$registry->register( 'woocommerce.fulfillment.create', array( $this, 'create' ), $write );
 		$registry->register( 'woocommerce.fulfillment.restore_created', array( $this, 'restoreCreated' ), $write );
-	}
-
-	/**
-	 * Inspect locations for the WooCommerceFulfillment adapter.
-	 *
-	 * @param array $payload Requested action payload.
-	 * @param array $context Authorized execution context.
-	 *
-	 * @return array Operation result.
-	 */
-	public function inspectLocations( array $payload, array $context = array() ): array {
-		// Registry supplies execution context; this read does not consume it.
-		unset( $context );
-
-		$this->keys( $payload, array( 'zone_id' ) );
-		$path      = $this->location_path( $payload );
-		$locations = $this->location_snapshot( $this->api( 'GET', $path ) );
-		return array(
-			'zone_id'     => $payload['zone_id'],
-			'locations'   => $locations,
-			'fingerprint' => Fingerprint::make( $locations ),
-		);
 	}
 
 	/**
