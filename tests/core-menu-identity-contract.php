@@ -46,19 +46,31 @@ function set_theme_mod($name, $value): bool {
     $GLOBALS['menu_location_data'] = $value;
     return true;
 }
-function is_wp_error($value): bool { return false; }
+class WP_Error {
+    public function get_error_message(): string { return 'private provider detail'; }
+}
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
+function wp_create_nav_menu($name) {
+    return $GLOBALS['menu_provider_create'] ?? 404;
+}
 function wp_update_nav_menu_object($id, $args) {
     ++$GLOBALS['menu_updates'];
     if (101 !== $id) {
         throw new RuntimeException('Incorrect menu update target.');
     }
+    if (array_key_exists('menu_provider_update', $GLOBALS)) {
+        return $GLOBALS['menu_provider_update'];
+    }
     $GLOBALS['menu_fixture']->name = $args['menu-name'];
     return $id;
 }
-function wp_delete_nav_menu($id): bool {
+function wp_delete_nav_menu($id) {
     ++$GLOBALS['menu_deletes'];
     if (101 !== $id) {
         throw new RuntimeException('Incorrect menu deletion target.');
+    }
+    if (array_key_exists('menu_provider_delete', $GLOBALS)) {
+        return $GLOBALS['menu_provider_delete'];
     }
     return true;
 }
@@ -80,6 +92,9 @@ function wp_update_nav_menu_item($menu_id, $item_id, $args) {
     ++$GLOBALS['menu_item_writes'];
     if (101 !== $menu_id || (0 !== $item_id && 202 !== $item_id)) {
         throw new RuntimeException('Menu item target changed.');
+    }
+    if (array_key_exists('menu_provider_item', $GLOBALS)) {
+        return $GLOBALS['menu_provider_item'];
     }
     $GLOBALS['menu_item_last_write'] = array($menu_id, $item_id, $args);
     return 0 === $item_id ? 303 : 202;
@@ -329,5 +344,30 @@ try {
 }
 if ($GLOBALS['menu_location_writes'] !== 2) {
     throw new RuntimeException('Unknown menu location changed theme state.');
+}
+$providerCases = array(
+    array('menuCreate', array('name' => 'New'), 'create', 'WordPress menu creation failed.', array(new WP_Error(), false, 0, -1, '404')),
+    array('menuUpdate', array('id' => 101, 'name' => 'New'), 'update', 'WordPress menu update failed.', array(new WP_Error(), false, 0, 999, '101')),
+    array('menuDelete', array('id' => 101), 'delete', 'WordPress menu deletion failed.', array(new WP_Error(), false, null, 1)),
+    array('menuItemUpsert', array('menu_id' => 101, 'item_id' => 202), 'item', 'WordPress menu item update failed.', array(new WP_Error(), false, 0, 999, '202')),
+    array('menuItemUpsert', array('menu_id' => 101), 'item', 'WordPress menu item update failed.', array(new WP_Error(), false, 0, -1, '303')),
+);
+foreach ($providerCases as list($method, $payload, $key, $expected, $results)) {
+    foreach ($results as $result) {
+        $GLOBALS['menu_provider_' . $key] = $result;
+        try {
+            $adapter->$method($payload, array('dry_run' => false));
+            throw new RuntimeException('Invalid provider result accepted: ' . $method);
+        } catch (RuntimeException $error) {
+            if ($expected !== $error->getMessage()) {
+                throw $error;
+            }
+        } finally {
+            unset($GLOBALS['menu_provider_' . $key]);
+        }
+    }
+}
+if (404 !== ($adapter->menuCreate(array('name' => 'New'), array('dry_run' => false))['menu_id'] ?? null)) {
+    throw new RuntimeException('Valid menu creation changed.');
 }
 echo "Classic-menu exact ID and rollback contract OK\n";
