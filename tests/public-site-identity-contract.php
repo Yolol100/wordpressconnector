@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 // Sandbox options: verifies a bounded public-safe path without touching a site.
 $GLOBALS['site_identity_options'] = array(
     'blogname'=>'Tape Solutions','blogdescription'=>'Oplossingen voor verpakkingen',

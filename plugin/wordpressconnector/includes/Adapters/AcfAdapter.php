@@ -666,7 +666,7 @@ final class AcfAdapter {
 			$cleanup_failures = $this->cleanup_created_field_nodes( $created_nodes );
 			if ( $cleanup_failures ) {
 				throw new RuntimeException(
-					$error->getMessage() . ' Compensation failed for created ACF fields: ' . implode( ', ', $cleanup_failures ),
+					'Compensation failed for created ACF fields: ' . esc_html( implode( ', ', $cleanup_failures ) ),
 					0,
 					$error
 				);

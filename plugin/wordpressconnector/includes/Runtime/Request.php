@@ -203,7 +203,7 @@ final class Request {
 				'plugin.install_package',
 			);
 			if ( ! $dry_run && in_array( $action, $fingerprint_required, true ) && null === $expected_fingerprint ) {
-				throw new RuntimeException( 'Confirmed public ' . $action . ' requires expected_fingerprint from the preceding dry-run.' );
+				throw new RuntimeException( 'Confirmed public ' . esc_html( $action ) . ' requires expected_fingerprint from the preceding dry-run.' );
 			}
 		}
 
@@ -233,7 +233,7 @@ final class Request {
 			return null;
 		}
 		if ( ! is_string( $data[ $key ] ) || ! preg_match( '/^[a-f0-9]{64}\z/', $data[ $key ] ) ) {
-			throw new RuntimeException( $key . ' must be a SHA-256 hex string.' );
+			throw new RuntimeException( esc_html( $key ) . ' must be a SHA-256 hex string.' );
 		}
 		return $data[ $key ];
 	}

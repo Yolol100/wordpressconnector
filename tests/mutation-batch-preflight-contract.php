@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 if (! defined('ABSPATH')) {
     define('ABSPATH', __DIR__ . '/');
 }

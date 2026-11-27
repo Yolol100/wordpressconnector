@@ -739,12 +739,12 @@ final class ElementorAdapter {
 				$this->restore_snapshot( $before );
 			} catch ( Throwable $rollback_error ) {
 				throw new RuntimeException(
-					'Elementor mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollback_error->getMessage(),
+					'Elementor mutation failed and automatic rollback also failed. Manual recovery is required.',
 					0,
 					$error
 				);
 			}
-			throw new RuntimeException( 'Elementor mutation failed; previous snapshot restored: ' . $error->getMessage(), 0, $error );
+			throw new RuntimeException( 'Elementor mutation failed; previous snapshot restored.', 0, $error );
 		}
 	}
 

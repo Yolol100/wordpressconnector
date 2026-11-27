@@ -1570,11 +1570,11 @@ final class WooCommerceAdapter {
 	 */
 	private function positive_integer_id( $value, string $message ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
-			throw new RuntimeException( $message );
+			throw new RuntimeException( esc_html( $message ) );
 		}
 		$validated = filter_var( (string) $value, FILTER_VALIDATE_INT );
 		if ( false === $validated || $validated < 1 ) {
-			throw new RuntimeException( $message );
+			throw new RuntimeException( esc_html( $message ) );
 		}
 		return (int) $validated;
 	}

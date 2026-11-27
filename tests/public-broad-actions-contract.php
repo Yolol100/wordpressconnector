@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
 $tmp = sys_get_temp_dir() . '/wpconnector-public-broad-' . bin2hex(random_bytes(6));

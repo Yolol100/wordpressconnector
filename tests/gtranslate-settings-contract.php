@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 $GLOBALS['fake_gtranslate_options']=array('GTranslate'=>array(
     'default_language'=>'nl',
     'incl_langs'=>array('nl','en','de'),

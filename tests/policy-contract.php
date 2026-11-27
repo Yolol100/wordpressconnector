@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 define('ABSPATH', __DIR__ . '/');
 $GLOBALS['wpconnector_test_caps'] = array();
 function current_user_can($capability): bool { return in_array((string) $capability, $GLOBALS['wpconnector_test_caps'], true); }

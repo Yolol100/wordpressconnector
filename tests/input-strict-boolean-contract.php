@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 use Webactueel\WordPressConnector\Support\Input;
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';
@@ -49,4 +51,10 @@ foreach ( array( false, true, 71.5, 0, -1, '0', '0000', '-71', '71bad', '7.1e1',
 	}
 }
 
+try {
+    Input::boolValue('false', '<fixture>');
+    throw new RuntimeException('Invalid boolean accepted.');
+} catch (RuntimeException $error) {
+    if ('&lt;fixture&gt; must be boolean.' !== $error->getMessage()) throw $error;
+}
 echo "strict boolean input contract OK\n";
