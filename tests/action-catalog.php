@@ -150,8 +150,8 @@ foreach (array_unique($adapterMatches[1]) as $adapterName) {
     // forwarder to the one canonical implementation loaded by bootstrap.
     if (count($candidatePaths) === 2) {
         $forwarder = file_get_contents($legacy);
-        $expected = "<?php\ndeclare( strict_types = 1 );\nrequire_once __DIR__ . '" . '/' . basename($canonical) . "';\n";
-        if ($adapterPath !== $canonical || $forwarder === false || $tokenValues($forwarder) !== $tokenValues($expected)) {
+        $expectedForwarder = "<?php\ndeclare( strict_types = 1 );\nrequire_once __DIR__ . '" . '/' . basename($canonical) . "';\n";
+        if ($adapterPath !== $canonical || $forwarder === false || $tokenValues($forwarder) !== $tokenValues($expectedForwarder)) {
             throw new RuntimeException('Ambiguous or executable legacy adapter forwarder: ' . $adapterName);
         }
     }
