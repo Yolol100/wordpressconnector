@@ -35,7 +35,7 @@ function update_option($key,$value){$GLOBALS['tps_options'][$key]=$value;return 
 function sanitize_text_field($text){return trim(strip_tags((string)$text));}
 function current_user_can($cap){return in_array($cap,$GLOBALS['tps_caps'],true);}
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
-foreach(array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php',
+foreach(array('Support/class-json.php','Support/class-fingerprint.php','Security/class-policy.php',
     'Runtime/class-registry.php','Adapters/class-yoasttemplatesettingsadapter.php') as $file)require $root.$file;
 $registry=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\YoastTemplateSettingsAdapter())->register($registry);

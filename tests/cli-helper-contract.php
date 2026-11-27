@@ -27,15 +27,15 @@ if (! class_exists('WP_CLI')) {
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 foreach (array(
-    'Support/Json.php',
+    'Support/class-json.php',
     'Support/class-fingerprint.php',
-    'Security/Policy.php',
+    'Security/class-policy.php',
     'Runtime/class-request.php',
     'Runtime/class-registry.php',
-    'Runtime/SnapshotStore.php',
-    'Runtime/ProcessedStore.php',
+    'Runtime/class-snapshotstore.php',
+    'Runtime/class-processedstore.php',
     'Runtime/class-result.php',
-    'Runtime/Runner.php',
+    'Runtime/class-runner.php',
     'CLI/class-command.php',
 ) as $file) {
     require_once $root . $file;

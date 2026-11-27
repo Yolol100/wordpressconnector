@@ -18,7 +18,7 @@ function get_plugins(): array
 function is_plugin_active($name): bool { return true; }
 function sanitize_key($name): string { return strtolower(preg_replace('/[^a-z0-9_-]/i', '', $name)); }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-pluginsettingsadapter.php';
 

@@ -74,7 +74,7 @@ function ewww_image_optimizer_get_option($name, $default = null) {
     return array('ewww_image_optimizer_lazy_load' => 1, 'ewww_image_optimizer_add_missing_dims' => 1)[$name] ?? $default;
 }
 $prefix = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
-require_once $prefix . 'Security/Policy.php';
+require_once $prefix . 'Security/class-policy.php';
 require_once $prefix . 'Runtime/class-registry.php';
 require_once $prefix . 'Adapters/class-pluginsettingsadapter.php';
 

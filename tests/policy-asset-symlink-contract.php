@@ -1,6 +1,6 @@
 <?php
-/** Run against the actual plugin's Policy.php: source file supplied as argv[1]. */
-$policy = $argv[1] ?? dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+/** Run against the actual plugin's class-policy.php: source file supplied as argv[1]. */
+$policy = $argv[1] ?? dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 if (! is_file($policy)) { fwrite(STDERR, "Policy file missing\n"); exit(9); }
 require $policy;
 use Webactueel\WordPressConnector\Security\Policy;

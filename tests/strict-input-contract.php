@@ -5,11 +5,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
 $root = dirname(__DIR__);
-require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
-require_once $root . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
-require_once $root . '/plugin/wordpressconnector/includes/REST/Controller.php';
-require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once $root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php';
+require_once $root . '/plugin/wordpressconnector/includes/REST/class-controller.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
@@ -131,9 +131,9 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
 
 $adapterSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapterSource .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
-$assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
+$assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
 $requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-request.php');
-$controllerSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
+$controllerSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-controller.php');
 $controllerImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-restcontrollermethods.php');
 if (!is_string($controllerSource) || !is_string($controllerImplementation)) { throw new RuntimeException('Missing canonical REST validator source.'); }
 $controllerSource .= $controllerImplementation;

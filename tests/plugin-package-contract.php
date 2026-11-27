@@ -5,7 +5,8 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
-$assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
+$assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
+if (!is_string($assetStore)) { throw new RuntimeException('Missing assetstore source.'); }
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/class-plugin.php');
 $docs = file_get_contents($root . '/docs/PLUGIN-PACKAGE-REST.md');
@@ -137,8 +138,11 @@ if (strpos($docs, 'theme.install_package') === false) {
     fwrite(STDERR, "Missing guarded theme package documentation.\n");
     exit(1);
 }
-$publicPolicy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
-$publicRunner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+$publicPolicy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$publicPolicyImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+if (!is_string($publicPolicy) || !is_string($publicPolicyImplementation)) { throw new RuntimeException('Missing canonical policy source.'); }
+$publicPolicy .= $publicPolicyImplementation;
+$publicRunner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
 $publicValidator = file_get_contents($root . '/scripts/validate-public-request.php');
 foreach (array($publicPolicy, $publicRunner, $publicValidator) as $boundary) {
     if (! is_string($boundary) || strpos($boundary, "'theme.install_package'") === false) {
@@ -154,7 +158,7 @@ if (strpos($publicRunner, "false !== \$payload['overwrite']") === false ||
 
 // ZIP entry checks must use the supported PHP Countable API. Both guarded
 // package adapters must retain the same archive size limits and read-only ZIP.
-$updater = file_get_contents( $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php' );
+$updater = file_get_contents( $root . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php' );
 if ( ! is_string( $updater ) || false !== strpos( $adapter, '->numFiles' )
     || false !== strpos( $updater, '->numFiles' )
     || false === strpos( $adapter, '$zip->count()' )

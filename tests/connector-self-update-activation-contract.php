@@ -97,7 +97,7 @@ register_shutdown_function(static function() use($dir) {
     @rmdir($dir.'/wordpressconnector');
     @rmdir($dir);
 });
-require_once dirname(__DIR__).'/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+require_once dirname(__DIR__).'/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
 $adapter = new Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
 add_filter('upgrader_pre_download', array($adapter, 'verifiedNativeDownload'), 10, 4);
 $method=new ReflectionMethod($adapter,'install_with_core_backup');

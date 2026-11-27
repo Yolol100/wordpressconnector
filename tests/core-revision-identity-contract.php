@@ -95,8 +95,8 @@ function wp_update_post($fields, $wp_error = false) {
 
 $root = dirname(__DIR__);
 foreach (array(
-    'Support/Json.php', 'Support/class-fingerprint.php', 'Support/Input.php',
-    'Security/Policy.php', 'Adapters/class-coreadapter.php',
+    'Support/class-json.php', 'Support/class-fingerprint.php', 'Support/class-input.php',
+    'Security/class-policy.php', 'Adapters/class-coreadapter.php',
 ) as $path) {
     require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 }

@@ -24,7 +24,7 @@ function is_ssl(): bool { return true; }
 function wp_parse_url( string $uri, int $component = -1 ) { return -1 === $component ? parse_url( $uri ) : parse_url( $uri, $component ); }
 function wp_safe_remote_post(): void { throw new RuntimeException( 'Unconfigured OAuth must never contact a provider.' ); }
 
-require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
+require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/class-oauthresourceserver.php';
 
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 

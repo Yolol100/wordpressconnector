@@ -36,9 +36,9 @@ function esc_url_raw($url): string { return $url; }
 function sanitize_text_field($value): string { return trim(strip_tags((string) $value)); }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
-require $root . 'Support/Json.php';
+require $root . 'Support/class-json.php';
 require $root . 'Support/class-fingerprint.php';
-require $root . 'Security/Policy.php';
+require $root . 'Security/class-policy.php';
 require $root . 'Runtime/class-registry.php';
 require $root . 'Adapters/class-yoastadapter.php';
 

@@ -7,11 +7,14 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
-$runnerSource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
-$policySource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
+$runnerSource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
+$policySource = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$policySourceImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+if (!is_string($policySource) || !is_string($policySourceImplementation)) { throw new RuntimeException('Missing canonical policy source.'); }
+$policySource .= $policySourceImplementation;
 
-require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 
 use Webactueel\WordPressConnector\Runtime\Request;

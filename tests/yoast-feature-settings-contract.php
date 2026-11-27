@@ -73,7 +73,7 @@ function current_user_can($cap)
 }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
-foreach (array('Support/Json.php', 'Support/class-fingerprint.php', 'Security/Policy.php',
+foreach (array('Support/class-json.php', 'Support/class-fingerprint.php', 'Security/class-policy.php',
     'Runtime/class-registry.php', 'Adapters/class-yoastfeaturesettingsadapter.php') as $file) {
     require $root . $file;
 }

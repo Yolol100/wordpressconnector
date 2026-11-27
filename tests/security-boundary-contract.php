@@ -6,9 +6,9 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
 $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-input.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -84,7 +84,7 @@ foreach (array('connector.update.check', 'connector.update.apply') as $action) {
     }
 }
 
-$system = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
+$system = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php');
 $system .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-systemadapteractions.php');
 $core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-coreadapter.php');
 $core .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-coreadapteractions.php');

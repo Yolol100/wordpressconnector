@@ -133,9 +133,9 @@ namespace {
         }
     }
 
-    require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php';
     $adapter = new \Webactueel\WordPressConnector\Adapters\SystemAdapter();
 
     $expectFailure = static function (callable $operation, string $reason): void {

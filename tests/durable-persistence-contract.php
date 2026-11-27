@@ -108,15 +108,15 @@ $GLOBALS['wpdb'] = new DurableTestDb();
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes';
 foreach (array(
-    '/Security/Policy.php',
-    '/Support/Json.php',
+    '/Security/class-policy.php',
+    '/Support/class-json.php',
     '/Support/class-fingerprint.php',
     '/Runtime/class-registry.php',
     '/Runtime/class-request.php',
     '/Runtime/class-result.php',
-    '/Runtime/SnapshotStore.php',
-    '/Runtime/ProcessedStore.php',
-    '/Runtime/Runner.php',
+    '/Runtime/class-snapshotstore.php',
+    '/Runtime/class-processedstore.php',
+    '/Runtime/class-runner.php',
 ) as $filename) require_once $root . $filename;
 
 use Webactueel\WordPressConnector\Runtime\Registry;

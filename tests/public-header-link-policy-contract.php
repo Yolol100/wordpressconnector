@@ -14,7 +14,7 @@ function wp_parse_url($url, $component = -1)
     return parse_url($url, $component);
 }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 
 $reflection = new ReflectionClass(Runner::class);
 $runner = $reflection->newInstanceWithoutConstructor();

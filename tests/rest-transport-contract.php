@@ -3,17 +3,24 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
+$controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-controller.php');
 $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-restcontrollermethods.php');
 if ($implementation === false || !is_string($controller)) { throw new RuntimeException('Missing canonical implementation: REST/trait-restcontrollermethods.php'); }
 $controller .= $implementation;
-$assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
+$assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
+if (!is_string($assetStore)) { throw new RuntimeException('Missing assetstore source.'); }
 $settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
 $settingsImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
 if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
 $settings .= $settingsImplementation;
-$policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
-$oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/GitHubOidc.php');
+$policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$policyImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+if (!is_string($policy) || !is_string($policyImplementation)) { throw new RuntimeException('Missing canonical policy source.'); }
+$policy .= $policyImplementation;
+$oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-githuboidc.php');
+$oidcImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-githuboidcmethods.php');
+if (!is_string($oidc) || !is_string($oidcImplementation)) { throw new RuntimeException('Missing canonical githuboidc source.'); }
+$oidc .= $oidcImplementation;
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 foreach (array('controller'=>$controller,'asset store'=>$assetStore,'settings'=>$settings,'policy'=>$policy,'oidc'=>$oidc,'bootstrap'=>$bootstrap) as $name=>$contents) {
     if (false === $contents) { fwrite(STDERR,"Unable to read REST {$name}.\n"); exit(1); }
@@ -66,7 +73,7 @@ if (! is_string($compactOidc) || ! is_string($compactPolicy) || ! is_string($com
 foreach (array("private const ISSUER = 'https://token.actions.githubusercontent.com'","private const JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks'","private const TRUSTED_RUNTIMES = array(","'Yolol100/wordpressconnector'","'repository_id' => '1341990468'","'Yolol100/Wordpress'","'repository_id' => '933904076'","private const REPOSITORY_OWNER_ID = '22932777'",'wordpress-zero-config-execute.yml@refs/heads/main','wordpressconnector-zero-config-execute.yml@refs/heads/main',"private const HEADER = 'x-webactueel-github-oidc'",'openssl_verify(','wp_safe_remote_get(self::JWKS_URL','assert_not_replayed',"'workflow_dispatch'","'github-hosted'") as $needle) {
     if (strpos($compactOidc,preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing GitHub OIDC boundary: {$needle}\n"); exit(1); }
 }
-if (strpos($oidc, 'SitePairing::pairedAdministratorId()') === false || strpos($bootstrap, 'includes/Security/SitePairing.php') === false) { fwrite(STDERR, "Missing opt-in GitHub OIDC pairing boundary.\n"); exit(1); }
+if (strpos($oidc, 'SitePairing::pairedAdministratorId()') === false || strpos($bootstrap, 'includes/Security/class-sitepairing.php') === false) { fwrite(STDERR, "Missing opt-in GitHub OIDC pairing boundary.\n"); exit(1); }
 foreach (array('is_uploaded_file($tmp_name)','filesize($tmp_name)','allowed_file_type($relativePath)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','Policy::assertLocalAssetPath($parent, $root)','sys_get_temp_dir()','assert_outside_web_root') as $needle) {
     if (strpos($compactAssetStore,preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing REST asset security contract: {$needle}\n"); exit(1); }
 }
@@ -74,13 +81,13 @@ if (strpos($controller,'__return_true')!==false) { fwrite(STDERR,"REST routes mu
 foreach (array('eval(','shell_exec(','passthru(','proc_open(','popen(') as $primitive) {
     if (strpos($controller,$primitive)!==false || strpos($assetStore,$primitive)!==false || strpos($oidc,$primitive)!==false) { fwrite(STDERR,"Forbidden execution primitive: {$primitive}\n"); exit(1); }
 }
-foreach (array("'includes/REST/Controller.php'","'includes/REST/AssetStore.php'","'includes/Security/GitHubOidc.php'") as $needle) {
+foreach (array("'includes/REST/class-controller.php'","'includes/REST/class-assetstore.php'","'includes/Security/class-githuboidc.php'") as $needle) {
     if (strpos($bootstrap,$needle)===false) { fwrite(STDERR,"Bootstrap missing dependency: {$needle}\n"); exit(1); }
 }
 
 // WordPress REST passes WP_REST_Request to endpoint and permission callbacks.
 // Even unused typed arguments are part of these public callback contracts.
-require_once $root . '/plugin/wordpressconnector/includes/REST/Controller.php';
+require_once $root . '/plugin/wordpressconnector/includes/REST/class-controller.php';
 foreach ( array( 'allowPresence', 'presence', 'health' ) as $callback_name ) {
     $method = new ReflectionMethod( 'Webactueel\\WordPressConnector\\REST\\Controller', $callback_name );
     $parameters = $method->getParameters();

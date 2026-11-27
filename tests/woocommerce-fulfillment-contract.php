@@ -108,7 +108,7 @@ function rest_do_request($r){
     return new FulfillResponse(404,array('error'=>'not found'));
 }
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
-foreach(array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php',
+foreach(array('Support/class-json.php','Support/class-fingerprint.php','Security/class-policy.php',
     'Runtime/class-registry.php','Adapters/class-woocommercefulfillmentadapter.php')as $file)require $root.$file;
 $registry=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapter())->register($registry);

@@ -24,7 +24,7 @@ function wp_is_file_mod_allowed(string $context): bool { return $GLOBALS['wpconn
 function current_user_can(string $capability): bool { return true; }
 function is_multisite(): bool { return false; }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php';
 
 $wpdb = new wpdb();
 $wp_version = '7.1-test';

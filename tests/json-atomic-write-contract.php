@@ -25,7 +25,7 @@ namespace Webactueel\WordPressConnector\Support {
     }
 }
 namespace {
-    require_once ($argv[1] ?? dirname(__DIR__) . '/plugin/wordpressconnector') . '/includes/Support/Json.php';
+    require_once ($argv[1] ?? dirname(__DIR__) . '/plugin/wordpressconnector') . '/includes/Support/class-json.php';
     use Webactueel\WordPressConnector\Support\Json;
 
     require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';

@@ -127,7 +127,7 @@ function wp_set_current_user( int $user_id ): void {
 }
 function __return_true(): bool { return true; }
 
-require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
+require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-oauthresourceserver.php';
 
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 

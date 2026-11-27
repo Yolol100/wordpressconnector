@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $files = array(
-    'updater' => $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php',
+    'updater' => $root . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php',
     'package adapter' => $root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php',
     'builder' => $root . '/scripts/build-release-package.py',
     'uninstall' => $root . '/plugin/wordpressconnector/uninstall.php',

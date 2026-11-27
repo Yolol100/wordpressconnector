@@ -1,44 +1,45 @@
 <?php
 
 declare(strict_types=1);
+if (!defined('DAY_IN_SECONDS')) define('DAY_IN_SECONDS', 86400);
 
 require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Json.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-json.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-filesystempolicy.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-siteeditoradapter.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-systemadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommerceadapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-acfadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercefulfillmentadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastadapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-abilitiesadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Input.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-input.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-elementorjsonexport.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastsnippetadapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-settings.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/Policy.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/SitePairing.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/GitHubOidc.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-policy.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-sitepairing.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-githuboidc.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/MCP/Controller.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/Controller.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/ReleaseApproval.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-elementorjsonimport.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/MCP/class-controller.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/class-controller.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-processedstore.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-oauthresourceserver.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-releaseapproval.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-discoveryadapter.php';
 
@@ -48,11 +49,104 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/Filesyst
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercesettingsadapter.php';
 
 if (!defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/fixtures/'); }
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-runner.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/class-assetstore.php';
+
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php';
+
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php';
+
+
+// Keep the existing public method declarations, including reflection identity on PHP 7.4.
+// Native trait aliases report the original trait method name on that supported runtime.
+$legacyNativeMethods = array(
+    array('Webactueel\\WordPressConnector\\REST\\AssetStore', 'rootForRequest', false, false, false, 'string', array(array('name' => 'requestId', 'type' => 'string', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null), array('name' => 'create', 'type' => 'bool', 'optional' => true, 'reference' => false, 'variadic' => false, 'default' => array('value' => false)))),
+    array('Webactueel\\WordPressConnector\\REST\\AssetStore', 'cleanupExpired', false, false, false, 'void', array(array('name' => 'olderThanSeconds', 'type' => 'int', 'optional' => true, 'reference' => false, 'variadic' => false, 'default' => array('constant' => 'Webactueel\\WordPressConnector\\REST\\DAY_IN_SECONDS')))),
+    array('Webactueel\\WordPressConnector\\Runtime\\ProcessedStore', 'mutationLockStatus', false, false, false, 'string', array(array('name' => 'requestId', 'type' => 'string', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Runtime\\ProcessedStore', 'acquireMutationLock', false, false, false, 'string', array(array('name' => 'requestId', 'type' => 'string', 'optional' => true, 'reference' => false, 'variadic' => false, 'default' => array('value' => '')))),
+    array('Webactueel\\WordPressConnector\\Runtime\\SnapshotStore', 'getRecord', false, false, false, '?array', array(array('name' => 'requestId', 'type' => 'string', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Security\\GitHubOidc', 'cleanupReplayClaims', true, false, false, 'int', array(array('name' => 'olderThanSeconds', 'type' => 'int', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Security\\OAuthResourceServer', 'serveWellKnown', false, false, false, 'void', array()),
+    array('Webactueel\\WordPressConnector\\Security\\Policy', 'assertActionAllowed', true, false, false, 'void', array(array('name' => 'descriptor', 'type' => 'array', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null), array('name' => 'dryRun', 'type' => 'bool', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null), array('name' => 'confirm', 'type' => 'bool', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Security\\Policy', 'assertPublicContentTarget', true, false, false, 'void', array(array('name' => 'post', 'type' => 'WP_Post', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null), array('name' => 'requiresEdit', 'type' => 'bool', 'optional' => true, 'reference' => false, 'variadic' => false, 'default' => array('value' => false)))),
+    array('Webactueel\\WordPressConnector\\Security\\Policy', 'assertReadablePostType', true, false, false, 'void', array(array('name' => 'postType', 'type' => 'string', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Security\\Policy', 'assertLocalAssetPath', true, false, false, 'string', array(array('name' => 'path', 'type' => 'string', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null), array('name' => 'assetRoot', 'type' => 'string', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Security\\Policy', 'setPublicRepositoryContext', true, false, false, 'void', array(array('name' => 'isPublic', 'type' => 'bool', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+    array('Webactueel\\WordPressConnector\\Security\\SitePairing', 'enableForAdministrator', true, false, false, 'void', array(array('name' => 'administratorId', 'type' => 'int', 'optional' => false, 'reference' => false, 'variadic' => false, 'default' => null))),
+);
+foreach ($legacyNativeMethods as $contract) {
+    list($class, $name, $static, $final, $reference, $returnType, $expectedParameters) = $contract;
+    $method = new ReflectionMethod($class, $name);
+    // PHP 7.4 stringifies nullable named return types without the question mark.
+    $type = $method->getReturnType();
+    $actualReturnType = $type instanceof ReflectionNamedType
+        ? ($type->allowsNull() ? '?' : '').$type->getName()
+        : ($type !== null ? (string) $type : null);
+    if (!$method->isPublic() || $method->getName() !== $name ||
+        $method->getDeclaringClass()->getName() !== $class ||
+        $method->isStatic() !== $static || $method->isFinal() !== $final ||
+        $method->returnsReference() !== $reference ||
+        $actualReturnType !== $returnType ||
+        isset((new ReflectionClass($class))->getTraitAliases()[$name])) {
+        throw new RuntimeException('Legacy native method identity changed: '.$class.'::'.$name);
+    }
+    $parameters = array();
+    foreach ($method->getParameters() as $parameter) {
+        $default = null;
+        if ($parameter->isDefaultValueAvailable()) {
+            $default = $parameter->isDefaultValueConstant()
+                ? array('constant' => $parameter->getDefaultValueConstantName())
+                : array('value' => $parameter->getDefaultValue());
+        }
+        $parameters[] = array(
+            'name' => $parameter->getName(),
+            'type' => $parameter->hasType() ? (string) $parameter->getType() : null,
+            'optional' => $parameter->isOptional(),
+            'reference' => $parameter->isPassedByReference(),
+            'variadic' => $parameter->isVariadic(),
+            'default' => $default,
+        );
+    }
+    if ($parameters !== $expectedParameters) {
+        throw new RuntimeException('Legacy native method parameters changed: '.$class.'::'.$name);
+    }
+}
+
 $serviceAliases = array(
+    'Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter' => array(
+        'handleAssetCleanupLoopback' => 'Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapterMethods::handle_asset_cleanup_loopback',
+    ),
+    'Webactueel\WordPressConnector\Security\GitHubOidc' => array(
+        'expectedAudience' => 'Webactueel\WordPressConnector\Security\GitHubOidcMethods::expected_audience',
+    ),
+    'Webactueel\WordPressConnector\Security\SitePairing' => array(
+        'pairedAdministratorId' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::paired_administrator_id',
+        'approveOnActivation' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::approve_on_activation',
+    ),
+    'Webactueel\WordPressConnector\Security\OAuthResourceServer' => array(
+        'isConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_configured',
+        'selfUpdateConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::self_update_configured',
+        'wellKnownUrl' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::well_known_url',
+        'registerRoutes' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::register_routes',
+        'resourceMetadata' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::resource_metadata',
+        'challengeHeader' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::challenge_header',
+        'canSelfUpdate' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::can_self_update',
+        'isAuthenticated' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_authenticated',
+    ),
+    'Webactueel\WordPressConnector\Security\Policy' => array(
+        'assertPublicActionTarget' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_public_action_target',
+        'assertPostReadable' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_post_readable',
+        'assertKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_key_allowed',
+        'assertMetaKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_meta_key_allowed',
+        'assertOptionKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_option_key_allowed',
+        'publicRepositoryContext' => 'Webactueel\WordPressConnector\Security\PolicyMethods::public_repository_context',
+    ),
+    'Webactueel\WordPressConnector\Runtime\ProcessedStore' => array(
+        'releaseMutationLock' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::release_mutation_lock',
+    ),
     'Webactueel\WordPressConnector\Support\Json' => array(
         'readFile' => 'Webactueel\WordPressConnector\Support\JsonMethods::read_file_compat',
         'writeFileAtomic' => 'Webactueel\WordPressConnector\Support\JsonMethods::write_file_atomic_compat',
@@ -105,19 +199,6 @@ $serviceAliases = array(
         'uploadAsset' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::upload_asset',
         'validateAssetPath' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_asset_path',
     ),
-    'Webactueel\WordPressConnector\Runtime\ProcessedStore' => array(
-        'releaseMutationLock' => 'Webactueel\WordPressConnector\Runtime\ProcessedStoreMethods::release_mutation_lock',
-    ),
-    'Webactueel\WordPressConnector\Security\OAuthResourceServer' => array(
-        'isConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_configured',
-        'selfUpdateConfigured' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::self_update_configured',
-        'wellKnownUrl' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::well_known_url',
-        'registerRoutes' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::register_routes',
-        'resourceMetadata' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::resource_metadata',
-        'challengeHeader' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::challenge_header',
-        'canSelfUpdate' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::can_self_update',
-        'isAuthenticated' => 'Webactueel\WordPressConnector\Security\OAuthResourceServerMethods::is_authenticated',
-    ),
     'Webactueel\WordPressConnector\Security\ReleaseApproval' => array(
         'renderForm' => 'Webactueel\WordPressConnector\Security\ReleaseApprovalMethods::render_form_compat',
         'idForFingerprint' => 'Webactueel\WordPressConnector\Security\ReleaseApprovalMethods::id_for_fingerprint',
@@ -130,21 +211,6 @@ $serviceAliases = array(
         'mediaUpdate' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_update',
         'mediaAssign' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_assign',
         'mediaRegenerate' => 'Webactueel\WordPressConnector\Adapters\MediaAdapterActions::media_regenerate',
-    ),
-    'Webactueel\WordPressConnector\Security\Policy' => array(
-        'assertPublicActionTarget' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_public_action_target',
-        'assertPostReadable' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_post_readable',
-        'assertKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_key_allowed',
-        'assertMetaKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_meta_key_allowed',
-        'assertOptionKeyAllowed' => 'Webactueel\WordPressConnector\Security\PolicyMethods::assert_option_key_allowed',
-        'publicRepositoryContext' => 'Webactueel\WordPressConnector\Security\PolicyMethods::public_repository_context',
-    ),
-    'Webactueel\WordPressConnector\Security\SitePairing' => array(
-        'pairedAdministratorId' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::paired_administrator_id',
-        'approveOnActivation' => 'Webactueel\WordPressConnector\Security\SitePairingMethods::approve_on_activation',
-    ),
-    'Webactueel\WordPressConnector\Security\GitHubOidc' => array(
-        'expectedAudience' => 'Webactueel\WordPressConnector\Security\GitHubOidcMethods::expected_audience',
     ),
     'Webactueel\WordPressConnector\Admin\Settings' => array(
         'unpairedNotice' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::unpaired_notice',

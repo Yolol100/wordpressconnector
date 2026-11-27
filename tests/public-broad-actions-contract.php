@@ -76,7 +76,7 @@ if (0 === $status) {
     exit(1);
 }
 
-require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 \Webactueel\WordPressConnector\Security\Policy::setPublicRepositoryContext(true);
 
 $unsafeDescriptor = array(

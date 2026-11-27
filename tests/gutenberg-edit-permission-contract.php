@@ -82,10 +82,10 @@ function is_wp_error( $value ): bool {
 
 $root = dirname( __DIR__ );
 foreach ( array(
-	'Support/Json.php',
+	'Support/class-json.php',
 	'Support/class-fingerprint.php',
-	'Support/Input.php',
-	'Security/Policy.php',
+	'Support/class-input.php',
+	'Security/class-policy.php',
 	'Adapters/class-gutenbergadapter.php',
 ) as $source ) {
 	require_once $root . '/plugin/wordpressconnector/includes/' . $source;

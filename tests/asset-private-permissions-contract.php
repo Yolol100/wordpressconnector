@@ -74,6 +74,7 @@ namespace Webactueel\WordPressConnector\REST {
 }
 
 namespace {
+    require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
     $base = sys_get_temp_dir() . '/wpconnector-permission-contract-' . bin2hex(random_bytes(6));
     define('WPCONNECTOR_ASSET_ROOT', $base);
     function home_url(string $path = ''): string { return 'https://example.test/' . ltrim($path, '/'); }
@@ -86,10 +87,10 @@ namespace {
     }
     function get_allowed_mime_types(): array { return array('json' => 'application/json'); }
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
     require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
     $GLOBALS['wpconn_direct_file_delete'] = '\\Webactueel\\WordPressConnector\\REST\\unlink';
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/class-assetstore.php';
 
     $store = new \Webactueel\WordPressConnector\REST\AssetStore();
     $id = 'request-12345678';

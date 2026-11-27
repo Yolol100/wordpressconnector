@@ -6,17 +6,17 @@ if (! defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/'); }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 foreach (array(
-    'Support/Json.php',
+    'Support/class-json.php',
     'Support/class-fingerprint.php',
-    'Support/Input.php',
-    'Security/Policy.php',
+    'Support/class-input.php',
+    'Security/class-policy.php',
     'Runtime/class-registry.php',
     'Runtime/class-request.php',
     'Runtime/class-result.php',
     'Runtime/class-diagnostics.php',
-    'Runtime/SnapshotStore.php',
-    'Runtime/ProcessedStore.php',
-    'Runtime/Runner.php',
+    'Runtime/class-snapshotstore.php',
+    'Runtime/class-processedstore.php',
+    'Runtime/class-runner.php',
     'Adapters/class-customcssadapter.php',
     'Adapters/class-portfoliostatsadapter.php',
 ) as $path) {

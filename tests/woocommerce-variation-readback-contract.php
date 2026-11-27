@@ -58,10 +58,10 @@ function wc_get_product($id)
 }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector';
-require_once $root . '/includes/Support/Json.php';
+require_once $root . '/includes/Support/class-json.php';
 require_once $root . '/includes/Support/class-fingerprint.php';
-require_once $root . '/includes/Support/Input.php';
-require_once $root . '/includes/Adapters/WooCommerceAdapter.php';
+require_once $root . '/includes/Support/class-input.php';
+require_once $root . '/includes/Adapters/class-woocommerceadapter.php';
 $adapter = new \Webactueel\WordPressConnector\Adapters\WooCommerceAdapter();
 
 foreach (array('missing', 'wrong-type') as $mode) {

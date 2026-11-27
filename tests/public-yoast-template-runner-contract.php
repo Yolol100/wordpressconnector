@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 
 use Webactueel\WordPressConnector\Runtime\Runner;
 

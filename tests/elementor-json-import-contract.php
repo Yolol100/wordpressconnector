@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-$path=__DIR__.'/../plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php';
+$path=__DIR__.'/../plugin/wordpressconnector/includes/Admin/class-elementorjsonimport.php';
 $source=file_get_contents($path);
 if(!is_string($source)||''===$source) {
-    fwrite(STDERR,"ElementorJsonImport.php is missing or unreadable.\n");
+    fwrite(STDERR,"class-elementorjsonimport.php is missing or unreadable.\n");
     exit(1);
 }
 $importImplementation = file_get_contents(dirname($path) . '/trait-elementorjsonimportmethods.php');

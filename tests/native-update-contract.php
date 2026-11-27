@@ -110,7 +110,7 @@ namespace {
     $newVersionParts[2] = (string) ((int) $newVersionParts[2] + 1);
     $newerVersion = implode('.', $newVersionParts);
     $GLOBALS['test_release_version'] = $newerVersion;
-    require_once $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
     $adapter = new \Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
     $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
     $adapter->register($registry);

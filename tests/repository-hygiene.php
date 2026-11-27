@@ -70,7 +70,7 @@ $sourceFiles=array(
     $root.'/scripts/validate-request.php',
     $root.'/scripts/validate-public-request.php',
     $root.'/scripts/build-public-receipt.php',
-    $root.'/plugin/wordpressconnector/includes/Security/GitHubOidc.php',
+    $root.'/plugin/wordpressconnector/includes/Security/class-githuboidc.php',
 );
 foreach($sourceFiles as $file){$content=(string)file_get_contents($file);foreach(array('BEGIN RSA PRIVATE KEY','BEGIN OPENSSH PRIVATE KEY','wp-config.php','REST_APP_PASSWORD=','WPCONNECTOR_REST_APPLICATION_PASSWORD','WPCONNECTOR_REST_USERNAME') as $secretPattern){if(strpos($content,$secretPattern)!==false){fwrite(STDERR,"Credential/config residue detected in zero-config transport source: {$file}\n");exit(1);}}}
 echo "repository zero-config hygiene OK\n";

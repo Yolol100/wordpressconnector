@@ -137,15 +137,15 @@ final class PortfolioRuntimeWpdb
 $GLOBALS['wpdb'] = new PortfolioRuntimeWpdb();
 
 $root = dirname(__DIR__);
-require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-result.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-processedstore.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;

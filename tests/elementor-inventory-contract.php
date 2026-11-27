@@ -29,7 +29,7 @@ file_put_contents($pluginRoot . '/awesome-addon/widget.php', "<?php\nclass Inven
 require $coreRoot . 'core-widget.php';
 require $proRoot . 'pro-widget.php';
 require $pluginRoot . '/awesome-addon/widget.php';
-require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php';
+require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-elementorcapabilitiesadapter.php';
 
 $adapter = new Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter();
 $reflection = new ReflectionClass($adapter);

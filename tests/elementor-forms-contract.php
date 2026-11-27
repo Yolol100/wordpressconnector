@@ -16,7 +16,7 @@ namespace {
     function wp_json_encode($value, int $flags = 0) { return json_encode($value, $flags); }
     function wp_get_theme() { return new class { public function get(string $key): string { return 'Version' === $key ? '1.0.0' : 'Test Theme'; } }; }
 
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-json.php';
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-elementorformsadapter.php';
 
