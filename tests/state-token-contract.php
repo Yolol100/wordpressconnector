@@ -19,6 +19,7 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-el
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercefulfillmentadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-abilitiesadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-input.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-elementorjsonexport.php';
@@ -43,6 +44,7 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-re
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-discoveryadapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-filesystemadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercesettingsadapter.php';
 
