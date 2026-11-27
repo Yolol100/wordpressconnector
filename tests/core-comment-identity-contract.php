@@ -53,7 +53,7 @@ function wp_trash_comment($id): bool {
 }
 $root = dirname(__DIR__);
 foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php',
-    'Security/Policy.php', 'Adapters/CoreAdapter.php') as $path) {
+    'Security/Policy.php', 'Adapters/class-coreadapter.php') as $path) {
     require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 }
 $adapter = new \Webactueel\WordPressConnector\Adapters\CoreAdapter();

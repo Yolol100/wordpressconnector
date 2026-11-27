@@ -52,7 +52,7 @@ $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 require_once $root . 'Support/Json.php';
 require_once $root . 'Support/Fingerprint.php';
 require_once $root . 'Security/Policy.php';
-require_once $root . 'Runtime/Registry.php';
+require_once $root . 'Runtime/class-registry.php';
 require_once $root . 'Adapters/PluginSettingsAdapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;

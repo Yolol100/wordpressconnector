@@ -75,7 +75,7 @@ function ewww_image_optimizer_get_option($name, $default = null) {
 }
 $prefix = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 require_once $prefix . 'Security/Policy.php';
-require_once $prefix . 'Runtime/Registry.php';
+require_once $prefix . 'Runtime/class-registry.php';
 require_once $prefix . 'Adapters/PluginSettingsAdapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;

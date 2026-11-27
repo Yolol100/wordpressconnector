@@ -85,7 +85,7 @@ function wp_get_abilities(): array
     return array('elementor/network-write' => $provenanceAbility);
 }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
 

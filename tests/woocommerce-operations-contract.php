@@ -84,7 +84,7 @@ function rest_do_request($request) {
 }
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
 foreach(array('Support/Json.php','Support/Fingerprint.php','Security/Policy.php',
-    'Runtime/Registry.php','Adapters/WooCommerceOperationsAdapter.php') as $file)require $root.$file;
+    'Runtime/class-registry.php','Adapters/WooCommerceOperationsAdapter.php') as $file)require $root.$file;
 $registry=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\WooCommerceOperationsAdapter())->register($registry);
 $d=$registry->descriptor('woocommerce.operations.update');

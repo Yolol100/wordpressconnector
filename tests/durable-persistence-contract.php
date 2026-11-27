@@ -111,7 +111,7 @@ foreach (array(
     '/Security/Policy.php',
     '/Support/Json.php',
     '/Support/Fingerprint.php',
-    '/Runtime/Registry.php',
+    '/Runtime/class-registry.php',
     '/Runtime/Request.php',
     '/Runtime/class-result.php',
     '/Runtime/SnapshotStore.php',

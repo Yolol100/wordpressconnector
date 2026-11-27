@@ -31,7 +31,7 @@ foreach (array(
     'Support/Fingerprint.php',
     'Security/Policy.php',
     'Runtime/Request.php',
-    'Runtime/Registry.php',
+    'Runtime/class-registry.php',
     'Runtime/SnapshotStore.php',
     'Runtime/ProcessedStore.php',
     'Runtime/class-result.php',

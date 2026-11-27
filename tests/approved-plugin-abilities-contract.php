@@ -8,7 +8,7 @@ if (! defined('ABSPATH')) define('ABSPATH', __DIR__ . '/');
 if (! defined('WP_PLUGIN_DIR')) define('WP_PLUGIN_DIR', __DIR__ . '/fixtures');
 
 require_once __DIR__ . '/fixtures/approved-abilities/approved-abilities.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
 

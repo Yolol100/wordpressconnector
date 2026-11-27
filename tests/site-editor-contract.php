@@ -7,7 +7,7 @@ namespace {
     require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
     require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
     require_once $root . '/plugin/wordpressconnector/includes/Adapters/SiteEditorAdapter.php';
 
     $GLOBALS['site_editor_test'] = array(

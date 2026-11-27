@@ -10,7 +10,7 @@ foreach (array(
     'Support/Fingerprint.php',
     'Support/Input.php',
     'Security/Policy.php',
-    'Runtime/Registry.php',
+    'Runtime/class-registry.php',
     'Runtime/Request.php',
     'Runtime/class-result.php',
     'Runtime/class-diagnostics.php',

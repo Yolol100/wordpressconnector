@@ -7,7 +7,7 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
 require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
 
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
@@ -85,7 +85,8 @@ foreach (array('connector.update.check', 'connector.update.apply') as $action) {
 }
 
 $system = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
-$core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CoreAdapter.php');
+$core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-coreadapter.php');
+$core .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-coreadapteractions.php');
 $filesystem = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
 $systemCompact = preg_replace('/\\s+/', '', $system);
 $coreCompact = preg_replace('/\\s+/', '', $core);
