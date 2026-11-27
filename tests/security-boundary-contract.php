@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
 $root = dirname(__DIR__);
-require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';

@@ -17,7 +17,7 @@ namespace {
     function wp_get_theme() { return new class { public function get(string $key): string { return 'Version' === $key ? '1.0.0' : 'Test Theme'; } }; }
 
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php';
 
     final class FakeManager {

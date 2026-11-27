@@ -143,7 +143,7 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function listPath( array $payload, array $context = array() ): array {
-		$relative = FilesystemPolicy::assertListable( isset( $payload['path'] ) ? (string) $payload['path'] : '.' );
+		$relative = FilesystemPolicy::assert_listable( isset( $payload['path'] ) ? (string) $payload['path'] : '.' );
 		$absolute = $this->resolve_existing( $relative, true );
 		if ( ! is_dir( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a directory.' );
@@ -162,7 +162,7 @@ final class FilesystemAdapter {
 			}
 			$child = '.' === $relative ? $name : $relative . '/' . $name;
 			try {
-				$child          = FilesystemPolicy::assertListable( $child );
+				$child          = FilesystemPolicy::assert_listable( $child );
 				$child_absolute = $this->resolve_existing( $child, true );
 			} catch ( RuntimeException $error ) {
 				continue;
@@ -177,7 +177,7 @@ final class FilesystemAdapter {
 				'type'                => is_dir( $child_absolute ) ? 'directory' : 'file',
 				'bytes'               => is_file( $child_absolute ) ? (int) filesize( $child_absolute ) : null,
 				'modified_gmt'        => $this->modified_gmt( $child_absolute ),
-				'writable_text_scope' => is_file( $child_absolute ) && FilesystemPolicy::isWritableText( $child ),
+				'writable_text_scope' => is_file( $child_absolute ) && FilesystemPolicy::is_writable_text( $child ),
 			);
 		}
 
@@ -200,7 +200,7 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function readText( array $payload, array $context = array() ): array {
-		$relative = FilesystemPolicy::assertReadableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
+		$relative = FilesystemPolicy::assert_readable_text( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
 		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a regular file.' );
@@ -238,8 +238,8 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Filesystem writes are disabled. Enable the dedicated filesystem-writes gate first.' );
 		}
 
-		$relative            = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
-		$active_content      = FilesystemPolicy::affectsBrowserExecution( $relative );
+		$relative            = FilesystemPolicy::assert_writable_text( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
+		$active_content      = FilesystemPolicy::affects_browser_execution( $relative );
 		$required_capability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
 		if ( ! current_user_can( $required_capability ) ) {
 			throw new RuntimeException( 'Current user lacks the required filesystem capability: ' . esc_html( $required_capability ) . '.' );
@@ -352,7 +352,7 @@ final class FilesystemAdapter {
 	 */
 	public function createText( array $payload, array $context ): array {
 		$this->assert_lifecycle_permission( $payload, $context );
-		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
+		$relative = FilesystemPolicy::assert_lifecycle_text( (string) ( $payload['path'] ?? '' ) );
 		if ( ! isset( $payload['content'] ) || ! is_string( $payload['content'] ) ) {
 			throw new RuntimeException( 'filesystem.create_text requires UTF-8 content.' );
 		}
@@ -374,7 +374,7 @@ final class FilesystemAdapter {
 				'bytes'  => strlen( $content ),
 				'sha256' => hash( 'sha256', $content ),
 			),
-			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+			'requires_active_content_acknowledgement' => FilesystemPolicy::affects_browser_execution( $relative ),
 			'_current_fingerprint'                    => Fingerprint::make( $expected_state ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -427,7 +427,7 @@ final class FilesystemAdapter {
 			'payload' => array(
 				'path'                       => $relative,
 				'expected_sha256'            => hash( 'sha256', $readback ),
-				'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+				'acknowledge_active_content' => FilesystemPolicy::affects_browser_execution( $relative ),
 			),
 		);
 		return $result;
@@ -477,7 +477,7 @@ final class FilesystemAdapter {
 	 */
 	public function deleteText( array $payload, array $context ): array {
 		$this->assert_lifecycle_permission( $payload, $context );
-		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
+		$relative = FilesystemPolicy::assert_lifecycle_text( (string) ( $payload['path'] ?? '' ) );
 		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Text deletion requires a regular non-symlink file.' );
@@ -495,7 +495,7 @@ final class FilesystemAdapter {
 				'exists' => false,
 			),
 			'_current_fingerprint'                    => Fingerprint::make( $before_state ),
-			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+			'requires_active_content_acknowledgement' => FilesystemPolicy::affects_browser_execution( $relative ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -523,7 +523,7 @@ final class FilesystemAdapter {
 			'payload' => array(
 				'path'                       => $relative,
 				'content'                    => $before,
-				'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+				'acknowledge_active_content' => FilesystemPolicy::affects_browser_execution( $relative ),
 			),
 		);
 		return $result;
@@ -544,8 +544,8 @@ final class FilesystemAdapter {
 		if ( empty( $context['dry_run'] ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ) ) {
 			throw new RuntimeException( 'Filesystem writes are disabled by server policy.' );
 		}
-		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
-		if ( empty( $context['dry_run'] ) && FilesystemPolicy::affectsBrowserExecution( $relative ) &&
+		$relative = FilesystemPolicy::assert_lifecycle_text( (string) ( $payload['path'] ?? '' ) );
+		if ( empty( $context['dry_run'] ) && FilesystemPolicy::affects_browser_execution( $relative ) &&
 			( $payload['acknowledge_active_content'] ?? null ) !== true ) {
 			throw new RuntimeException( 'Browser-active HTML, JavaScript and CSS assets require acknowledge_active_content=true and normal confirmed change approval.' );
 		}
@@ -671,7 +671,7 @@ final class FilesystemAdapter {
 			'bytes'               => strlen( $content ),
 			'sha256'              => hash( 'sha256', $content ),
 			'modified_gmt'        => $this->modified_gmt( $absolute ),
-			'writable_text_scope' => FilesystemPolicy::isWritableText( $relative ),
+			'writable_text_scope' => FilesystemPolicy::is_writable_text( $relative ),
 		);
 	}
 

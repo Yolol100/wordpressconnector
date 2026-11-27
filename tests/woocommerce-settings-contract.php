@@ -111,7 +111,7 @@ function rest_do_request($request)
     return new FakeWooResponse(200, $store[$group][$id]);
 }
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
-foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Security/Policy.php', 'Runtime/class-registry.php', 'Adapters/WooCommerceSettingsAdapter.php') as $path) require $root . $path;
+foreach (array('Support/Json.php', 'Support/class-fingerprint.php', 'Security/Policy.php', 'Runtime/class-registry.php', 'Adapters/WooCommerceSettingsAdapter.php') as $path) require $root . $path;
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\WooCommerceSettingsAdapter())->register($registry);

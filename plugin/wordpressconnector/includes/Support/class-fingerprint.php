@@ -9,10 +9,17 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Support;
 
+require_once __DIR__ . '/trait-fingerprintmethods.php';
+
 /**
  * Provides Fingerprint utilities shared by connector services.
  */
 final class Fingerprint {
+	use FingerprintMethods {
+		site_token as siteToken;
+		site_token_from_fingerprint as siteTokenFromFingerprint;
+	}
+
 
 	/**
 	 * Create a stable SHA-256 fingerprint of normalized data.
@@ -23,40 +30,6 @@ final class Fingerprint {
 	 */
 	public static function make( $value ): string {
 		return hash( 'sha256', Json::encode( self::normalize( $value ), false ) );
-	}
-
-	/**
-	 * Derive a site-scoped token from the normalized state.
-	 *
-	 * @param mixed $value Site state to bind to a token.
-	 *
-	 * @return string Site-bound token digest.
-	 */
-	public static function siteToken( $value ): string {
-		return self::siteTokenFromFingerprint( self::make( $value ) );
-	}
-
-	/**
-	 * Bind an existing fingerprint to the site's authentication secret.
-	 *
-	 * @param string $fingerprint SHA-256 fingerprint or value to hash.
-	 *
-	 * @return string Site-scoped HMAC digest.
-	 */
-	public static function siteTokenFromFingerprint( string $fingerprint ): string {
-		if ( ! preg_match( '/^[a-f0-9]{64}$/', $fingerprint ) ) {
-			$fingerprint = self::make( $fingerprint );
-		}
-
-		if ( function_exists( 'wp_salt' ) ) {
-			$secret = (string) wp_salt( 'auth' );
-		} elseif ( defined( 'AUTH_SALT' ) ) {
-			$secret = (string) AUTH_SALT;
-		} else {
-			$secret = 'wordpressconnector-test-state-token';
-		}
-
-		return hash_hmac( 'sha256', $fingerprint, $secret );
 	}
 
 	/**

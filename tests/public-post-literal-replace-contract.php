@@ -30,7 +30,7 @@ function wp_update_post($fields, $wp_error = false)
 
 $root = dirname(__DIR__);
 foreach (array(
-    'Support/Json.php','Support/Fingerprint.php','Support/Input.php','Security/Policy.php',
+    'Support/Json.php','Support/class-fingerprint.php','Support/Input.php','Security/Policy.php',
     'Runtime/class-registry.php','Adapters/class-coreadapter.php',
 ) as $path) require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 use Webactueel\WordPressConnector\Runtime\Registry;

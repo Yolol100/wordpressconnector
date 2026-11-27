@@ -153,8 +153,8 @@ function plugins_api($action, $args = array()) {
 class WP_Error { public function get_error_message(): string { return 'qa_private_provider_detail_758e'; } }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 
-foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php', 'Runtime/class-diagnostics.php', 'Security/Policy.php',
-    'Security/FilesystemPolicy.php', 'Adapters/FilesystemAdapter.php',
+foreach (array('Support/Json.php', 'Support/class-fingerprint.php', 'Support/Input.php', 'Runtime/class-diagnostics.php', 'Security/Policy.php',
+    'Security/class-filesystempolicy.php', 'Adapters/FilesystemAdapter.php',
     'Adapters/SystemAdapter.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
 }

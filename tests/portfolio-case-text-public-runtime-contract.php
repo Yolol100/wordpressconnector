@@ -63,9 +63,9 @@ $GLOBALS['wpdb'] = new PortfolioCaseOptionDb();
 
 $root=dirname(__DIR__);
 require_once $root.'/plugin/wordpressconnector/includes/Support/Json.php';
-require_once $root.'/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once $root.'/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once $root.'/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once $root.'/plugin/wordpressconnector/includes/Runtime/Request.php';
+require_once $root.'/plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/class-result.php';
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
 require_once $root.'/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';

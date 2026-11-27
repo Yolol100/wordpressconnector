@@ -82,7 +82,7 @@ namespace {
 
     $root = dirname(__DIR__);
     require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
     require_once $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
 

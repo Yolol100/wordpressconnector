@@ -59,7 +59,7 @@ function wc_get_product($id)
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector';
 require_once $root . '/includes/Support/Json.php';
-require_once $root . '/includes/Support/Fingerprint.php';
+require_once $root . '/includes/Support/class-fingerprint.php';
 require_once $root . '/includes/Support/Input.php';
 require_once $root . '/includes/Adapters/WooCommerceAdapter.php';
 $adapter = new \Webactueel\WordPressConnector\Adapters\WooCommerceAdapter();

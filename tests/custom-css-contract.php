@@ -69,7 +69,7 @@ if (strpos($bootstrap, "includes/Adapters/CustomCssAdapter.php") === false) {
 // Runtime coverage of the actual adapter: a corrupt readback is not proof of
 // restoration. A failed compensation must explicitly request manual recovery.
 require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once $adapterPath;
 class WP_Post {
     public $ID;

@@ -185,7 +185,7 @@ namespace {
 
     define('WPCONNECTOR_VERSION', '1.16.0-test');
 
-    require __DIR__ . '/../plugin/wordpressconnector/includes/Security/FilesystemPolicy.php';
+    require __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-filesystempolicy.php';
     require __DIR__ . '/../plugin/wordpressconnector/includes/MCP/Controller.php';
 
     use Webactueel\WordPressConnector\MCP\Controller;

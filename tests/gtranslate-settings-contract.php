@@ -32,7 +32,7 @@ function update_option($name,$value){
 function current_user_can($cap):bool{return in_array($cap,$GLOBALS['fake_gtranslate_caps'],true);}
 function sanitize_text_field($value):string{return trim(strip_tags((string)$value));}
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
-foreach(array('Support/Json.php','Support/Fingerprint.php','Security/Policy.php',
+foreach(array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php',
     'Runtime/class-registry.php','Adapters/GTranslateSettingsAdapter.php') as $file)require_once $root.$file;
 $reg=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\GTranslateSettingsAdapter())->register($reg);

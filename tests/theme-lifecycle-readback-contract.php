@@ -134,7 +134,7 @@ namespace {
     }
 
     require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
     require_once $root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
     $adapter = new \Webactueel\WordPressConnector\Adapters\SystemAdapter();
 

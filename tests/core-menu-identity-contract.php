@@ -101,7 +101,7 @@ function wp_update_nav_menu_item($menu_id, $item_id, $args) {
 }
 
 $root = dirname(__DIR__);
-foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php',
+foreach (array('Support/Json.php', 'Support/class-fingerprint.php', 'Support/Input.php',
     'Security/Policy.php', 'Adapters/class-coreadapter.php') as $path) {
     require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 }

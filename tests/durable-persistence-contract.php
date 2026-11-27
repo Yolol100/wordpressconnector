@@ -110,9 +110,9 @@ $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes';
 foreach (array(
     '/Security/Policy.php',
     '/Support/Json.php',
-    '/Support/Fingerprint.php',
+    '/Support/class-fingerprint.php',
     '/Runtime/class-registry.php',
-    '/Runtime/Request.php',
+    '/Runtime/class-request.php',
     '/Runtime/class-result.php',
     '/Runtime/SnapshotStore.php',
     '/Runtime/ProcessedStore.php',

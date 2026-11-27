@@ -28,7 +28,7 @@ $required = array(
     "'public_repository_mode'=>Policy::publicRepositoryContext()",
     'get_json_params()',
     'strlen($body)>self::MAX_REQUEST_BYTES',
-    'Request::fromArray($data)',
+    'Request::from_array($data)',
     "'transport'=>'rest'",
     "'zero_config'=>true",
 );

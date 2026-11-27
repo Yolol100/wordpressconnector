@@ -65,7 +65,7 @@ function wp_get_ability($name) {
 }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
-foreach (array('Support/Json.php','Support/Fingerprint.php','Security/Policy.php',
+foreach (array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php',
     'Runtime/class-registry.php','Adapters/YoastNativeAbilitiesAdapter.php') as $file) {
     require_once $root . $file;
 }

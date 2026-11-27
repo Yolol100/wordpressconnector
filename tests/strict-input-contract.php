@@ -6,7 +6,7 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
 $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/Request.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once $root . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
 require_once $root . '/plugin/wordpressconnector/includes/REST/Controller.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
@@ -131,7 +131,7 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
 
 $adapterSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php');
 $assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
-$requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Request.php');
+$requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-request.php');
 $controllerSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
 foreach (array('adapter' => $adapterSource, 'asset store' => $assetSource, 'request' => $requestSource, 'controller' => $controllerSource) as $name => $source) {
     if (false === $source || strpos($source, '\\z') === false) {

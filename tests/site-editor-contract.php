@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace {
     $root = dirname(__DIR__);
     require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
     require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
     require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Adapters/SiteEditorAdapter.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-siteeditoradapter.php';
 
     $GLOBALS['site_editor_test'] = array(
         'admin' => true, 'post' => true, 'rest_calls' => 0,

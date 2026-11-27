@@ -73,7 +73,7 @@ function wp_delete_user($id, $reassign = null): bool {
 function wp_set_password($password, $id): void { ++$GLOBALS['user_resets']; }
 
 $root = dirname(__DIR__);
-foreach (array('Support/Json.php', 'Support/Fingerprint.php',
+foreach (array('Support/Json.php', 'Support/class-fingerprint.php',
     'Support/Input.php', 'Adapters/SystemAdapter.php') as $file) {
     require_once $root . '/plugin/wordpressconnector/includes/' . $file;
 }

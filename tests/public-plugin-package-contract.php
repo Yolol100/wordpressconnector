@@ -12,7 +12,7 @@ $policySource = (string) file_get_contents($root . '/plugin/wordpressconnector/i
 
 require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once $root . '/plugin/wordpressconnector/includes/Runtime/Request.php';
+require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Security\Policy;

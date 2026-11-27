@@ -6,7 +6,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 
 define('AUTH_SALT', 'standalone-fingerprint-contract-salt');
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 
 $assertSame = static function ($expected, $actual, string $message): void {
     if ($expected !== $actual) {
