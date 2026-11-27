@@ -803,6 +803,12 @@ if ('code_snippets.patch' === $action) {
 
     $snippetId = isset($payload['snippet_id']) ? $payload['snippet_id'] : null;
     $marker = isset($payload['match_code_contains']) ? $payload['match_code_contains'] : null;
+    if (null !== $snippetId && (!is_int($snippetId) || $snippetId < 0)) {
+        $errors[] = 'Code Snippets snippet_id must be a non-negative integer.';
+    }
+    if (null !== $marker && !is_string($marker)) {
+        $errors[] = 'Code Snippets marker must be a string.';
+    }
     $hasId = is_int($snippetId) && $snippetId > 0;
     $hasMarker = is_string($marker) && '' !== $marker;
 

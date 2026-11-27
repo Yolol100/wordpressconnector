@@ -8,6 +8,7 @@ $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 foreach (array(
     'Support/Json.php',
     'Support/Fingerprint.php',
+    'Support/Input.php',
     'Security/Policy.php',
     'Runtime/Registry.php',
     'Runtime/Request.php',
@@ -165,6 +166,16 @@ foreach (array(array('find' => 'x'), array('find' => 'x', 'replace' => null), ar
     $rejectWithoutReflection(static function () use ($snippetGuard, $runner, $replacement): void {
         $snippetGuard->invoke($runner, array('snippet_id' => 1, 'replacements' => array($replacement)));
     }, 'requires an explicit string replace');
+}
+foreach (array(true, false, array(1), array(), 1.9, '1junk', '1e0', '+1', ' 1', -1, str_repeat('9', 50)) as $badId) {
+    $rejectWithoutReflection(static function () use ($snippetGuard, $runner, $badId): void {
+        $snippetGuard->invoke($runner, array('snippet_id' => $badId, 'replacements' => array(array('find' => 'x', 'replace' => 'y'))));
+    }, 'Identifier must be a positive integer');
+}
+foreach (array(false, array('x'), 1) as $badMarker) {
+    $rejectWithoutReflection(static function () use ($snippetGuard, $runner, $badMarker): void {
+        $snippetGuard->invoke($runner, array('snippet_id' => 1, 'match_code_contains' => $badMarker, 'replacements' => array(array('find' => 'x', 'replace' => 'y'))));
+    }, 'marker must be a string');
 }
 $css = new \Webactueel\WordPressConnector\Adapters\CustomCssAdapter();
 $portfolio = new \Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter();

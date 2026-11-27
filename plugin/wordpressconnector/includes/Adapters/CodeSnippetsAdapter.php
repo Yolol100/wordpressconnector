@@ -12,6 +12,7 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 /**
  * Registers and handles Code Snippets connector actions.
@@ -450,11 +451,11 @@ final class CodeSnippetsAdapter {
 	public function restoreCode( array $payload, array $context ): array {
 		$this->assert_available();
 
-		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
+		$snippet_id = Input::positive_id( $payload['snippet_id'] ?? null );
 		$code       = isset( $payload['code'] ) && is_string( $payload['code'] ) ? $payload['code'] : null;
-		$expected   = isset( $payload['expected_code_fingerprint'] ) ? strtolower( (string) $payload['expected_code_fingerprint'] ) : '';
+		$expected   = isset( $payload['expected_code_fingerprint'] ) && is_string( $payload['expected_code_fingerprint'] ) ? strtolower( $payload['expected_code_fingerprint'] ) : '';
 
-		if ( $snippet_id <= 0 || null === $code || strlen( $code ) > self::MAX_CODE_BYTES ) {
+		if ( null === $code || strlen( $code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Code Snippets rollback payload is invalid.' );
 		}
 		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) ) {
@@ -524,10 +525,11 @@ final class CodeSnippetsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function find_target( array $payload ) {
-		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$marker     = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
-			? $payload['match_code_contains']
-			: '';
+		$snippet_id = isset( $payload['snippet_id'] ) ? Input::non_negative_id( $payload['snippet_id'] ) : 0;
+		if ( isset( $payload['match_code_contains'] ) && ! is_string( $payload['match_code_contains'] ) ) {
+			throw new RuntimeException( 'Code Snippets marker must be a string.' );
+		}
+		$marker = $payload['match_code_contains'] ?? '';
 
 		if ( ( $snippet_id > 0 && '' !== $marker ) || ( $snippet_id <= 0 && '' === $marker ) ) {
 			throw new RuntimeException( 'Code Snippets patch requires exactly one of snippet_id or match_code_contains.' );
