@@ -34,3 +34,12 @@ Filesystem adapters. The original include paths remain as minimal require-once
 forwarders so existing direct PHP includes continue to resolve the same classes.
 The complete audit still scans these forwarders and reports their legacy casing.
 Do not remove them merely to reduce the report count.
+
+### Compatibility-first filename migration candidate
+
+The original implementation bytes and all 22 historical direct include paths
+are retained. The canonical files contain the implementation; legacy files
+are minimal require-once forwarders. The legacy casing remains visible in the
+full WPCS report. Existing suppression directives remain unchanged in content
+and scope; their path-bound migration still requires the protected governance
+review. No scan exclusions or exceptions are introduced.

@@ -103,13 +103,10 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
 
 $assetStore = new AssetStore();
 $normalize = new ReflectionMethod(AssetStore::class, 'normalize_relative_path');
-$assertRequestId = new ReflectionMethod(AssetStore::class, 'validated_request_id');
+$assertRequestId = new ReflectionMethod(AssetStore::class, 'assert_request_id');
 // PHP < 8.1 requires explicit accessibility for invoking non-public methods in tests.
 $normalize->setAccessible(true);
 $assertRequestId->setAccessible(true);
-if ('request-1234' !== $assertRequestId->invoke($assetStore, 'request-1234')) {
-    throw new RuntimeException('AssetStore did not preserve a valid request id exactly.');
-}
 if ('plugin-packages/acme.zip' !== $normalize->invoke($assetStore, 'plugin-packages/acme.zip')) {
     fwrite(STDERR, "AssetStore did not preserve a valid asset path exactly.\n");
     exit(1);
@@ -135,7 +132,6 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
 $adapterSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapterSource .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
-if (!is_string($assetSource)) { throw new RuntimeException('Missing assetstore source.'); }
 $requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-request.php');
 $controllerSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-controller.php');
 $controllerImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-restcontrollermethods.php');

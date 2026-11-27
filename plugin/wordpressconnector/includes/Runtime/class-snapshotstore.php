@@ -51,6 +51,26 @@ final class SnapshotStore {
 	}
 
 	/**
+	 * Retrieve record for the SnapshotStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
+	public function getRecord( string $requestId ): ?array {
+		$value = get_option( self::key( $requestId ), null );
+		if ( ! is_array( $value ) || ! isset( $value['rollback'] ) || ! is_array( $value['rollback'] ) ) {
+			return null;
+		}
+		return array(
+			'created_at'             => isset( $value['created_at'] ) ? (int) $value['created_at'] : 0,
+			'rollback'               => $value['rollback'],
+			'source_action'          => isset( $value['source_action'] ) ? (string) $value['source_action'] : '',
+			'public_repository_mode' => ! empty( $value['public_repository_mode'] ),
+		);
+	}
+
+	/**
 	 * Process the delete operation in the SnapshotStore component.
 	 *
 	 * @param string $requestId Input for the operation.
@@ -117,25 +137,5 @@ final class SnapshotStore {
 	 */
 	private static function key( string $request_id ): string {
 		return self::PREFIX . hash( 'sha256', $request_id );
-	}
-
-	/**
-	 * Retrieve record for the SnapshotStore component.
-	 *
-	 * @param string $requestId Input for the operation.
-	 *
-	 * @return array|null Operation result.
-	 */
-	public function getRecord( string $requestId ): ?array {
-		$value = get_option( self::key( $requestId ), null );
-		if ( ! is_array( $value ) || ! isset( $value['rollback'] ) || ! is_array( $value['rollback'] ) ) {
-			return null;
-		}
-		return array(
-			'created_at'             => isset( $value['created_at'] ) ? (int) $value['created_at'] : 0,
-			'rollback'               => $value['rollback'],
-			'source_action'          => isset( $value['source_action'] ) ? (string) $value['source_action'] : '',
-			'public_repository_mode' => ! empty( $value['public_repository_mode'] ),
-		);
 	}
 }

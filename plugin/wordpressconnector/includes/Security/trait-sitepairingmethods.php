@@ -58,18 +58,4 @@ trait SitePairingMethods {
 		}
 		self::enableForAdministrator( $user_id );
 	}
-
-	/**
-	 * Validate the exact administrator before writing site-bound approval.
-	 *
-	 * @param int $administrator_id Administrator to validate.
-	 * @return int Validated administrator id.
-	 * @throws RuntimeException If the administrator cannot approve pairing.
-	 */
-	private static function validated_administrator_id( int $administrator_id ): int {
-		if ( $administrator_id <= 0 || ! user_can( $administrator_id, 'manage_options' ) ) {
-			throw new RuntimeException( 'Only a current site administrator may approve GitHub OIDC.' );
-		}
-		return $administrator_id;
-	}
 }

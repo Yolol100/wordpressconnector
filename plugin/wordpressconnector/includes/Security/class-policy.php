@@ -115,68 +115,6 @@ final class Policy {
 	private static bool $request_confirmed = false;
 
 	/**
-	 * Process the redact operation in the Policy component.
-	 *
-	 * @param mixed $value Input for the operation.
-	 *
-	 * @return mixed Operation result.
-	 */
-	public static function redact( $value ) {
-		if ( ! is_array( $value ) ) {
-			return $value; }
-		$redacted = array();
-		foreach ( $value as $key => $item ) {
-			$name = (string) $key;
-			if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', $name ) ) {
-				$redacted[ $key ] = '[redacted]';
-				continue;
-			}
-			$redacted[ $key ] = self::redact( $item );
-		}
-		return $redacted;
-	}
-
-	/**
-	 * Process the flag operation in the Policy component.
-	 *
-	 * @param string $name Input for the operation.
-	 *
-	 * @return bool Operation result.
-	 */
-	public static function flag( string $name ): bool {
-		if ( defined( $name ) ) {
-			return self::truthy( constant( $name ) ); }
-		$environment = getenv( $name );
-		if ( false !== $environment && '' !== (string) $environment ) {
-			return self::truthy( $environment ); }
-		if ( in_array( $name, self::AUTO_ENABLED_FLAGS, true ) ) {
-			return true; }
-		return false;
-	}
-
-	/**
-	 * Process the truthy operation in the Policy component.
-	 *
-	 * @param mixed $value Input for the operation.
-	 *
-	 * @return bool Operation result.
-	 */
-	private static function truthy( $value ): bool {
-		if ( true === $value || 1 === $value ) {
-			return true; }
-		return in_array( strtolower( (string) $value ), array( '1', 'true', 'yes', 'on' ), true );
-	}
-
-	/**
-	 * Process the sensitive export allowed operation in the Policy component.
-	 *
-	 * @return bool Operation result.
-	 */
-	private static function sensitive_export_allowed(): bool {
-		return self::$request_confirmed && ! self::publicRepositoryContext() && self::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' );
-	}
-
-	/**
 	 * Ensure action allowed for the Policy component.
 	 *
 	 * @param array $descriptor Input for the operation.
@@ -268,7 +206,12 @@ final class Policy {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public static function assertReadablePostType( string $postType ): void {
-		self::assert_readable_post_type_value( $postType );
+		if ( in_array( $postType, self::SENSITIVE_POST_TYPES, true ) && ! self::sensitive_export_allowed() ) {
+			throw new RuntimeException( 'Sensitive post type export requires confirm=true on a non-public transport.' );
+		}
+		if ( (bool) preg_match( '/(medical|patient|intake|consult|questionnaire|prescription|submission|order_request)/i', $postType ) && ! self::sensitive_export_allowed() ) {
+			throw new RuntimeException( 'Potentially sensitive post type export requires confirm=true on a non-public transport.' );
+		}
 	}
 
 	/**
@@ -314,11 +257,72 @@ final class Policy {
 	}
 
 	/**
+	 * Process the redact operation in the Policy component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
+	public static function redact( $value ) {
+		if ( ! is_array( $value ) ) {
+			return $value; }
+		$redacted = array();
+		foreach ( $value as $key => $item ) {
+			$name = (string) $key;
+			if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', $name ) ) {
+				$redacted[ $key ] = '[redacted]';
+				continue;
+			}
+			$redacted[ $key ] = self::redact( $item );
+		}
+		return $redacted;
+	}
+
+	/**
 	 * Process the set public repository context operation in the Policy component.
 	 *
 	 * @param bool $isPublic Input for the operation.
 	 */
 	public static function setPublicRepositoryContext( bool $isPublic ): void {
-		self::$runtime_public_repository = $isPublic;
+		self::$runtime_public_repository = $isPublic; }
+
+	/**
+	 * Process the flag operation in the Policy component.
+	 *
+	 * @param string $name Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
+	public static function flag( string $name ): bool {
+		if ( defined( $name ) ) {
+			return self::truthy( constant( $name ) ); }
+		$environment = getenv( $name );
+		if ( false !== $environment && '' !== (string) $environment ) {
+			return self::truthy( $environment ); }
+		if ( in_array( $name, self::AUTO_ENABLED_FLAGS, true ) ) {
+			return true; }
+		return false;
+	}
+
+	/**
+	 * Process the truthy operation in the Policy component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
+	private static function truthy( $value ): bool {
+		if ( true === $value || 1 === $value ) {
+			return true; }
+		return in_array( strtolower( (string) $value ), array( '1', 'true', 'yes', 'on' ), true );
+	}
+
+	/**
+	 * Process the sensitive export allowed operation in the Policy component.
+	 *
+	 * @return bool Operation result.
+	 */
+	private static function sensitive_export_allowed(): bool {
+		return self::$request_confirmed && ! self::publicRepositoryContext() && self::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' );
 	}
 }

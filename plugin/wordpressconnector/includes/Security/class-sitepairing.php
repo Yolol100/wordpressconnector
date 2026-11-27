@@ -47,6 +47,31 @@ final class SitePairing {
 	}
 
 	/**
+	 * Process the enable for administrator operation in the SitePairing component.
+	 *
+	 * @param int $administratorId Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	public static function enableForAdministrator( int $administratorId ): void {
+		if ( $administratorId <= 0 || ! user_can( $administratorId, 'manage_options' ) ) {
+			throw new RuntimeException( 'Only a current site administrator may approve GitHub OIDC.' );
+		}
+		$state = array(
+			'enabled'          => 1,
+			'audience_sha256'  => self::fingerprint(),
+			'administrator_id' => $administratorId,
+		);
+		update_option( self::OPTION, $state, false );
+		// A WordPress option update can be unchanged, fail, or be filtered.
+		// Only the exact stored approval and current administrator rights count.
+		if ( get_option( self::OPTION, null ) !== $state
+			|| self::pairedAdministratorId() !== $state['administrator_id'] ) {
+			throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
+		}
+	}
+
+	/**
 	 * Revoke the stored GitHub OIDC pairing; never report a failed delete as success.
 	 *
 	 * @throws \RuntimeException If the approval is still stored.
@@ -56,29 +81,6 @@ final class SitePairing {
 		// A failed option deletion must never report a successful revocation.
 		if ( null !== get_option( self::OPTION, null ) ) {
 			throw new RuntimeException( 'Could not revoke site-specific GitHub OIDC approval.' );
-		}
-	}
-
-	/**
-	 * Process the enable for administrator operation in the SitePairing component.
-	 *
-	 * @param int $administratorId Input for the operation.
-	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 */
-	public static function enableForAdministrator( int $administratorId ): void {
-		$administrator_id = self::validated_administrator_id( $administratorId );
-		$state            = array(
-			'enabled'          => 1,
-			'audience_sha256'  => self::fingerprint(),
-			'administrator_id' => $administrator_id,
-		);
-		update_option( self::OPTION, $state, false );
-		// A WordPress option update can be unchanged, fail, or be filtered.
-		// Only the exact stored approval and current administrator rights count.
-		if ( get_option( self::OPTION, null ) !== $state
-			|| self::pairedAdministratorId() !== $state['administrator_id'] ) {
-			throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
 		}
 	}
 }

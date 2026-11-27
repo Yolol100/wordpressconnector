@@ -152,6 +152,8 @@ run_php tests/mutation-lock-contract.php
 run_php tests/durable-persistence-contract.php
 run_php tests/audit-hardening-contract.php
 run_php tests/single-plugin-contract.php
+run_php tests/legacy-includes-contract.php legacy
+run_php tests/legacy-includes-contract.php canonical
 if command -v pwsh >/dev/null 2>&1; then
   pwsh -NoProfile -NonInteractive -File tests/local-docker-runner-preflight.ps1
 fi
