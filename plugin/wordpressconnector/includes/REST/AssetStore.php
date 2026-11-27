@@ -41,7 +41,7 @@ final class AssetStore {
 		}
 		$error = $file['error'];
 		if ( UPLOAD_ERR_OK !== $error ) {
-			throw new RuntimeException( 'Asset upload failed with PHP upload error ' . $error . '.' );
+			throw new RuntimeException( 'Asset upload failed with PHP upload error ' . intval( $error ) . '.' );
 		}
 
 		$tmp_name = $file['tmp_name'];

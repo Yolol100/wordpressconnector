@@ -1175,7 +1175,7 @@ final class Controller {
 	 */
 	private function assert_no_arguments( array $arguments, string $tool_name ): void {
 		if ( array() !== $arguments ) {
-			throw new RuntimeException( $tool_name . ' does not accept arguments.' );
+			throw new RuntimeException( esc_html( $tool_name ) . ' does not accept arguments.' );
 		}
 	}
 

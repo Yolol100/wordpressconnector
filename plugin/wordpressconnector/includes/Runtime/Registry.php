@@ -38,13 +38,13 @@ final class Registry {
 		}
 
 		if ( isset( $this->actions[ $name ] ) ) {
-			throw new RuntimeException( 'Duplicate action registration: ' . $name );
+			throw new RuntimeException( 'Duplicate action registration.' );
 		}
 
 		$capability = null;
 		if ( array_key_exists( 'capability', $metadata ) ) {
 			if ( ! is_string( $metadata['capability'] ) || ! preg_match( '/^[a-z][a-z0-9_]*\z/', $metadata['capability'] ) ) {
-				throw new RuntimeException( 'Invalid WordPress capability for action: ' . $name );
+				throw new RuntimeException( 'Invalid WordPress capability for action.' );
 			}
 			$capability = $metadata['capability'];
 		}
@@ -95,7 +95,7 @@ final class Registry {
 		Policy::assertPublicActionTarget( $name, $payload );
 		$result = call_user_func( $descriptor['handler'], $payload, $context );
 		if ( ! is_array( $result ) ) {
-			throw new RuntimeException( 'Connector action did not return an array: ' . $name );
+			throw new RuntimeException( 'Connector action did not return an array.' );
 		}
 
 		return $result;
