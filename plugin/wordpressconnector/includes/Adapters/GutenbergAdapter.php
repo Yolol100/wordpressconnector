@@ -109,8 +109,8 @@ final class GutenbergAdapter {
 			),
 			true
 		);
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || (int) $post->ID !== $updated ) {
+			throw new RuntimeException( 'WordPress Gutenberg document update failed.' );
 		}
 
 		$result['_rollback'] = array(
@@ -203,8 +203,8 @@ final class GutenbergAdapter {
 			),
 			true
 		);
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || (int) $post->ID !== $updated ) {
+			throw new RuntimeException( 'WordPress Gutenberg document update failed.' );
 		}
 
 		$result['_rollback'] = array(
