@@ -217,10 +217,20 @@ trait PolicyMethods {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public static function assert_readable_post_type( string $postType ): void {
-		if ( in_array( $postType, self::SENSITIVE_POST_TYPES, true ) && ! self::sensitive_export_allowed() ) {
+		self::assert_readable_post_type_value( $postType );
+	}
+
+	/**
+	 * Enforce the read policy against the exact post type.
+	 *
+	 * @param string $post_type Post type to check.
+	 * @throws RuntimeException If policy disallows the post type.
+	 */
+	private static function assert_readable_post_type_value( string $post_type ): void {
+		if ( in_array( $post_type, self::SENSITIVE_POST_TYPES, true ) && ! self::sensitive_export_allowed() ) {
 			throw new RuntimeException( 'Sensitive post type export requires confirm=true on a non-public transport.' );
 		}
-		if ( (bool) preg_match( '/(medical|patient|intake|consult|questionnaire|prescription|submission|order_request)/i', $postType ) && ! self::sensitive_export_allowed() ) {
+		if ( (bool) preg_match( '/(medical|patient|intake|consult|questionnaire|prescription|submission|order_request)/i', $post_type ) && ! self::sensitive_export_allowed() ) {
 			throw new RuntimeException( 'Potentially sensitive post type export requires confirm=true on a non-public transport.' );
 		}
 	}

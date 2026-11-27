@@ -6,6 +6,7 @@ $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
+$assetStore .= file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/class-plugin.php');
 $docs = file_get_contents($root . '/docs/PLUGIN-PACKAGE-REST.md');
@@ -138,6 +139,7 @@ if (strpos($docs, 'theme.install_package') === false) {
     exit(1);
 }
 $publicPolicy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$publicPolicy .= file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
 $publicRunner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
 $publicValidator = file_get_contents($root . '/scripts/validate-public-request.php');
 foreach (array($publicPolicy, $publicRunner, $publicValidator) as $boundary) {

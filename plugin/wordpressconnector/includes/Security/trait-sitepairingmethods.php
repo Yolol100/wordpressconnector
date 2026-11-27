@@ -67,13 +67,11 @@ trait SitePairingMethods {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public static function enable_for_administrator( int $administratorId ): void {
-		if ( $administratorId <= 0 || ! user_can( $administratorId, 'manage_options' ) ) {
-			throw new RuntimeException( 'Only a current site administrator may approve GitHub OIDC.' );
-		}
-		$state = array(
+		$administrator_id = self::validated_administrator_id( $administratorId );
+		$state            = array(
 			'enabled'          => 1,
 			'audience_sha256'  => self::fingerprint(),
-			'administrator_id' => $administratorId,
+			'administrator_id' => $administrator_id,
 		);
 		update_option( self::OPTION, $state, false );
 		// A WordPress option update can be unchanged, fail, or be filtered.
@@ -82,5 +80,19 @@ trait SitePairingMethods {
 			|| self::pairedAdministratorId() !== $state['administrator_id'] ) {
 			throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
 		}
+	}
+
+	/**
+	 * Validate the exact administrator before writing site-bound approval.
+	 *
+	 * @param int $administrator_id Administrator to validate.
+	 * @return int Validated administrator id.
+	 * @throws RuntimeException If the administrator cannot approve pairing.
+	 */
+	private static function validated_administrator_id( int $administrator_id ): int {
+		if ( $administrator_id <= 0 || ! user_can( $administrator_id, 'manage_options' ) ) {
+			throw new RuntimeException( 'Only a current site administrator may approve GitHub OIDC.' );
+		}
+		return $administrator_id;
 	}
 }

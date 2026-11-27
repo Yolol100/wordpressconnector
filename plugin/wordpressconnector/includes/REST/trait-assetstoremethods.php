@@ -27,9 +27,9 @@ trait AssetStoreMethods {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function root_for_request( string $requestId, bool $create = false ): string {
-		$this->assert_request_id( $requestId );
-		$base      = $this->base_root( $create );
-		$directory = $base . DIRECTORY_SEPARATOR . hash( 'sha256', home_url( '/' ) . '|' . $requestId );
+		$request_id = $this->validated_request_id( $requestId );
+		$base       = $this->base_root( $create );
+		$directory  = $base . DIRECTORY_SEPARATOR . hash( 'sha256', home_url( '/' ) . '|' . $request_id );
 
 		if ( is_link( $directory ) ) {
 			throw new RuntimeException( 'Refusing symbolic link request asset root.' );

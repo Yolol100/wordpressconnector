@@ -44,8 +44,8 @@ final class AssetStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function put( string $requestId, string $relativePath, array $file ): array {
-		$this->assert_request_id( $requestId );
-		$relativePath = $this->normalize_relative_path( $relativePath );
+		$request_id    = $this->validated_request_id( $requestId );
+		$relative_path = $this->normalize_relative_path( $relativePath );
 
 		// PHP upload fields must remain scalar. Never cast nested input into a valid status.
 		if ( ! isset( $file['error'], $file['tmp_name'] ) || ! is_int( $file['error'] ) || ! is_string( $file['tmp_name'] ) ) {
@@ -66,15 +66,15 @@ final class AssetStore {
 		}
 		$size = (int) $actual_size;
 
-		$file_type = $this->allowed_file_type( $relativePath );
+		$file_type = $this->allowed_file_type( $relative_path );
 
-		$root  = $this->rootForRequest( $requestId, true );
+		$root  = $this->root_for_request( $request_id, true );
 		$usage = $this->usage( $root );
 		if ( $usage['files'] >= self::MAX_FILES || ( $usage['bytes'] + $size ) > self::MAX_TOTAL_BYTES ) {
 			throw new RuntimeException( 'Request asset limit exceeded (max 10 files / 25 MiB total).' );
 		}
 
-		$destination = $root . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $relativePath );
+		$destination = $root . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $relative_path );
 		$parent      = dirname( $destination );
 		if ( ! is_dir( $parent ) && ! wp_mkdir_p( $parent ) ) {
 			throw new RuntimeException( 'Could not create request asset directory.' );
@@ -93,7 +93,7 @@ final class AssetStore {
 		}
 
 		if ( file_exists( $destination ) || is_link( $destination ) ) {
-			throw new RuntimeException( 'Duplicate request asset path: ' . $relativePath );
+			throw new RuntimeException( 'Duplicate request asset path: ' . $relative_path );
 		}
 		if ( ! move_uploaded_file( $tmp_name, $destination ) ) {
 			throw new RuntimeException( 'Could not store uploaded request asset.' );
@@ -138,8 +138,8 @@ final class AssetStore {
 		}
 
 		return array(
-			'request_id' => $requestId,
-			'asset_path' => $relativePath,
+			'request_id' => $request_id,
+			'asset_path' => $relative_path,
 			'bytes'      => $size,
 			'mime_type'  => (string) $file_type['type'],
 		);
@@ -337,16 +337,18 @@ final class AssetStore {
 	}
 
 	/**
-	 * Ensure request id for the AssetStore component.
+	 * Validate and return the exact request id for storage.
 	 *
 	 * @param string $request_id Input for the operation.
+	 * @return string Validated request id.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assert_request_id( string $request_id ): void {
+	private function validated_request_id( string $request_id ): string {
 		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $request_id ) ) {
 			throw new RuntimeException( 'request_id must be 8-100 safe characters.' );
 		}
+		return $request_id;
 	}
 
 	/**

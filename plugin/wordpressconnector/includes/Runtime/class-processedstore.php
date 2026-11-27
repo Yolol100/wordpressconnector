@@ -66,7 +66,7 @@ final class ProcessedStore {
 	 */
 	public function put( string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null ): void {
 		$key      = self::key( $requestId );
-		$previous = $this->get( $requestId );
+		$previous = $this->get_by_key( $key );
 		if ( ! is_array( $previous )
 		|| ( $previous['state'] ?? null ) !== 'pending'
 		|| ! is_string( $previous['fingerprint'] ?? null )
@@ -99,7 +99,17 @@ final class ProcessedStore {
 	 * @return array|null Operation result.
 	 */
 	public function get( string $requestId ): ?array {
-		$value = get_option( self::key( $requestId ), null );
+		return $this->get_by_key( self::key( $requestId ) );
+	}
+
+	/**
+	 * Read a record by its already derived internal option key.
+	 *
+	 * @param string $key Derived option key.
+	 * @return array|null Stored record, if present.
+	 */
+	private function get_by_key( string $key ): ?array {
+		$value = get_option( $key, null );
 		return is_array( $value ) ? $value : null;
 	}
 

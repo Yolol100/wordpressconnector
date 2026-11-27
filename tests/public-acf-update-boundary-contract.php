@@ -180,6 +180,7 @@ foreach ($cases as $label => $request) {
 
 $source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
 $snapshotSource = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php');
+$snapshotSource .= (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/trait-snapshotstoremethods.php');
 foreach (array('assert_public_acf_update_payload', 'assert_public_rollback_record', 'publicRepositoryContext') as $needle) {
     if (false === strpos($source, $needle)) {
         fwrite(STDERR, "Runner is missing guarded public ACF/rollback boundary token: {$needle}\n");

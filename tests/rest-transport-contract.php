@@ -8,12 +8,15 @@ $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes
 if ($implementation === false || !is_string($controller)) { throw new RuntimeException('Missing canonical implementation: REST/trait-restcontrollermethods.php'); }
 $controller .= $implementation;
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
+$assetStore .= file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
 $settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
 $settingsImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
 if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
 $settings .= $settingsImplementation;
 $policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$policy .= file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
 $oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-githuboidc.php');
+$oidc .= file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-githuboidcmethods.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 foreach (array('controller'=>$controller,'asset store'=>$assetStore,'settings'=>$settings,'policy'=>$policy,'oidc'=>$oidc,'bootstrap'=>$bootstrap) as $name=>$contents) {
     if (false === $contents) { fwrite(STDERR,"Unable to read REST {$name}.\n"); exit(1); }
@@ -67,7 +70,7 @@ foreach (array("private const ISSUER = 'https://token.actions.githubusercontent.
     if (strpos($compactOidc,preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing GitHub OIDC boundary: {$needle}\n"); exit(1); }
 }
 if (strpos($oidc, 'SitePairing::pairedAdministratorId()') === false || strpos($bootstrap, 'includes/Security/class-sitepairing.php') === false) { fwrite(STDERR, "Missing opt-in GitHub OIDC pairing boundary.\n"); exit(1); }
-foreach (array('is_uploaded_file($tmp_name)','filesize($tmp_name)','allowed_file_type($relativePath)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','Policy::assertLocalAssetPath($parent, $root)','sys_get_temp_dir()','assert_outside_web_root') as $needle) {
+foreach (array('is_uploaded_file($tmp_name)','filesize($tmp_name)','allowed_file_type($relative_path)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','Policy::assertLocalAssetPath($parent, $root)','sys_get_temp_dir()','assert_outside_web_root') as $needle) {
     if (strpos($compactAssetStore,preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing REST asset security contract: {$needle}\n"); exit(1); }
 }
 if (strpos($controller,'__return_true')!==false) { fwrite(STDERR,"REST routes must not use __return_true.\n"); exit(1); }

@@ -9,6 +9,7 @@ $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 $runnerSource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
 $policySource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$policySource .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
 
 require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
