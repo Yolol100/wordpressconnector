@@ -123,15 +123,28 @@ final class ElementorJsonImport {
 				return;
 			}
 		}
-		$posts = get_posts(
-			array(
-				'post_type'      => $post_type,
-				'post_status'    => $post_statuses,
-				'posts_per_page' => 200,
-				'orderby'        => 'modified',
-				'order'          => 'DESC',
-			)
-		);
+		// Retain the 200-item selector while bounding each query and ordering ties.
+		$posts = array();
+		foreach ( array( 0, 100 ) as $offset ) {
+			$page = get_posts(
+				array(
+					'post_type'      => $post_type,
+					'post_status'    => $post_statuses,
+					'posts_per_page' => 100,
+					'offset'         => $offset,
+					'orderby'        => array( 'modified' => 'DESC', 'ID' => 'DESC' ),
+				)
+			);
+			foreach ( $page as $post ) {
+				if ( $post instanceof \WP_Post ) {
+					$posts[ (int) $post->ID ] = $post;
+				}
+			}
+			if ( count( $page ) < 100 ) {
+				break;
+			}
+		}
+		$posts = array_values( $posts );
 		// A row-action target can be older than the bounded recent-items list.
 		// Preserve its exact identity instead of silently selecting a new draft.
 		if ( $selected_post instanceof \WP_Post ) {
