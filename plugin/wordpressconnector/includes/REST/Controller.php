@@ -23,6 +23,7 @@ require_once __DIR__ . '/trait-restcontrollermethods.php';
  */
 final class Controller {
 	use RESTControllerMethods {
+		allow_presence as allowPresence;
 		validate_request_id as validateRequestId;
 		register_routes as registerRoutes;
 		upload_asset as uploadAsset;
@@ -61,19 +62,6 @@ final class Controller {
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'registerRoutes' ) ); }
-
-	/**
-	 * Process the allow presence operation in the Controller component.
-	 *
-	 * @param \WP_REST_Request $request Input for the operation.
-	 *
-	 * @return mixed Operation result.
-	 */
-	public function allowPresence( \WP_REST_Request $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- REST permission callback receives the request; preserve the public callback signature.
-		if ( ! is_ssl() ) {
-			return new \WP_Error( 'wpconnector_https_required', 'WordPress Connector presence requires HTTPS.', array( 'status' => 403 ) ); }
-		return true;
-	}
 
 	/**
 	 * Process the authorize operation in the Controller component.

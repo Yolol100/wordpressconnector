@@ -143,7 +143,7 @@ final class ReleaseApproval {
 		echo '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="wpconnector_oauth_approve_release" />';
 		echo '<input type="hidden" name="expected_fingerprint" value="' . esc_attr( $release['fingerprint'] ) . '" />';
-		echo wp_nonce_field( self::NONCE_ACTION, '_wpnonce', true, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress-generated hidden nonce field markup.
+		wp_nonce_field( self::NONCE_ACTION, '_wpnonce', true, true );
 		echo '<button type="submit" class="button button-primary">';
 		echo esc_html__( 'Approve this Connector release', 'wordpressconnector' );
 		echo '</button></form></div>';

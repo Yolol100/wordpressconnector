@@ -93,7 +93,10 @@ final class Command {
 	 * @param array $args Command-line arguments.
 	 * @param array $assoc_args Associative command-line arguments.
 	 */
-	public function actions( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI passes both positional and associative arguments; preserve the public signature.
+	public function actions( array $args, array $assoc_args ): void {
+		// WP-CLI supplies both arrays; this read-only command uses neither.
+		unset( $args, $assoc_args );
+
 		$request = Request::fromArray(
 			array(
 				'version'    => 1,
@@ -115,7 +118,10 @@ final class Command {
 	 * @param array $args Command-line arguments.
 	 * @param array $assoc_args Associative command-line arguments.
 	 */
-	public function doctor( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI passes both positional and associative arguments; preserve the public signature.
+	public function doctor( array $args, array $assoc_args ): void {
+		// WP-CLI supplies both arrays; this read-only command uses neither.
+		unset( $args, $assoc_args );
+
 		$request = Request::fromArray(
 			array(
 				'version'    => 1,

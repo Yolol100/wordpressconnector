@@ -160,4 +160,19 @@ trait RESTControllerMethods {
 	public function validate_request_id( $value ): bool {
 		return is_string( $value ) && (bool) preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $value );
 	}
+
+	/**
+	 * Process the allow presence operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
+	public function allow_presence( \WP_REST_Request $request ) {
+		// The REST callback signature includes the request; only transport security is required here.
+		unset( $request );
+		if ( ! is_ssl() ) {
+			return new \WP_Error( 'wpconnector_https_required', 'WordPress Connector presence requires HTTPS.', array( 'status' => 403 ) ); }
+		return true;
+	}
 }

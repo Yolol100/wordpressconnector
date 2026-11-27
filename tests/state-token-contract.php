@@ -80,6 +80,7 @@ $serviceAliases = array(
         'registerRoutes' => 'Webactueel\WordPressConnector\MCP\MCPControllerMethods::register_routes',
     ),
     'Webactueel\WordPressConnector\REST\Controller' => array(
+        'allowPresence' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::allow_presence',
         'validateRequestId' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_request_id',
         'registerRoutes' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::register_routes',
         'uploadAsset' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::upload_asset',
