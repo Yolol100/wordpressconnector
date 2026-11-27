@@ -113,7 +113,7 @@ foreach (array(
     '/Support/Fingerprint.php',
     '/Runtime/Registry.php',
     '/Runtime/Request.php',
-    '/Runtime/Result.php',
+    '/Runtime/class-result.php',
     '/Runtime/SnapshotStore.php',
     '/Runtime/ProcessedStore.php',
     '/Runtime/Runner.php',

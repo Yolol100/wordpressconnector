@@ -6,7 +6,7 @@ $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
-$plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/Plugin.php');
+$plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/class-plugin.php');
 $docs = file_get_contents($root . '/docs/PLUGIN-PACKAGE-REST.md');
 
 foreach (array('adapter' => $adapter, 'asset store' => $assetStore, 'bootstrap' => $bootstrap, 'plugin registry' => $plugin, 'documentation' => $docs) as $name => $source) {

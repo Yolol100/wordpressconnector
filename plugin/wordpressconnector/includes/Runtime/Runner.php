@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Keep isolated REST/MCP/CLI and contract harness entrypoints consistent.
-require_once __DIR__ . '/Diagnostics.php';
+require_once __DIR__ . '/class-diagnostics.php';
 
 /**
  * Provides Runner behavior for connector request processing.

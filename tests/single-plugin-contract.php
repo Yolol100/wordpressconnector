@@ -12,7 +12,7 @@ $read = static function (string $relative) use ($root): string {
     return $content;
 };
 $main=$read('plugin/wordpressconnector/wordpressconnector.php');
-$plugin=$read('plugin/wordpressconnector/includes/Plugin.php');
+$plugin=$read('plugin/wordpressconnector/includes/class-plugin.php');
 $elementor=$read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
 $capabilities=$read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
 $forms=$read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');

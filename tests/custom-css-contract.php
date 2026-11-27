@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/CustomCssAdapter.php';
-$pluginPath = $root . '/plugin/wordpressconnector/includes/Plugin.php';
+$pluginPath = $root . '/plugin/wordpressconnector/includes/class-plugin.php';
 $bootstrapPath = $root . '/plugin/wordpressconnector/wordpressconnector.php';
 
 foreach (array($adapterPath, $pluginPath, $bootstrapPath) as $path) {
@@ -56,7 +56,7 @@ if (strpos($normalizedAdapter, 'eval(') !== false || strpos($normalizedAdapter, 
 }
 
 if (strpos($plugin, 'new CustomCssAdapter()') === false) {
-    fwrite(STDERR, "CustomCssAdapter is not registered in Plugin.php.\n");
+    fwrite(STDERR, "CustomCssAdapter is not registered in class-plugin.php.\n");
     exit(1);
 }
 

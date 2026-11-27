@@ -12,7 +12,7 @@ foreach (array(
     'Support/Fingerprint.php',
     'Security/Policy.php',
     'Runtime/Registry.php',
-    'Runtime/Diagnostics.php',
+    'Runtime/class-diagnostics.php',
     'Runtime/SnapshotStore.php',
     'Runtime/ProcessedStore.php',
     'Runtime/Runner.php',

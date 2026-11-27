@@ -5,7 +5,7 @@ declare(strict_types=1);
 if (! defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/'); }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
-require_once $root . 'Runtime/Diagnostics.php';
+require_once $root . 'Runtime/class-diagnostics.php';
 
 use Webactueel\WordPressConnector\Runtime\Diagnostics;
 

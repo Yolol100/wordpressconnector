@@ -110,7 +110,7 @@ foreach (preg_split('/\R/', $catalog) as $line) {
 // Scan only the canonical adapters and Runner, not WordPress extension hooks
 // or test fixtures, so source and documentation cannot silently drift.
 $adapterDirectory = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters';
-$pluginSource = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Plugin.php');
+$pluginSource = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/class-plugin.php');
 if ($pluginSource === false) {
     fwrite(STDERR, "Unable to read the active Connector adapter wiring.\n");
     exit(1);
