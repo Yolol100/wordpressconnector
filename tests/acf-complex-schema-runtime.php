@@ -48,7 +48,11 @@ function get_fields($target, $format = false): array
 }
 function update_field($key, $value, $target): bool
 {
-    return true;
+    return empty($GLOBALS['acf_test_update_failure']);
+}
+function esc_html($value): string
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
 }
 function get_field($key, $target, $format = false)
 {
@@ -487,4 +491,17 @@ try {
     restore_error_handler();
 }
 echo "ACF malformed schema rejection cases: " . count($cases) . "\n";
+// Provider failure for an arbitrary field selector must not reflect it.
+$GLOBALS['acf_test_update_failure'] = true;
+$untrustedField = '<qa_private_field_marker>';
+$rejected = false;
+try {
+    $adapter->update(array('post_id'=>4470,'fields'=>array($untrustedField=>'fixture')),array('dry_run'=>false));
+} catch (RuntimeException $error) {
+    $rejected = $error->getMessage() === 'ACF update failed for a requested field.';
+}
+unset($GLOBALS['acf_test_update_failure']);
+if (!$rejected) {
+    throw new LogicException('Unsafe field selector was reflected or a failed update was accepted.');
+}
 echo "complex ACF schema runtime contract OK\n";
