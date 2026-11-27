@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php');
+$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php');
 $adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-pluginpackageadapteractions.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
@@ -70,7 +70,7 @@ foreach ($assetRequired as $needle) {
     }
 }
 
-if (strpos($bootstrap, "includes/Adapters/PluginPackageAdapter.php") === false) {
+if (strpos($bootstrap, "includes/Adapters/class-pluginpackageadapter.php") === false) {
     fwrite(STDERR, "Plugin package adapter is missing from bootstrap.\n");
     exit(1);
 }

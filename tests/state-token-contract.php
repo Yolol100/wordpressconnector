@@ -21,10 +21,20 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/Abilitie
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Input.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/YoastSnippetAdapter.php';
 
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-settings.php';
+
 $serviceAliases = array(
+    'Webactueel\WordPressConnector\Admin\Settings' => array(
+        'unpairedNotice' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::unpaired_notice',
+        'registerPage' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::register_page',
+        'enqueueConnectionDoctor' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::enqueue_connection_doctor',
+        'saveSitePairing' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::save_site_pairing',
+        'createApplicationPassword' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::create_application_password',
+        'renderPage' => 'Webactueel\WordPressConnector\Admin\SettingsMethods::render_page',
+    ),
     'Webactueel\WordPressConnector\Adapters\AcfAdapter' => array(
         'fieldGroups' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::field_groups',
         'ensureTextFields' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::ensure_text_fields',
@@ -65,6 +75,7 @@ $serviceAliases = array(
         'rowActions' => 'Webactueel\WordPressConnector\Admin\ElementorJsonExportMethods::row_actions',
     ),
     'Webactueel\WordPressConnector\Adapters\PluginPackageAdapter' => array(
+        'registerThemePackage' => 'Webactueel\WordPressConnector\Adapters\PluginPackageAdapterActions::register_theme_package',
         'installThemePackage' => 'Webactueel\WordPressConnector\Adapters\PluginPackageAdapterActions::install_theme_package',
         'installPackage' => 'Webactueel\WordPressConnector\Adapters\PluginPackageAdapterActions::install_package',
     ),
@@ -153,7 +164,10 @@ $serviceAliases = array(
 
 foreach ($serviceAliases as $className => $aliases) {
     $reflection = new ReflectionClass($className);
-    if ($reflection->getTraitAliases() !== $aliases) {
+    $observedAliases = $reflection->getTraitAliases();
+    ksort($observedAliases);
+    ksort($aliases);
+    if ($observedAliases !== $aliases) {
         throw new RuntimeException('Service method alias contract changed: '.$className);
     }
     foreach ($aliases as $legacy => $implementation) {

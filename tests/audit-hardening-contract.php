@@ -5,10 +5,10 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $files = array(
     'updater' => $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php',
-    'package adapter' => $root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php',
+    'package adapter' => $root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php',
     'builder' => $root . '/scripts/build-release-package.py',
     'uninstall' => $root . '/plugin/wordpressconnector/uninstall.php',
-    'settings' => $root . '/plugin/wordpressconnector/includes/Admin/Settings.php',
+    'settings' => $root . '/plugin/wordpressconnector/includes/Admin/class-settings.php',
     'ci' => $root . '/.github/workflows/ci.yml',
     'release' => $root . '/.github/workflows/release.yml',
     'agents' => $root . '/AGENTS.md',
@@ -20,6 +20,11 @@ foreach ($files as $name => $path) {
     if (false === $source) {
         fwrite(STDERR, "Unable to read audit source: {$name}.\n");
         exit(1);
+    }
+    if ('settings' === $name) {
+        $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
+        if ($implementation === false) { throw new RuntimeException('Missing Settings implementation.'); }
+        $source .= $implementation;
     }
     $sources[$name] = $source;
 }

@@ -22,6 +22,7 @@ require_once __DIR__ . '/trait-pluginpackageadapteractions.php';
  */
 final class PluginPackageAdapter {
 	use PluginPackageAdapterActions {
+		register_theme_package as registerThemePackage;
 		install_theme_package as installThemePackage;
 		install_package as installPackage;
 	}
@@ -48,26 +49,6 @@ final class PluginPackageAdapter {
 			)
 		);
 		$this->registerThemePackage( $registry );
-	}
-
-	/**
-	 * A theme ZIP uses the same private request asset store and exact SHA-256
-	 * binding as plugin packages. Public requests cannot invoke this action.
-	 *
-	 * @param Registry $registry Action registry to register handlers with.
-	 */
-	public function registerThemePackage( Registry $registry ): void {
-		$registry->register(
-			'theme.install_package',
-			array( $this, 'installThemePackage' ),
-			array(
-				'mutation'      => true,
-				'privileged'    => true,
-				'system_update' => true,
-				'capability'    => 'install_themes',
-				'description'   => 'Install or replace an inactive theme from a verified, private request ZIP.',
-			)
-		);
 	}
 
 	/**

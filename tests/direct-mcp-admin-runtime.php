@@ -52,7 +52,7 @@ function wp_kses($html, array $allowed_html): string {
 function wp_die($message = '', $title = '', $args = array()) {
     throw new ConnectorAdminStop($message, (int) ($args['response'] ?? 500));
 }
-$source = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php';
+$source = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-settings.php';
 if (! is_file($source)) throw new RuntimeException('Missing Settings.php fixture');
 require_once $source;
 $settings = new \Webactueel\WordPressConnector\Admin\Settings();

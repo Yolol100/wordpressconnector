@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\Adapters;
 
 use RuntimeException;
+use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
@@ -18,6 +19,26 @@ use Webactueel\WordPressConnector\Support\Input;
  * Canonical implementations with native legacy method aliases in the host.
  */
 trait PluginPackageAdapterActions {
+	/**
+	 * A theme ZIP uses the same private request asset store and exact SHA-256
+	 * binding as plugin packages. Public requests cannot invoke this action.
+	 *
+	 * @param Registry $registry Action registry to register handlers with.
+	 */
+	public function register_theme_package( Registry $registry ): void {
+		$registry->register(
+			'theme.install_package',
+			array( $this, 'installThemePackage' ),
+			array(
+				'mutation'      => true,
+				'privileged'    => true,
+				'system_update' => true,
+				'capability'    => 'install_themes',
+				'description'   => 'Install or replace an inactive theme from a verified, private request ZIP.',
+			)
+		);
+	}
+
 	/**
 	 * Process the install theme package operation in the PluginPackage adapter.
 	 *

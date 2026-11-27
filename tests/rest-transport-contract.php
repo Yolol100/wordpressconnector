@@ -5,7 +5,10 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
-$settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/Settings.php');
+$settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
+$settingsImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
+if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
+$settings .= $settingsImplementation;
 $policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
 $oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/GitHubOidc.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
