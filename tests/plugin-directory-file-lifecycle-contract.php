@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 $base = dirname(__DIR__);
 $root = sys_get_temp_dir() . '/wpconn-private-ops-' . bin2hex(random_bytes(6)) . '/';
 mkdir($root . 'wp-content/themes/fixture/assets', 0700, true);

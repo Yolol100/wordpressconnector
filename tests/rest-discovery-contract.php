@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 // WordPress is not bootstrapped in this standalone contract; fixtures contain valid UTF-8.
 function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
 

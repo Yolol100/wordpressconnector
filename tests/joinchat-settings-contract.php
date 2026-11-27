@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 define('JOINCHAT_VERSION', '6.4.0');
 $GLOBALS['joinchat_values'] = array(
     'telephone' => '31612345678',
