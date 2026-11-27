@@ -213,7 +213,7 @@ final class PortfolioStatsAdapter {
 				}
 			}
 			if ( $failures ) {
-				throw new RuntimeException( 'Portfolio case compensation failed for: ' . esc_html( implode( ', ', $failures ) ) . '. Manual recovery is required.', 0, $error );
+				throw new RuntimeException( 'Portfolio case compensation failed for: ' . implode( ', ', $failures ) . '. Original error: ' . $error->getMessage(), 0, $error );
 			}
 			throw $error;
 		}

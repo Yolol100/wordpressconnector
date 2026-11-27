@@ -744,7 +744,7 @@ final class ElementorAdapter {
 					$error
 				);
 			}
-			throw new RuntimeException( 'Elementor mutation failed; previous snapshot restored.', 0, $error );
+			throw new RuntimeException( 'Elementor mutation failed; previous snapshot restored: ' . $error->getMessage(), 0, $error );
 		}
 	}
 

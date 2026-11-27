@@ -255,7 +255,7 @@ final class ElementorFormsAdapter {
 					$error
 				);
 			}
-			throw new RuntimeException( 'Elementor form mutation failed; previous document restored.', 0, $error );
+			throw new RuntimeException( 'Elementor form mutation failed; previous document restored: ' . $error->getMessage(), 0, $error );
 		}
 
 		$result['after_form']           = $readback;

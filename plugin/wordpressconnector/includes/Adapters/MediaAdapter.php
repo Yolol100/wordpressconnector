@@ -439,7 +439,7 @@ final class MediaAdapter {
 					@unlink( $created_file );
 				}
 			}
-			throw new RuntimeException( 'Image rename aborted; original attachment state verified as restored.', 0, $error );
+			throw new RuntimeException( 'Image rename aborted; original attachment state verified as restored: ' . $error->getMessage(), 0, $error );
 		}
 	}
 

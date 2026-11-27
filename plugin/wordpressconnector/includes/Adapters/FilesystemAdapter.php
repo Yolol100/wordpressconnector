@@ -311,11 +311,6 @@ final class FilesystemAdapter {
 				throw new RuntimeException( 'Filesystem write readback verification failed.' );
 			}
 		} catch ( Throwable $error ) {
-			// Preserve known connector diagnostics without exposing arbitrary
-			// filesystem provider errors or private paths.
-			$known_failure = $error->getMessage();
-			$failure_message = in_array( $known_failure, array( 'WordPress Filesystem API could not write the target file.', 'Filesystem write readback verification failed.' ), true )
-				? $known_failure : 'Filesystem write failed.';
 			// A failed write can still truncate the file. Recover before the
 			// Runner loses this local before-image when the action fails.
 			try {
@@ -327,9 +322,9 @@ final class FilesystemAdapter {
 			clearstatcache( true, $absolute );
 			$restored = $filesystem->get_contents( $absolute );
 			if ( ! is_string( $restored ) || ! hash_equals( $before_state['sha256'], hash( 'sha256', $restored ) ) ) {
-				throw new RuntimeException( esc_html( $failure_message ) . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error );
+				throw new RuntimeException( $error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error );
 			}
-			throw new RuntimeException( esc_html( $failure_message ) . ' Recovery complete; original file restored and verified.', 0, $error );
+			throw new RuntimeException( $error->getMessage() . ' Recovery complete; original file restored and verified.', 0, $error );
 		}
 
 		$result['after']     = $this->state( $relative, $readback, $absolute );

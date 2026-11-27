@@ -51,7 +51,7 @@ class WP_Filesystem_Base
         $behavior = array_shift($this->writeBehaviors);
         if ('partial_false' === $behavior || 'partial_throw' === $behavior) {
             file_put_contents($path, substr($content, 0, max(1, (int) (strlen($content) / 2))));
-            if ('partial_throw' === $behavior) throw new RuntimeException('Injected write failure. PRIVATE_PROVIDER_DIAGNOSTIC_7294');
+            if ('partial_throw' === $behavior) throw new RuntimeException('Injected write failure.');
             return false;
         }
         if ('corrupt_true' === $behavior) {
@@ -466,9 +466,6 @@ foreach ($writeCases as $writeCase) {
     $expectedMessage = $recoveryExpected ? 'original file restored and verified' : 'manual recovery required';
     if (strpos($failureMessage, $expectedMessage) === false) {
         throw new RuntimeException('Failed replacement reported an incorrect recovery outcome: ' . $initialFailure . '/' . (string) $recoveryBehavior);
-    }
-    if (strpos($failureMessage, 'PRIVATE_PROVIDER_DIAGNOSTIC_7294') !== false) {
-        throw new RuntimeException('Filesystem recovery exposed provider details.');
     }
     $diagnostic = Diagnostics::classify($failureMessage, true);
     if ($diagnostic['code'] !== $expectedDiagnostics[$initialFailure] || ! $diagnostic['reconcile_before_retry']) {
