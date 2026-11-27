@@ -78,7 +78,9 @@ namespace {
     $invoke = static function (string $name, array $args = array()) use ($adapter, $reflection, &$scenarios) {
         $scenarios++;
         $method = $reflection->getMethod($name);
-        $method->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $method->setAccessible(true);
+        }
         return $method->invokeArgs($adapter, $args);
     };
     $mustFail = static function (callable $callback, string $needle) use (&$scenarios): void {
