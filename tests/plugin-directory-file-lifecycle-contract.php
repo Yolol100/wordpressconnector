@@ -18,6 +18,7 @@ class WP_Filesystem_Base
 {
     public array $writeBehaviors = array();
     public int $writeCalls = 0;
+    public bool $failRecoveryReadback = false;
     public string $chmodBehavior = '';
     public string $deleteBehavior = '';
     public int $deleteCalls = 0;
@@ -57,6 +58,7 @@ class WP_Filesystem_Base
     // Mirror WordPress's direct filesystem reader. The adapter must verify
     // successful writes and recovery using the same backend that wrote them.
     public function get_contents($path) {
+        if ($this->failRecoveryReadback && $this->writeCalls === 2) throw new RuntimeException('Injected recovery readback failure: private fixture detail.');
         return @file_get_contents($path);
     }
     public function put_contents($path, $content, $mode = false): bool {
@@ -73,6 +75,10 @@ class WP_Filesystem_Base
         }
         if ('false' === $behavior) return false;
         if ('throw' === $behavior) throw new RuntimeException('Injected filesystem failure.');
+        if ('complete_throw' === $behavior) {
+            file_put_contents($path, $content);
+            throw new RuntimeException('Injected exception after complete recovery write.');
+        }
         if ('complete_false' === $behavior) {
             file_put_contents($path, $content);
             return false;
@@ -567,6 +573,7 @@ $writeCases = array(
     array('corrupt_true', null, true),
     array('partial_throw', null, true),
     array('partial_false', 'complete_false', true),
+    array('partial_false', 'complete_throw', true),
     array('partial_false', 'false', false),
     array('partial_false', 'corrupt_true', false),
     array('partial_false', 'throw', false),
@@ -602,6 +609,36 @@ foreach ($writeCases as $writeCase) {
     if ($diagnostic['code'] !== $expectedDiagnostics[$initialFailure] || ! $diagnostic['reconcile_before_retry']) {
         throw new RuntimeException('Filesystem recovery hid the original failure diagnostic: ' . $initialFailure);
     }
+}
+// If verification itself throws, no claim of verified rollback is valid.
+// Preserve the initial write failure as the causal error and flag manual
+// reconciliation without exposing the backend's private diagnostic.
+file_put_contents($root.$path, $content);
+$GLOBALS['wp_filesystem']->writeBehaviors = array('partial_false', null);
+$GLOBALS['wp_filesystem']->writeCalls = 0;
+$GLOBALS['wp_filesystem']->failRecoveryReadback = true;
+try {
+    $caught = null;
+    try {
+        $fs->writeText(array('path'=>$path, 'content'=>$replacement,
+            'expected_sha256'=>hash('sha256',$content), 'acknowledge_active_content'=>true),
+            array('dry_run'=>false));
+    } catch (RuntimeException $error) {
+        $caught = $error;
+    }
+    if (!$caught || strpos($caught->getMessage(), 'manual recovery required') === false ||
+        strpos($caught->getMessage(), 'private fixture detail') !== false ||
+        !($caught->getPrevious() instanceof RuntimeException) ||
+        strpos($caught->getPrevious()->getMessage(), 'could not write the target file') === false ||
+        $GLOBALS['wp_filesystem']->writeCalls !== 2 || file_get_contents($root.$path) !== $content) {
+        throw new RuntimeException('Recovery readback exception lost initial failure or misreported verification.');
+    }
+    $diagnostic = Diagnostics::classify($caught->getMessage(), true);
+    if ($diagnostic['code'] !== 'filesystem_unavailable' || !$diagnostic['reconcile_before_retry']) {
+        throw new RuntimeException('Unverified recovery lost reconciliation diagnostic.');
+    }
+} finally {
+    $GLOBALS['wp_filesystem']->failRecoveryReadback = false;
 }
 $GLOBALS['wp_filesystem']->writeBehaviors = array();
 file_put_contents($root.$path, $content);
