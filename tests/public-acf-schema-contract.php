@@ -204,6 +204,7 @@ if (false !== strpos($confirmedRaw, 'must-not-leak')) {
 }
 
 $adapter = (string) file_get_contents($adapterPath);
+$adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-acfadapteractions.php');
 foreach (array("acf.schema.ensure_text_fields", "acf.schema.remove_text_fields", "'_rollback'") as $needle) {
     if (false === strpos($adapter, $needle)) {
         fwrite(STDERR, "ACF adapter is missing required bounded schema/rollback contract token: {$needle}\n");

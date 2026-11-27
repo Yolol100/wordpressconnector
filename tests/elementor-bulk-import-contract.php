@@ -4,6 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $import = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php');
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
+$adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-elementoradapteractions.php');
 if (! is_string($import) || ! is_string($adapter)) {
     throw new RuntimeException('Elementor bulk import sources are unavailable.');
 }

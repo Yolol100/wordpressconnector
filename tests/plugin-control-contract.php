@@ -20,6 +20,15 @@ $mustContain = array(
 foreach ($mustContain as $relative => $needles) {
     $source = file_get_contents($root . '/' . $relative);
     if ($source === false) { fwrite(STDERR, "Unable to read {$relative}.\n"); exit(1); }
+    $implementationPaths = array(
+        'plugin/wordpressconnector/includes/Adapters/WooCommerceFulfillmentAdapter.php' => 'plugin/wordpressconnector/includes/Adapters/trait-woocommercefulfillmentadapteractions.php',
+        'plugin/wordpressconnector/includes/Adapters/YoastAdapter.php' => 'plugin/wordpressconnector/includes/Adapters/trait-yoastadapteractions.php',
+    );
+    if (isset($implementationPaths[$relative])) {
+        $implementation = file_get_contents($root . '/' . $implementationPaths[$relative]);
+        if ($implementation === false) { throw new RuntimeException('Missing canonical implementation: ' . $relative); }
+        $source .= $implementation;
+    }
     foreach ($needles as $needle) { if (strpos($source, $needle) === false) { fwrite(STDERR, "Missing plugin-control contract fragment in {$relative}: {$needle}\n"); exit(1); } }
 }
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');

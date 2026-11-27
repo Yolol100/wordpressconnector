@@ -13,7 +13,64 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-si
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php';
 
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/WooCommerceFulfillmentAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/YoastAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Input.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/YoastSnippetAdapter.php';
+
 $serviceAliases = array(
+    'Webactueel\WordPressConnector\Adapters\AcfAdapter' => array(
+        'fieldGroups' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::field_groups',
+        'ensureTextFields' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::ensure_text_fields',
+        'removeTextFields' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::remove_text_fields',
+        'removeFields' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::remove_fields',
+        'createFieldGroup' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::create_field_group',
+        'deleteFieldGroup' => 'Webactueel\WordPressConnector\Adapters\AcfAdapterActions::delete_field_group',
+    ),
+    'Webactueel\WordPressConnector\Adapters\ElementorAdapter' => array(
+        'createDocument' => 'Webactueel\WordPressConnector\Adapters\ElementorAdapterActions::create_document',
+        'replaceDocument' => 'Webactueel\WordPressConnector\Adapters\ElementorAdapterActions::replace_document',
+        'patchElement' => 'Webactueel\WordPressConnector\Adapters\ElementorAdapterActions::patch_element',
+        'inspectHeaderLinks' => 'Webactueel\WordPressConnector\Adapters\ElementorAdapterActions::inspect_header_links',
+        'replaceHeaderLinks' => 'Webactueel\WordPressConnector\Adapters\ElementorAdapterActions::replace_header_links',
+    ),
+    'Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapter' => array(
+        'updateLocations' => 'Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapterActions::update_locations',
+        'restoreLocations' => 'Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapterActions::restore_locations',
+        'restoreCreated' => 'Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapterActions::restore_created',
+    ),
+    'Webactueel\WordPressConnector\Adapters\YoastAdapter' => array(
+        'updateSiteRepresentation' => 'Webactueel\WordPressConnector\Adapters\YoastAdapterActions::update_site_representation',
+        'restoreSiteRepresentation' => 'Webactueel\WordPressConnector\Adapters\YoastAdapterActions::restore_site_representation',
+    ),
+    'Webactueel\WordPressConnector\Adapters\AbilitiesAdapter' => array(
+        'executeAbility' => 'Webactueel\WordPressConnector\Adapters\AbilitiesAdapterActions::execute_ability',
+        'executeApprovedAbility' => 'Webactueel\WordPressConnector\Adapters\AbilitiesAdapterActions::execute_approved_ability',
+    ),
+    'Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter' => array(
+        'catalogOnlyEnsure' => 'Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapterActions::catalog_only_ensure',
+        'catalogOnlyUndo' => 'Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapterActions::catalog_only_undo',
+        'restoreCode' => 'Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapterActions::restore_code',
+    ),
+    'Webactueel\WordPressConnector\Support\Input' => array(
+        'boolValue' => 'Webactueel\WordPressConnector\Support\InputMethods::bool_value',
+    ),
+    'Webactueel\WordPressConnector\Admin\ElementorJsonExport' => array(
+        'rowActions' => 'Webactueel\WordPressConnector\Admin\ElementorJsonExportMethods::row_actions',
+    ),
+    'Webactueel\WordPressConnector\Adapters\PluginPackageAdapter' => array(
+        'installThemePackage' => 'Webactueel\WordPressConnector\Adapters\PluginPackageAdapterActions::install_theme_package',
+        'installPackage' => 'Webactueel\WordPressConnector\Adapters\PluginPackageAdapterActions::install_package',
+    ),
+    'Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter' => array(
+        'validateFields' => 'Webactueel\WordPressConnector\Adapters\YoastSnippetAdapterActions::validate_fields',
+    ),
     'Webactueel\WordPressConnector\Adapters\SystemAdapter' => array(
         'userList' => 'Webactueel\WordPressConnector\Adapters\SystemAdapterActions::user_list',
         'userGet' => 'Webactueel\WordPressConnector\Adapters\SystemAdapterActions::user_get',
