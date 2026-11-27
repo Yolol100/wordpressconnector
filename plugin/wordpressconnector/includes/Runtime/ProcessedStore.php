@@ -64,7 +64,7 @@ final class ProcessedStore {
 	 */
 	public function put( string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null ): void {
 		$key      = self::key( $requestId );
-		$previous = $this->get( $requestId );
+		$previous = get_option( $key, null );
 		if ( ! is_array( $previous )
 		|| ( $previous['state'] ?? null ) !== 'pending'
 		|| ! is_string( $previous['fingerprint'] ?? null )
