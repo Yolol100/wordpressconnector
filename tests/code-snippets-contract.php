@@ -136,6 +136,47 @@ if (0 === $status) {
     exit(1);
 }
 
+// Missing or mistyped replacement text must never silently become deletion.
+// Explicit empty text remains a valid, intentional exact deletion.
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+$adapterInstance = new \Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter();
+$parse = new ReflectionMethod($adapterInstance, 'replacements');
+if (PHP_VERSION_ID < 80100) {
+    $parse->setAccessible(true);
+}
+$opaque = 'qa_opaque_replacement_key_4f21';
+$badReplacements = array(
+    array('find' => 'example'),
+    array('find' => 'example', 'replace' => null),
+    array('find' => 'example', 'replace' => false),
+    array('find' => 'example', 'replace' => 123),
+    array('find' => 'example', 'replace' => array('unexpected')),
+    array('find' => 'example', 'replace' => '', $opaque => true),
+);
+foreach ($badReplacements as $index => $replacement) {
+    $bad = $base;
+    $bad['payload']['replacements'] = array($replacement);
+    list($status, $output) = $run($validator, array($write('malformed-replacement-' . $index . '.json', $bad)));
+    if (0 === $status || false !== strpos($output, $opaque)) {
+        throw new LogicException('CLI accepted malformed replacement or reflected its key: ' . $index);
+    }
+    $rejected = false;
+    try {
+        $parse->invoke($adapterInstance, $bad['payload']);
+    } catch (RuntimeException $error) {
+        $rejected = false === strpos($error->getMessage(), $opaque);
+    }
+    if (!$rejected) {
+        throw new LogicException('Runtime accepted malformed replacement or reflected its key: ' . $index);
+    }
+}
+$deletion = $base;
+$deletion['payload']['replacements'] = array(array('find' => 'example', 'replace' => ''));
+list($status, $output) = $run($validator, array($write('explicit-deletion.json', $deletion)));
+if (0 !== $status || $deletion['payload']['replacements'] !== $parse->invoke($adapterInstance, $deletion['payload'])) {
+    throw new LogicException('Explicit empty replacement was not preserved.');
+}
+
 $restore = $base;
 $restore['request_id'] = 'snippet-patch-contract-005';
 $restore['action'] = 'code_snippets.restore_code';

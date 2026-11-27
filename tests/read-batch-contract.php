@@ -156,6 +156,16 @@ foreach ($guardCases as $case) {
         $method->invokeArgs($runner, $case[1]);
     }, 'unsupported');
 }
+// Public runtime must reject malformed replacements before registry preview.
+$snippetGuard = new ReflectionMethod(Runner::class, 'assert_public_code_snippets_patch_payload');
+if (PHP_VERSION_ID < 80100) {
+    $snippetGuard->setAccessible(true);
+}
+foreach (array(array('find' => 'x'), array('find' => 'x', 'replace' => null), array('find' => 'x', 'replace' => false), array('find' => 'x', 'replace' => 7), array('find' => 'x', 'replace' => array())) as $replacement) {
+    $rejectWithoutReflection(static function () use ($snippetGuard, $runner, $replacement): void {
+        $snippetGuard->invoke($runner, array('snippet_id' => 1, 'replacements' => array($replacement)));
+    }, 'requires an explicit string replace');
+}
 $css = new \Webactueel\WordPressConnector\Adapters\CustomCssAdapter();
 $portfolio = new \Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter();
 foreach (array(array($css, 'patch'), array($portfolio, 'updateCaseText'), array($portfolio, 'update')) as $call) {

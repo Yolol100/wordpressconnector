@@ -797,7 +797,7 @@ if ('code_snippets.patch' === $action) {
 
     foreach (array_keys($payload) as $key) {
         if (! in_array((string) $key, array('snippet_id','match_code_contains','replacements'), true)) {
-            $errors[] = 'Code Snippets patch payload has unsupported key: ' . (string) $key;
+            $errors[] = 'Code Snippets patch payload has unsupported key.';
         }
     }
 
@@ -827,11 +827,15 @@ if ('code_snippets.patch' === $action) {
         }
         foreach (array_keys($replacement) as $key) {
             if (! in_array((string) $key, array('find','replace'), true)) {
-                $errors[] = 'Code Snippets replacement contains unsupported key: ' . (string) $key;
+                $errors[] = 'Code Snippets replacement contains unsupported key.';
             }
         }
+        if (!isset($replacement['replace']) || !is_string($replacement['replace'])) {
+            $errors[] = 'Code Snippets replacement requires an explicit string replace value.';
+            continue;
+        }
         $find = isset($replacement['find']) && is_string($replacement['find']) ? $replacement['find'] : '';
-        $replace = isset($replacement['replace']) && is_string($replacement['replace']) ? $replacement['replace'] : '';
+        $replace = $replacement['replace'];
         if ('' === $find || strlen($find) > 131072 || strlen($replace) > 131072) {
             $errors[] = 'Code Snippets replacement exceeds the bounded size limit.';
         }

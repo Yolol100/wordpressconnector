@@ -381,7 +381,7 @@ final class CodeSnippetsAdapter {
 		foreach ( $replacements as $index => $replacement ) {
 			$occurrences = substr_count( $new_code, $replacement['find'] );
 			if ( 1 !== $occurrences ) {
-				throw new RuntimeException( 'Replacement ' . $index . ' must match exactly once; matched ' . $occurrences . ' times.' );
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' must match exactly once; matched ' . (int) $occurrences . ' times.' );
 			}
 			$new_code = str_replace( $replacement['find'], $replacement['replace'], $new_code );
 		}
@@ -588,28 +588,31 @@ final class CodeSnippetsAdapter {
 		$input = isset( $payload['replacements'] ) && is_array( $payload['replacements'] ) ? array_values( $payload['replacements'] ) : array();
 
 		if ( ! $input || count( $input ) > self::MAX_REPLACEMENTS ) {
-			throw new RuntimeException( 'Code Snippets patch requires 1-' . self::MAX_REPLACEMENTS . ' replacements.' );
+			throw new RuntimeException( 'Code Snippets patch requires 1-' . (int) self::MAX_REPLACEMENTS . ' replacements.' );
 		}
 
 		$replacements = array();
 		foreach ( $input as $index => $replacement ) {
 			if ( ! is_array( $replacement ) ) {
-				throw new RuntimeException( 'Replacement ' . $index . ' must be an object.' );
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' must be an object.' );
 			}
 			foreach ( array_keys( $replacement ) as $key ) {
 				if ( ! in_array( (string) $key, array( 'find', 'replace' ), true ) ) {
-					throw new RuntimeException( 'Replacement ' . $index . ' contains unsupported key: ' . (string) $key . '.' );
+					throw new RuntimeException( 'Replacement ' . (int) $index . ' contains unsupported key.' );
 				}
 			}
 
+			if ( ! isset( $replacement['replace'] ) || ! is_string( $replacement['replace'] ) ) {
+				throw new RuntimeException( 'Code Snippets replacement requires an explicit string replace value.' );
+			}
 			$find    = isset( $replacement['find'] ) && is_string( $replacement['find'] ) ? $replacement['find'] : '';
-			$replace = isset( $replacement['replace'] ) && is_string( $replacement['replace'] ) ? $replacement['replace'] : '';
+			$replace = $replacement['replace'];
 
 			if ( '' === $find || strlen( $find ) > self::MAX_CODE_BYTES || strlen( $replace ) > self::MAX_CODE_BYTES ) {
-				throw new RuntimeException( 'Replacement ' . $index . ' has an invalid find/replace size.' );
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' has an invalid find/replace size.' );
 			}
 			if ( false !== strpos( $find, "\0" ) || false !== strpos( $replace, "\0" ) ) {
-				throw new RuntimeException( 'Replacement ' . $index . ' may not contain NUL bytes.' );
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' may not contain NUL bytes.' );
 			}
 
 			$replacements[] = array(
