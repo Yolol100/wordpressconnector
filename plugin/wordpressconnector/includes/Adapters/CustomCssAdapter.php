@@ -154,7 +154,7 @@ final class CustomCssAdapter {
 	public function patch( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'stylesheet', 'patch_id', 'operation', 'css' ), true ) ) {
-				throw new RuntimeException( 'custom_css.patch contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'custom_css.patch contains unsupported payload key.' );
 			}
 		}
 

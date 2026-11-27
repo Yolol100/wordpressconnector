@@ -122,7 +122,7 @@ final class Request {
 		);
 		foreach ( array_keys( $data ) as $key ) {
 			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
-				throw new RuntimeException( 'Unknown top-level request key: ' . (string) $key . '.' );
+				throw new RuntimeException( 'Unknown top-level request key.' );
 			}
 		}
 
@@ -177,21 +177,21 @@ final class Request {
 				if ( array_keys( $payload ) !== array( 'operations' ) || ! $operations || count( $operations ) > 25 ) {
 					throw new RuntimeException( 'Public read batch requires 1-25 operations.' );
 				}
-				foreach ( $operations as $index => $operation ) {
+				foreach ( array_values( $operations ) as $index => $operation ) {
 					$leaf = is_array( $operation ) && isset( $operation['action'] ) && is_string( $operation['action'] ) ? $operation['action'] : '';
 					if ( ! in_array( $leaf, $safe_reads, true ) || ! isset( $operation['payload'] ) || ! is_array( $operation['payload'] )
 					|| array_diff( array_keys( $operation ), array( 'action', 'payload' ) ) ) {
-						throw new RuntimeException( 'Unsafe public read batch operation at index ' . $index . '.' );
+						throw new RuntimeException( 'Unsafe public read batch operation at index ' . (int) $index . '.' );
 					}
 				}
 			}
 
 			if ( 'connector.batch' === $action ) {
 				$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
-				foreach ( $operations as $index => $operation ) {
-					$leaf_action = is_array( $operation ) && isset( $operation['action'] ) ? (string) $operation['action'] : '';
+				foreach ( array_values( $operations ) as $index => $operation ) {
+					$leaf_action = is_array( $operation ) && isset( $operation['action'] ) && is_string( $operation['action'] ) ? $operation['action'] : '';
 					if ( ! in_array( $leaf_action, array( 'post.update', 'acf.update' ), true ) ) {
-						throw new RuntimeException( 'Public connector.batch operation is not allowed at index ' . $index . ': ' . $leaf_action . '.' );
+						throw new RuntimeException( 'Public connector.batch operation is not allowed at index ' . (int) $index . '.' );
 					}
 				}
 			}

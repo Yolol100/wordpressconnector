@@ -312,11 +312,11 @@ final class Runner {
 		}
 
 		$allowed = array();
-		foreach ( $operations as $index => $operation ) {
+		foreach ( array_values( $operations ) as $index => $operation ) {
 			if ( ! is_array( $operation ) || ! isset( $operation['action'] ) || ! is_string( $operation['action'] )
 			|| ! isset( $operation['payload'] ) || ! is_array( $operation['payload'] )
 			|| array_diff( array_keys( $operation ), array( 'action', 'payload' ) ) ) {
-				throw new RuntimeException( 'Read batch operation at index ' . $index . ' is invalid.' );
+				throw new RuntimeException( 'Read batch operation at index ' . (int) $index . ' is invalid.' );
 			}
 			$action = $operation['action'];
 			if ( in_array( $action, array( 'connector.read_batch', 'connector.batch', 'connector.rollback', 'connector.cleanup' ), true )
@@ -378,11 +378,11 @@ final class Runner {
 		// Validate every leaf's shape and access policy before executing the first mutation.
 		// State fingerprints remain checked at execution time for sequential dependencies.
 		$prepared = array();
-		foreach ( $operations as $index => $operation ) {
+		foreach ( array_values( $operations ) as $index => $operation ) {
 			if ( ! is_array( $operation ) || ! isset( $operation['action'] ) || ! is_string( $operation['action'] )
 			|| ! array_key_exists( 'payload', $operation ) || ! is_array( $operation['payload'] )
 			|| array_diff( array_keys( $operation ), array( 'action', 'payload', 'expected_fingerprint', 'expected_state_token' ) ) ) {
-				throw new RuntimeException( 'Batch operation at index ' . $index . ' is invalid.' );
+				throw new RuntimeException( 'Batch operation at index ' . (int) $index . ' is invalid.' );
 			}
 			$action = $operation['action'];
 			if ( in_array( $action, array( 'connector.batch', 'connector.read_batch', 'connector.rollback', 'connector.cleanup' ), true ) ) {
@@ -402,7 +402,7 @@ final class Runner {
 				}
 			}
 			if ( Policy::publicRepositoryContext() && empty( $context['dry_run'] ) && null === $expected ) {
-				throw new RuntimeException( 'Confirmed public batch operation requires expected_fingerprint at index ' . $index . '.' );
+				throw new RuntimeException( 'Confirmed public batch operation requires expected_fingerprint at index ' . (int) $index . '.' );
 			}
 			$descriptor = $this->registry->descriptor( $action );
 			if ( Policy::publicRepositoryContext() ) {
@@ -957,7 +957,7 @@ final class Runner {
 			: array( 'stylesheet' );
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
-				throw new RuntimeException( 'Public Additional CSS request contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Public Additional CSS request contains unsupported payload key.' );
 			}
 		}
 
@@ -1009,7 +1009,7 @@ final class Runner {
 	private function assert_public_custom_css_rollback_payload( array $payload ): void {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'stylesheet', 'css' ), true ) ) {
-				throw new RuntimeException( 'Public Additional CSS rollback contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Public Additional CSS rollback contains unsupported payload key.' );
 			}
 		}
 		$stylesheet = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
@@ -1035,7 +1035,7 @@ final class Runner {
 		$allowed = array( 'source_path', 'sha256', 'expected_plugin', 'overwrite', 'activate', 'network_wide' );
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
-				throw new RuntimeException( 'Public plugin package install contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Public plugin package install contains unsupported payload key.' );
 			}
 		}
 
@@ -1087,7 +1087,7 @@ final class Runner {
 	private function assert_public_cache_flush_payload( array $payload ): string {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'layer', 'regenerate' ), true ) ) {
-				throw new RuntimeException( 'Public cache flush contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Public cache flush contains unsupported payload key.' );
 			}
 		}
 
@@ -1137,7 +1137,7 @@ final class Runner {
 	private function assert_public_code_snippets_patch_payload( array $payload ): int {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'snippet_id', 'match_code_contains', 'replacements' ), true ) ) {
-				throw new RuntimeException( 'Public Code Snippets patch contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Public Code Snippets patch contains unsupported payload key.' );
 			}
 		}
 
@@ -1162,11 +1162,11 @@ final class Runner {
 
 		foreach ( $replacements as $index => $replacement ) {
 			if ( ! is_array( $replacement ) ) {
-				throw new RuntimeException( 'Public Code Snippets replacement ' . $index . ' must be an object.' );
+				throw new RuntimeException( 'Public Code Snippets replacement ' . (int) $index . ' must be an object.' );
 			}
 			foreach ( array_keys( $replacement ) as $key ) {
 				if ( ! in_array( (string) $key, array( 'find', 'replace' ), true ) ) {
-					throw new RuntimeException( 'Public Code Snippets replacement contains unsupported key: ' . (string) $key );
+					throw new RuntimeException( 'Public Code Snippets replacement contains unsupported key.' );
 				}
 			}
 			$find    = isset( $replacement['find'] ) && is_string( $replacement['find'] ) ? $replacement['find'] : '';
@@ -1263,7 +1263,7 @@ final class Runner {
 	private function assert_public_acf_update_payload( array $payload ): int {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'target', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Public ACF update contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Public ACF update contains unsupported payload key.' );
 			}
 		}
 		if ( isset( $payload['post_id'] ) && array_key_exists( 'target', $payload ) ) {
@@ -1488,7 +1488,7 @@ final class Runner {
 		$allowed = array( 'id', 'title', 'content', 'excerpt', 'status', 'slug', 'type', 'author', 'parent', 'menu_order', 'comment_status', 'ping_status' );
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
-				throw new RuntimeException( 'Public post rollback contains unsupported field: ' . (string) $key );
+				throw new RuntimeException( 'Public post rollback contains unsupported field.' );
 			}
 		}
 		$this->assert_public_rollback_post_id( $payload );

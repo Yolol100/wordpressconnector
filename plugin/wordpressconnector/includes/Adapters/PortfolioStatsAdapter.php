@@ -73,7 +73,7 @@ final class PortfolioStatsAdapter {
 	public function updateCaseText( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'content', 'description_1', 'description_2' ), true ) ) {
-				throw new RuntimeException( 'Portfolio case text update contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Portfolio case text update contains unsupported payload key.' );
 			}
 		}
 		if ( ! isset( $payload['post_id'] ) || ! is_int( $payload['post_id'] ) || $payload['post_id'] <= 0 ) {
@@ -244,7 +244,7 @@ final class PortfolioStatsAdapter {
 	public function update( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Portfolio stats update contains unsupported payload key: ' . (string) $key );
+				throw new RuntimeException( 'Portfolio stats update contains unsupported payload key.' );
 			}
 		}
 

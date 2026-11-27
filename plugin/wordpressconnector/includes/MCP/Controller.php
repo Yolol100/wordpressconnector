@@ -748,7 +748,7 @@ final class Controller {
 			return $this->release_tool( $rpc_id, $name, $arguments );
 		}
 
-		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
+		throw new RuntimeException( 'Unknown MCP tool.' );
 	}
 
 	/**

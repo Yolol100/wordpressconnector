@@ -102,4 +102,41 @@ if ('elementor.patch_element' !== ($parsedNonPublicBatch->payload()['operations'
     exit(1);
 }
 
+// Unknown request keys and leaf names are untrusted, even on authorized
+// transports. Rejection must not reflect arbitrary diagnostics into clients.
+$diagnosticMarker = 'qa_opaque_diagnostic_marker_7e21';
+$rejectWithoutReflection = static function (array $request, string $expected) use ($diagnosticMarker): void {
+    set_error_handler(static function (int $severity, string $message): bool {
+        throw new ErrorException($message, 0, $severity);
+    });
+    try {
+        try {
+            Request::fromArray($request);
+        } catch (RuntimeException $error) {
+            if (false === strpos($error->getMessage(), $expected)
+                || false !== strpos($error->getMessage(), $diagnosticMarker)) {
+                throw new LogicException('Unsafe or unexpected request diagnostic.');
+            }
+            return;
+        }
+        throw new LogicException('Malformed request unexpectedly accepted.');
+    } finally {
+        restore_error_handler();
+    }
+};
+$unknown = $base;
+$unknown[$diagnosticMarker] = true;
+$rejectWithoutReflection($unknown, 'Unknown top-level request key');
+Policy::setPublicRepositoryContext(true);
+$badRead = $batch;
+$badRead['action'] = 'connector.read_batch';
+$badRead['payload']['operations'] = array($diagnosticMarker => array('action' => 'private.secret', 'payload' => array()));
+$rejectWithoutReflection($badRead, 'Unsafe public read batch operation at index 0');
+$badWrite = $batch;
+$badWrite['payload']['operations'] = array($diagnosticMarker => array('action' => $diagnosticMarker, 'payload' => array()));
+$rejectWithoutReflection($badWrite, 'not allowed at index 0');
+$badWrite['payload']['operations'] = array(array('action' => array($diagnosticMarker), 'payload' => array()));
+$rejectWithoutReflection($badWrite, 'not allowed at index 0');
+Policy::setPublicRepositoryContext(false);
+
 echo "public request server boundary contract OK\n";
