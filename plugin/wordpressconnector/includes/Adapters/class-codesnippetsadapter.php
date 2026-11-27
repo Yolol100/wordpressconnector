@@ -1,0 +1,504 @@
+<?php
+/**
+ * Registers and handles Code Snippets connector actions.
+ *
+ * @package WordPressConnector
+ */
+
+declare(strict_types=1);
+
+namespace Webactueel\WordPressConnector\Adapters;
+
+use RuntimeException;
+use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
+
+require_once __DIR__ . '/trait-codesnippetsadapteractions.php';
+
+/**
+ * Registers and handles Code Snippets connector actions.
+ */
+final class CodeSnippetsAdapter {
+	use CodeSnippetsAdapterActions {
+		catalog_only_inspect as catalogOnlyInspect;
+		catalog_only_ensure as catalogOnlyEnsure;
+		catalog_only_undo as catalogOnlyUndo;
+		restore_code as restoreCode;
+	}
+
+	private const MAX_CODE_BYTES   = 1048576;
+	private const MAX_REPLACEMENTS = 4;
+	private const CATALOG_NAME     = 'Webactueel | WooCommerce Catalogue (No Orders)';
+	private const CATALOG_MARKER   = 'WAB_CATALOG_ONLY_2026';
+
+	/**
+	 * Register the CodeSnippets adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
+	public function register( Registry $registry ): void {
+
+		$registry->register(
+			'code_snippets.catalog_only.inspect',
+			array( $this, 'catalogOnlyInspect' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Read safe metadata of the built-in WooCommerce catalogue-only Code Snippets preset.',
+			)
+		);
+		$registry->register(
+			'code_snippets.catalog_only.ensure',
+			array( $this, 'catalogOnlyEnsure' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Create/activate only the vetted built-in WooCommerce catalogue snippet with rollback. No caller PHP.',
+			)
+		);
+		$registry->register(
+			'code_snippets.catalog_only.undo',
+			array( $this, 'catalogOnlyUndo' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Guarded internal rollback of a connector-created/activated catalogue snippet.',
+			)
+		);
+		$registry->register(
+			'code_snippets.patch',
+			array( $this, 'patch' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Patch one uniquely identified Code Snippets PHP snippet using exact bounded replacements with fingerprint, readback and rollback.',
+			)
+		);
+
+		$registry->register(
+			'code_snippets.restore_code',
+			array( $this, 'restoreCode' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Internal rollback action for restoring one Code Snippets record after a guarded patch.',
+			)
+		);
+	}
+
+
+	/**
+	 * Process the catalog code operation in the CodeSnippets adapter.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function catalog_code(): string {
+		$path = __DIR__ . '/../Presets/woocommerce-catalog-no-orders.txt';
+		if ( ! is_file( $path ) ) {
+			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+		}
+		$code = '';
+		try {
+			$handle = new \SplFileObject( $path, 'rb' );
+			$stat   = $handle->fstat();
+			if ( ! is_array( $stat ) || 0100000 !== ( $stat['mode'] & 0170000 ) ) {
+				throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+			}
+			// Read at most the accepted size plus one byte, including if the file grows.
+			$remaining = self::MAX_CODE_BYTES + 1;
+			while ( $remaining > 0 && ! $handle->eof() ) {
+				$chunk = $handle->fread( $remaining );
+				if ( ! is_string( $chunk ) || ( '' === $chunk && ! $handle->eof() ) ) {
+					throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+				}
+				$code      .= $chunk;
+				$remaining -= strlen( $chunk );
+			}
+		} catch ( \Throwable $error ) {
+			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+		}
+		if ( ! is_string( $code ) || '' === trim( $code ) ||
+			strlen( $code ) > self::MAX_CODE_BYTES ||
+			false === strpos( $code, self::CATALOG_MARKER ) ) {
+			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+		}
+		return trim( $code );
+	}
+
+	/**
+	 * Process the catalog provider operation in the CodeSnippets adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function catalog_provider(): void {
+		$this->assert_available();
+		if ( ! current_user_can( 'manage_options' ) || ! class_exists( \Code_Snippets\Model\Snippet::class ) ) {
+			throw new RuntimeException( 'Code Snippets administrator API is unavailable.' );
+		}
+		foreach ( array( 'save_snippet', 'activate_snippet', 'deactivate_snippet', 'delete_snippet' ) as $name ) {
+			if ( ! function_exists( '\\Code_Snippets\\' . $name ) ) {
+				throw new RuntimeException( 'Code Snippets provider is missing a required operation.' );
+			}
+		}
+	}
+
+	/**
+	 * Process the catalog find operation in the CodeSnippets adapter.
+	 *
+	 * @return object|null Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function catalog_find(): ?object {
+		$found = array();
+		foreach ( (array) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
+			if ( is_object( $snippet ) &&
+				( (string) ( $snippet->name ?? '' ) === self::CATALOG_NAME ||
+				false !== strpos( (string) ( $snippet->code ?? '' ), self::CATALOG_MARKER ) ) ) {
+				$found[] = $snippet;
+			}
+		}
+		if ( count( $found ) > 1 ) {
+			throw new RuntimeException( 'Conflicting catalogue snippets exist; refusing duplicate activation.' );
+		}
+		return $found ? $found[0] : null;
+	}
+
+	/**
+	 * Process the catalog state operation in the CodeSnippets adapter.
+	 *
+	 * @param object|null $snippet Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
+	private static function catalog_state( ?object $snippet ): array {
+		return array(
+			'present'     => null !== $snippet,
+			'id'          => $snippet ? (int) ( $snippet->id ?? 0 ) : 0,
+			'name'        => $snippet ? (string) ( $snippet->name ?? '' ) : '',
+			'type'        => $snippet ? (string) ( $snippet->type ?? '' ) : '',
+			'scope'       => $snippet ? (string) ( $snippet->scope ?? '' ) : '',
+			'active'      => $snippet ? ! empty( $snippet->active ) : false,
+			'network'     => $snippet ? ! empty( $snippet->network ) : false,
+			'trashed'     => $snippet ? ! empty( $snippet->trashed ) : false,
+			'locked'      => $snippet ? ! empty( $snippet->locked ) : false,
+			'code_sha256' => $snippet ? hash( 'sha256', trim( (string) ( $snippet->code ?? '' ) ) ) : '',
+		);
+	}
+
+	/**
+	 * Process the catalog guard operation in the CodeSnippets adapter.
+	 *
+	 * @param object|null $snippet Input for the operation.
+	 * @param string      $expected_code Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function catalog_guard( ?object $snippet, string $expected_code ): void {
+		if ( null === $snippet ) {
+			return;
+		}
+		$state = self::catalog_state( $snippet );
+		if ( $state['id'] <= 0 || self::CATALOG_NAME !== $state['name'] ||
+			'global' !== $state['scope'] || 'php' !== $state['type'] ||
+			$state['network'] || $state['trashed'] || $state['locked'] ||
+			! hash_equals( hash( 'sha256', $expected_code ), $state['code_sha256'] ) ) {
+			throw new RuntimeException( 'Existing catalogue snippet differs from audited preset. No changes performed.' );
+		}
+	}
+
+	/**
+	 * Process the patch operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	public function patch( array $payload, array $context ): array {
+		$this->assert_available();
+
+		$snippet = $this->find_target( $payload );
+		$before  = $this->snapshot( $snippet );
+
+		if ( ! empty( $before['locked'] ) ) {
+			throw new RuntimeException( 'Code Snippets target is locked and cannot be modified.' );
+		}
+		if ( ! empty( $before['trashed'] ) ) {
+			throw new RuntimeException( 'Code Snippets target is trashed and cannot be modified.' );
+		}
+		if ( 'php' !== (string) $before['type'] ) {
+			throw new RuntimeException( 'Only PHP Code Snippets may be patched through this action.' );
+		}
+
+		$replacements = $this->replacements( $payload );
+		$new_code     = (string) $before['code'];
+
+		foreach ( $replacements as $index => $replacement ) {
+			$occurrences = substr_count( $new_code, $replacement['find'] );
+			if ( 1 !== $occurrences ) {
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' must match exactly once; matched ' . (int) $occurrences . ' times.' );
+			}
+			$new_code = str_replace( $replacement['find'], $replacement['replace'], $new_code );
+		}
+
+		if ( $new_code === (string) $before['code'] ) {
+			throw new RuntimeException( 'Code Snippets patch does not change the target code.' );
+		}
+		if ( strlen( $new_code ) > self::MAX_CODE_BYTES ) {
+			throw new RuntimeException( 'Patched Code Snippets code exceeds the 1 MiB connector limit.' );
+		}
+
+		$after_planned         = $before;
+		$after_planned['code'] = $new_code;
+
+		$result = array(
+			'snippet'                 => $this->public_snapshot( $before ),
+			'replacement_count'       => count( $replacements ),
+			'before_code_fingerprint' => hash( 'sha256', (string) $before['code'] ),
+			'after_code_fingerprint'  => hash( 'sha256', $new_code ),
+			'before_fingerprint'      => Fingerprint::make( $before ),
+			'after_fingerprint'       => Fingerprint::make( $after_planned ),
+			'_current_fingerprint'    => Fingerprint::make( $before ),
+		);
+
+		if ( ! empty( $context['dry_run'] ) ) {
+			$result['readback_verified'] = null;
+			return $result;
+		}
+
+		$this->write_code( (int) $before['id'], $new_code );
+		$after = $this->snapshot( $this->get_snippet( (int) $before['id'] ) );
+
+		if ( ! $this->same_metadata( $before, $after ) || $new_code !== (string) $after['code'] ) {
+			$this->write_code( (int) $before['id'], (string) $before['code'] );
+			$restored = $this->snapshot( $this->get_snippet( (int) $before['id'] ) );
+			if ( (string) $restored['code'] !== (string) $before['code'] ) {
+				throw new RuntimeException( 'Code Snippets patch readback failed and automatic restore also failed.' );
+			}
+			throw new RuntimeException( 'Code Snippets patch readback failed; previous code was restored.' );
+		}
+
+		$result['snippet']           = $this->public_snapshot( $after );
+		$result['readback_verified'] = true;
+		$result['_rollback']         = array(
+			'action'  => 'code_snippets.restore_code',
+			'payload' => array(
+				'snippet_id'                => (int) $before['id'],
+				'code'                      => (string) $before['code'],
+				'expected_code_fingerprint' => hash( 'sha256', $new_code ),
+			),
+		);
+
+		return $result;
+	}
+
+	/**
+	 * Ensure available for the CodeSnippets adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function assert_available(): void {
+		foreach ( array( 'get_snippet', 'get_snippets', 'update_snippet_fields' ) as $function ) {
+			$qualified = '\\Code_Snippets\\' . $function;
+			if ( ! function_exists( $qualified ) ) {
+				throw new RuntimeException( 'Code Snippets API is unavailable: ' . esc_html( $function ) . '.' );
+			}
+		}
+
+		if ( function_exists( '\\Code_Snippets\\code_snippets' ) ) {
+			$plugin = \Code_Snippets\code_snippets();
+			if ( is_object( $plugin ) && method_exists( $plugin, 'current_user_can' ) && ! $plugin->current_user_can() ) {
+				throw new RuntimeException( 'Current user cannot manage Code Snippets.' );
+			}
+		}
+	}
+
+	/**
+	 * Find target for the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function find_target( array $payload ) {
+		$snippet_id = isset( $payload['snippet_id'] ) ? Input::non_negative_id( $payload['snippet_id'] ) : 0;
+		if ( isset( $payload['match_code_contains'] ) && ! is_string( $payload['match_code_contains'] ) ) {
+			throw new RuntimeException( 'Code Snippets marker must be a string.' );
+		}
+		$marker = $payload['match_code_contains'] ?? '';
+
+		if ( ( $snippet_id > 0 && '' !== $marker ) || ( $snippet_id <= 0 && '' === $marker ) ) {
+			throw new RuntimeException( 'Code Snippets patch requires exactly one of snippet_id or match_code_contains.' );
+		}
+
+		if ( $snippet_id > 0 ) {
+			return $this->get_snippet( $snippet_id );
+		}
+
+		if ( strlen( $marker ) > 240 || preg_match( '/[\x00-\x1F\x7F]/', $marker ) ) {
+			throw new RuntimeException( 'match_code_contains must be a printable string up to 240 bytes.' );
+		}
+
+		$matches = array();
+		foreach ( (array) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
+			if ( ! is_object( $snippet ) || empty( $snippet->id ) || ! isset( $snippet->code ) ) {
+				continue;
+			}
+			if ( false !== strpos( (string) $snippet->code, $marker ) ) {
+				$matches[] = $snippet;
+			}
+		}
+
+		if ( 1 !== count( $matches ) ) {
+			throw new RuntimeException( 'Code Snippets marker must identify exactly one snippet; matched ' . count( $matches ) . '.' );
+		}
+
+		return $matches[0];
+	}
+
+	/**
+	 * Retrieve snippet for the CodeSnippets adapter.
+	 *
+	 * @param int $snippet_id Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function get_snippet( int $snippet_id ) {
+		$snippet = \Code_Snippets\get_snippet( $snippet_id, false );
+		if ( ! is_object( $snippet ) || (int) ( $snippet->id ?? 0 ) !== $snippet_id ) {
+			throw new RuntimeException( 'Code Snippets target was not found.' );
+		}
+		return $snippet;
+	}
+
+	/**
+	 * Process the replacements operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function replacements( array $payload ): array {
+		$input = isset( $payload['replacements'] ) && is_array( $payload['replacements'] ) ? array_values( $payload['replacements'] ) : array();
+
+		if ( ! $input || count( $input ) > self::MAX_REPLACEMENTS ) {
+			throw new RuntimeException( 'Code Snippets patch requires 1-' . (int) self::MAX_REPLACEMENTS . ' replacements.' );
+		}
+
+		$replacements = array();
+		foreach ( $input as $index => $replacement ) {
+			if ( ! is_array( $replacement ) ) {
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' must be an object.' );
+			}
+			foreach ( array_keys( $replacement ) as $key ) {
+				if ( ! in_array( (string) $key, array( 'find', 'replace' ), true ) ) {
+					throw new RuntimeException( 'Replacement ' . (int) $index . ' contains unsupported key.' );
+				}
+			}
+
+			if ( ! isset( $replacement['replace'] ) || ! is_string( $replacement['replace'] ) ) {
+				throw new RuntimeException( 'Code Snippets replacement requires an explicit string replace value.' );
+			}
+			$find    = isset( $replacement['find'] ) && is_string( $replacement['find'] ) ? $replacement['find'] : '';
+			$replace = $replacement['replace'];
+
+			if ( '' === $find || strlen( $find ) > self::MAX_CODE_BYTES || strlen( $replace ) > self::MAX_CODE_BYTES ) {
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' has an invalid find/replace size.' );
+			}
+			if ( false !== strpos( $find, "\0" ) || false !== strpos( $replace, "\0" ) ) {
+				throw new RuntimeException( 'Replacement ' . (int) $index . ' may not contain NUL bytes.' );
+			}
+
+			$replacements[] = array(
+				'find'    => $find,
+				'replace' => $replace,
+			);
+		}
+
+		return $replacements;
+	}
+
+	/**
+	 * Write code for the CodeSnippets adapter.
+	 *
+	 * @param int    $snippet_id Input for the operation.
+	 * @param string $code Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function write_code( int $snippet_id, string $code ): void {
+		if ( strlen( $code ) > self::MAX_CODE_BYTES ) {
+			throw new RuntimeException( 'Code Snippets code exceeds the 1 MiB connector limit.' );
+		}
+
+		\Code_Snippets\update_snippet_fields( $snippet_id, array( 'code' => $code ), false );
+	}
+
+	/**
+	 * Process the snapshot operation in the CodeSnippets adapter.
+	 *
+	 * @param mixed $snippet Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
+	private function snapshot( $snippet ): array {
+		return array(
+			'id'             => (int) ( $snippet->id ?? 0 ),
+			'name'           => (string) ( $snippet->name ?? '' ),
+			'desc'           => (string) ( $snippet->desc ?? '' ),
+			'code'           => (string) ( $snippet->code ?? '' ),
+			'tags'           => isset( $snippet->tags ) && is_array( $snippet->tags ) ? array_values( $snippet->tags ) : array(),
+			'scope'          => (string) ( $snippet->scope ?? '' ),
+			'priority'       => (int) ( $snippet->priority ?? 0 ),
+			'active'         => ! empty( $snippet->active ),
+			'network'        => ! empty( $snippet->network ),
+			'shared_network' => ! empty( $snippet->shared_network ),
+			'locked'         => ! empty( $snippet->locked ),
+			'trashed'        => ! empty( $snippet->trashed ),
+			'type'           => (string) ( $snippet->type ?? '' ),
+		);
+	}
+
+	/**
+	 * Process the public snapshot operation in the CodeSnippets adapter.
+	 *
+	 * @param array $snapshot Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
+	private function public_snapshot( array $snapshot ): array {
+		unset( $snapshot['code'] );
+		return $snapshot;
+	}
+
+	/**
+	 * Process the same metadata operation in the CodeSnippets adapter.
+	 *
+	 * @param array $before Input for the operation.
+	 * @param array $after Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
+	private function same_metadata( array $before, array $after ): bool {
+		foreach ( array( 'id', 'name', 'desc', 'tags', 'scope', 'priority', 'active', 'network', 'shared_network', 'locked', 'trashed', 'type' ) as $key ) {
+			if ( ( $before[ $key ] ?? null ) !== ( $after[ $key ] ?? null ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+}

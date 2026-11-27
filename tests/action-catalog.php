@@ -120,23 +120,40 @@ if (preg_match_all('/new\s+([A-Za-z][A-Za-z0-9_]*Adapter)\s*\(/', $pluginSource,
     fwrite(STDERR, "Unable to discover the active Connector adapter wiring.\n");
     exit(1);
 }
+$bootstrapSource = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
+if ($bootstrapSource === false) {
+    throw new RuntimeException('Unable to inspect the Connector bootstrap.');
+}
+$normalizedPhpTokens = static function (string $source): array {
+    return array_values(array_filter(token_get_all($source), static function ($token): bool {
+        return !is_array($token) || !in_array($token[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true);
+    }));
+};
+$tokenValues = static function (string $source) use ($normalizedPhpTokens): array {
+    return array_map(static function ($token) {
+        return is_array($token) ? array($token[0], $token[1]) : $token;
+    }, $normalizedPhpTokens($source));
+};
 $registrationPaths = array();
 foreach (array_unique($adapterMatches[1]) as $adapterName) {
-    // During the migration a class may have either its legacy path or its
-    // canonical WPCS path, but never both. The bootstrap must load that file.
-    $candidatePaths = array_filter(array(
-        $adapterDirectory . '/' . $adapterName . '.php',
-        $adapterDirectory . '/class-' . strtolower($adapterName) . '.php',
-    ), 'is_file');
-    if (count($candidatePaths) !== 1) {
-        fwrite(STDERR, "Wired Connector adapter source is missing or ambiguous: {$adapterName}\n");
-        exit(1);
+    $legacy = $adapterDirectory . '/' . $adapterName . '.php';
+    $canonical = $adapterDirectory . '/class-' . strtolower($adapterName) . '.php';
+    $candidatePaths = array_values(array_filter(array($legacy, $canonical), 'is_file'));
+    $wiredPaths = array_values(array_filter($candidatePaths, static function (string $path) use ($bootstrapSource): bool {
+        return strpos($bootstrapSource, "'includes/Adapters/" . basename($path) . "'") !== false;
+    }));
+    if (count($wiredPaths) !== 1) {
+        throw new RuntimeException('Wired Connector adapter source is missing or ambiguous: ' . $adapterName);
     }
-    $adapterPath = reset($candidatePaths);
-    $bootstrapSource = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
-    if ($bootstrapSource === false || strpos($bootstrapSource, "'includes/Adapters/" . basename($adapterPath) . "'") === false) {
-        fwrite(STDERR, "Wired Connector adapter source is not loaded by bootstrap: {$adapterName}\n");
-        exit(1);
+    $adapterPath = $wiredPaths[0];
+    // An existing legacy path is allowed only as a pure require-once
+    // forwarder to the one canonical implementation loaded by bootstrap.
+    if (count($candidatePaths) === 2) {
+        $forwarder = file_get_contents($legacy);
+        $expectedForwarder = "<?php\ndeclare( strict_types = 1 );\nrequire_once __DIR__ . '" . '/' . basename($canonical) . "';\n";
+        if ($adapterPath !== $canonical || $forwarder === false || $tokenValues($forwarder) !== $tokenValues($expectedForwarder)) {
+            throw new RuntimeException('Ambiguous or executable legacy adapter forwarder: ' . $adapterName);
+        }
     }
     $registrationPaths[] = $adapterPath;
     $adapterSource = file_get_contents($adapterPath);

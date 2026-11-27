@@ -6,12 +6,12 @@ $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Security/class-filesystempolicy.php';
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 $mustContain = array(
-    'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/class-filesystempolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
+    'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/class-filesystempolicy.php', 'includes/Adapters/class-filesystemadapter.php'),
     'plugin/wordpressconnector/includes/class-plugin.php' => array('new FilesystemAdapter()'),
     'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'AUTO_ENABLED_FLAGS'),
     'plugin/wordpressconnector/includes/Admin/class-settings.php' => array('After a WordPress administrator clicks Activate,', 'Optional emergency policy overrides', 'Reconnect trusted GitHub Actions'),
     'plugin/wordpressconnector/includes/REST/Controller.php' => array('filesystem_writes', 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES'),
-    'plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php' => array('filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text', 'WP_Filesystem', "'direct' !== \$method", 'expected_sha256', 'TOKEN_PARSE', 'JSON_THROW_ON_ERROR', 'readback verification failed', "'_rollback'", 'assert_no_embedded_secrets', "'private_ajax_reused' => false"),
+    'plugin/wordpressconnector/includes/Adapters/class-filesystemadapter.php' => array('filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text', 'WP_Filesystem', "'direct' !== \$method", 'expected_sha256', 'TOKEN_PARSE', 'JSON_THROW_ON_ERROR', 'readback verification failed', "'_rollback'", 'assert_no_embedded_secrets', "'private_ajax_reused' => false"),
     'plugin/wordpressconnector/includes/Adapters/class-pluginsettingsadapter.php' => array('shared_filesystem_interface', 'filesystem.inspect', 'filesystem.write_text', 'bounded_filesystem_bridge'),
     'docs/PLUGIN-CONTROL.md' => array('WP File Manager and controlled filesystem access', 'WP_Filesystem', 'expected_sha256', 'WordPress core'),
 );
@@ -29,7 +29,7 @@ $blockedListings = array('wp-content/uploads','wp-content/cache','wp-content/wfl
 foreach ($blockedListings as $path) { try { FilesystemPolicy::assertListable($path); fwrite(STDERR, "Managed data path unexpectedly listable: {$path}\n"); exit(1); } catch (RuntimeException $error) {} }
 if (FilesystemPolicy::assertListable('.') !== '.') { fwrite(STDERR, "WordPress root listing contract failed.\n"); exit(1); }
 if (FilesystemPolicy::assertReadableText('wp-admin/includes/file.php') !== 'wp-admin/includes/file.php') { fwrite(STDERR, "Read-only core inspection contract failed.\n"); exit(1); }
-$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
+$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-filesystemadapter.php');
 $filesystemImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-filesystemadapteractions.php');
 if ($adapter === false || $filesystemImplementation === false) { exit(1); }
 $adapter .= $filesystemImplementation;
@@ -52,7 +52,7 @@ if (2 !== substr_count($writeMethod, '$filesystem->get_contents( $absolute )')
 $docs = file_get_contents($root . '/docs/PLUGIN-CONTROL.md'); if ($docs === false) { exit(1); }
 foreach (array('AndrewBaeten.nl','Observed version','observed on 2026-') as $residue) { if (stripos($docs, $residue) !== false) { fwrite(STDERR, "Client/runtime residue remains in generic plugin-control docs: {$residue}\n"); exit(1); } }
 // Read the actual filesystem timestamp, and fail safely if the file vanishes.
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-filesystemadapter.php';
 $timestampMethod = new ReflectionMethod(\Webactueel\WordPressConnector\Adapters\FilesystemAdapter::class, 'modified_gmt');
 $timestampMethod->setAccessible(true);
 $instance = new \Webactueel\WordPressConnector\Adapters\FilesystemAdapter();
