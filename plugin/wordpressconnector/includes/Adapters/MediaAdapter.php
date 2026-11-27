@@ -757,8 +757,8 @@ final class MediaAdapter {
 		}
 		if ( count( $post_fields ) > 1 ) {
 			$updated = wp_update_post( wp_slash( $post_fields ), true );
-			if ( is_wp_error( $updated ) ) {
-				throw new RuntimeException( $updated->get_error_message() );
+			if ( is_wp_error( $updated ) || $id !== $updated ) {
+				throw new RuntimeException( 'WordPress media attachment update failed.' );
 			}
 		}
 		if ( array_key_exists( 'alt', $payload ) ) {
