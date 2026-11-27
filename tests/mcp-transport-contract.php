@@ -292,6 +292,19 @@ namespace {
     $actionsResult = $actions->get_data()['result'];
     $assert(false === $actionsResult['isError'] && isset($actionsResult['structuredContent']['result']['actions']['post.update']), 'Actions tool must expose the existing registry catalog without semantic duplication.');
 
+    $unknownToolName = 'qa_opaque_diagnostic_marker_7e21';
+    $unknownTool = $controller->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0',
+        'id' => 'unknown-tool',
+        'method' => 'tools/call',
+        'params' => array('name' => $unknownToolName, 'arguments' => array(), '_meta' => $modernMeta),
+    ), array('MCP-Protocol-Version' => '2026-07-28', 'Mcp-Method' => 'tools/call', 'Mcp-Name' => $unknownToolName)));
+    $unknownError = $unknownTool->get_data()['error'] ?? array();
+    $assert(-32602 === ($unknownError['code'] ?? null)
+        && false !== strpos((string) ($unknownError['message'] ?? ''), 'Unknown MCP tool')
+        && false === strpos((string) ($unknownError['message'] ?? ''), $unknownToolName),
+        'Unknown MCP tool diagnostics must not reflect the caller-supplied name.');
+
     $executeHeaders = array('MCP-Protocol-Version' => '2026-07-28', 'Mcp-Method' => 'tools/call', 'Mcp-Name' => 'wordpress_connector_execute');
     $dryRun = $controller->handle(new WP_REST_Request(array(
         'jsonrpc' => '2.0',

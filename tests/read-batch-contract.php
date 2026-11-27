@@ -16,6 +16,8 @@ foreach (array(
     'Runtime/SnapshotStore.php',
     'Runtime/ProcessedStore.php',
     'Runtime/Runner.php',
+    'Adapters/CustomCssAdapter.php',
+    'Adapters/PortfolioStatsAdapter.php',
 ) as $path) {
     require_once $root . $path;
 }
@@ -113,4 +115,52 @@ if (! $denied || $reads !== $start) {
     throw new RuntimeException('Public policy did not block read-batch leaf before any reads.');
 }
 Policy::setPublicRepositoryContext(false);
+// Unknown field names and associative batch keys must not be reflected.
+$diagnosticMarker = 'qa_opaque_diagnostic_marker_7e21';
+$rejectWithoutReflection = static function (callable $call, string $expected) use ($diagnosticMarker): void {
+    try {
+        $call();
+    } catch (RuntimeException $error) {
+        if (false === strpos($error->getMessage(), $expected)
+            || false !== strpos($error->getMessage(), $diagnosticMarker)) {
+            throw new LogicException('Unsafe or unexpected runtime diagnostic.');
+        }
+        return;
+    }
+    throw new LogicException('Malformed payload unexpectedly accepted.');
+};
+foreach (array('readBatch', 'batch') as $method) {
+    $rejectWithoutReflection(static function () use ($runner, $method, $diagnosticMarker): void {
+        $runner->$method(array('operations' => array($diagnosticMarker => 'invalid')), array());
+    }, 'at index 0');
+}
+if ($reads !== $start || $writes !== 0) {
+    throw new LogicException('Invalid batch reached an execution handler.');
+}
+$guardCases = array(
+    array('assert_public_custom_css_payload', array(array($diagnosticMarker => true), true)),
+    array('assert_public_custom_css_rollback_payload', array(array($diagnosticMarker => true))),
+    array('assert_public_plugin_install_payload', array(array($diagnosticMarker => true))),
+    array('assert_public_cache_flush_payload', array(array($diagnosticMarker => true))),
+    array('assert_public_code_snippets_patch_payload', array(array($diagnosticMarker => true))),
+    array('assert_public_code_snippets_patch_payload', array(array('snippet_id' => 1, 'replacements' => array(array($diagnosticMarker => true))))),
+    array('assert_public_acf_update_payload', array(array($diagnosticMarker => true))),
+    array('assert_public_rollback_post_payload', array(array($diagnosticMarker => true))),
+);
+foreach ($guardCases as $case) {
+    $method = new ReflectionMethod(Runner::class, $case[0]);
+    if (PHP_VERSION_ID < 80100) {
+        $method->setAccessible(true);
+    }
+    $rejectWithoutReflection(static function () use ($method, $runner, $case): void {
+        $method->invokeArgs($runner, $case[1]);
+    }, 'unsupported');
+}
+$css = new \Webactueel\WordPressConnector\Adapters\CustomCssAdapter();
+$portfolio = new \Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter();
+foreach (array(array($css, 'patch'), array($portfolio, 'updateCaseText'), array($portfolio, 'update')) as $call) {
+    $rejectWithoutReflection(static function () use ($call, $diagnosticMarker): void {
+        $call(array($diagnosticMarker => true), array());
+    }, 'unsupported payload key');
+}
 echo "read batch preflight, public policy, bounded execution and mutation exclusion OK\n";
