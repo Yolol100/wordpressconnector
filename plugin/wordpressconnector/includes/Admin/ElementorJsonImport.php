@@ -19,6 +19,8 @@ require_once __DIR__ . '/trait-elementorjsonimportmethods.php';
  */
 final class ElementorJsonImport {
 	use ElementorJsonImportMethods {
+		render_import_page_compat as public renderImportPage;
+		handle_import_compat as public handleImport;
 		row_actions as rowActions;
 		register_import_pages as registerImportPages;
 		render_bulk_page as renderBulkPage;
@@ -54,7 +56,7 @@ final class ElementorJsonImport {
 	 *
 	 * @param string $post_type Input for the operation.
 	 */
-	public function renderImportPage( string $post_type ): void {
+	public function render_import_page( string $post_type ): void {
 		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
@@ -137,7 +139,7 @@ final class ElementorJsonImport {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function handleImport(): void {
+	public function handle_import(): void {
 		check_admin_referer( self::ACTION );
 		// A malformed or oversized post ID must never be coerced into another target.
 		try {

@@ -434,4 +434,16 @@ trait MediaAdapterActions {
 			'rollback_supported' => false,
 		);
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Operation result.
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function media_rename_compat( array $payload, array $context ): array {
+		return $this->media_rename( $payload, $context );
+	}
 }

@@ -24,6 +24,10 @@ require_once __DIR__ . '/trait-filesystemadapteractions.php';
  */
 final class FilesystemAdapter {
 	use FilesystemAdapterActions {
+		read_text_compat as public readText;
+		write_text_compat as public writeText;
+		create_text_compat as public createText;
+		delete_text_compat as public deleteText;
 		list_path as listPath;
 	}
 
@@ -151,7 +155,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function readText( array $payload, array $context = array() ): array {
+	public function read_text( array $payload, array $context = array() ): array {
 		// Registry supplies execution context; this read does not consume it.
 		unset( $context );
 
@@ -188,7 +192,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function writeText( array $payload, array $context ): array {
+	public function write_text( array $payload, array $context ): array {
 		if ( empty( $context['dry_run'] ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ) ) {
 			throw new RuntimeException( 'Filesystem writes are disabled. Enable the dedicated filesystem-writes gate first.' );
 		}
@@ -305,7 +309,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function createText( array $payload, array $context ): array {
+	public function create_text( array $payload, array $context ): array {
 		$this->assert_lifecycle_permission( $payload, $context );
 		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
 		if ( ! isset( $payload['content'] ) || ! is_string( $payload['content'] ) ) {
@@ -430,7 +434,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function deleteText( array $payload, array $context ): array {
+	public function delete_text( array $payload, array $context ): array {
 		$this->assert_lifecycle_permission( $payload, $context );
 		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
 		$absolute = $this->resolve_existing( $relative, false );
@@ -638,7 +642,11 @@ final class FilesystemAdapter {
 	 * @return string|null Operation result.
 	 */
 	private function modified_gmt( string $absolute ): ?string {
-		$modified = @filemtime( $absolute );
+		try {
+			$modified = ( new \SplFileInfo( $absolute ) )->getMTime();
+		} catch ( RuntimeException $error ) {
+			return null;
+		}
 		return false === $modified ? null : gmdate( 'c', (int) $modified );
 	}
 

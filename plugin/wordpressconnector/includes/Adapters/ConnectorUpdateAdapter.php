@@ -21,6 +21,7 @@ require_once __DIR__ . '/trait-connectorupdateadapteractions.php';
  */
 final class ConnectorUpdateAdapter {
 	use ConnectorUpdateAdapterActions {
+		checked_notice_compat as public checkedNotice;
 		native_update_offer as nativeUpdateOffer;
 		refresh_native_update_notice_action as refreshNativeUpdateNoticeAction;
 		refresh_native_update_notice as refreshNativeUpdateNotice;
@@ -99,7 +100,7 @@ final class ConnectorUpdateAdapter {
 	/**
 	 * Process the checked notice operation in the ConnectorUpdate adapter.
 	 */
-	public function checkedNotice(): void {
+	public function checked_notice(): void {
 		if ( ! current_user_can( 'update_plugins' )
 			|| ! isset( $_GET['wpconnector_update_checked'], $_GET['wpconnector_notice_nonce'] )
 			|| ! is_string( $_GET['wpconnector_update_checked'] )

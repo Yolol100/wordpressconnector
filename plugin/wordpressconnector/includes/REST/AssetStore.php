@@ -163,9 +163,17 @@ final class AssetStore {
 			if ( ! preg_match( '/^[a-f0-9]{64}\z/', $item ) ) {
 				continue;
 			}
-			$path     = $base . DIRECTORY_SEPARATOR . $item;
-			$modified = @filemtime( $path );
-			if ( is_dir( $path ) && ! is_link( $path ) && false !== $modified && $modified < $cutoff ) {
+			$path = $base . DIRECTORY_SEPARATOR . $item;
+			if ( ! is_dir( $path ) || is_link( $path ) ) {
+				continue;
+			}
+			try {
+				$modified = ( new \SplFileInfo( $path ) )->getMTime();
+			} catch ( RuntimeException $error ) {
+				// A disappeared or unreadable root cannot be safely expired.
+				continue;
+			}
+			if ( false !== $modified && $modified < $cutoff ) {
 				$this->remove_tree( $path );
 			}
 		}

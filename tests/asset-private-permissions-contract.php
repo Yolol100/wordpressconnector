@@ -298,10 +298,21 @@ namespace {
     $staleRoot = $store->rootForRequest($staleId, true);
     file_put_contents($staleRoot . '/old.txt', 'old');
     touch($staleRoot, time() - 7200);
+    $freshRoot = $store->rootForRequest('request-fresh12345', true);
+    file_put_contents($freshRoot . '/fresh.txt', 'fresh');
+    $staleFile = $base . '/' . str_repeat('f', 64);
+    file_put_contents($staleFile, 'not a directory');
+    touch($staleFile, time() - 7200);
+    $staleAlias = $base . '/' . str_repeat('e', 64);
+    if (!symlink($unrelated, $staleAlias)) { throw new RuntimeException('Cannot create expiry symlink fixture.'); }
     $store->cleanupExpired(3600);
-    if (! is_file($unrelated . '/keep.txt') || is_dir($staleRoot)) {
-        throw new RuntimeException('Expired cleanup removed unrelated data or kept expired connector assets.');
+    if (!is_file($unrelated . '/keep.txt') || is_dir($staleRoot) ||
+        !is_file($freshRoot . '/fresh.txt') || !is_file($staleFile) || !is_link($staleAlias)) {
+        throw new RuntimeException('Expired cleanup touched fresh, unrelated or non-directory data, or kept expired connector assets.');
     }
+    \unlink($staleAlias);
+    \unlink($staleFile);
+    $store->cleanup('request-fresh12345');
     \unlink($unrelated . '/keep.txt');
     \rmdir($unrelated);
     \rmdir($base);

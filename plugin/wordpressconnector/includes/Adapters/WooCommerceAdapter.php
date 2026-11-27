@@ -22,6 +22,10 @@ require_once __DIR__ . '/trait-woocommerceadapteractions.php';
  */
 final class WooCommerceAdapter {
 	use WooCommerceAdapterActions {
+		customer_get_compat as public customerGet;
+		shipping_zone_list_compat as public shippingZoneList;
+		shipping_zone_get_compat as public shippingZoneGet;
+		tax_rate_list_compat as public taxRateList;
 		order_list as orderList;
 		order_get as orderGet;
 		tax_class_list as taxClassList;
@@ -222,7 +226,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	public function customerGet( array $payload ): array {
+	public function customer_get( array $payload ): array {
 		$this->assert_woo();
 		if ( ! class_exists( 'WC_Customer' ) ) {
 			throw new RuntimeException( 'WooCommerce customer API is unavailable.' );
@@ -274,7 +278,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	public function shippingZoneList( array $payload = array() ): array {
+	public function shipping_zone_list( array $payload = array() ): array {
 		global $wpdb;
 		$this->assert_woo();
 		if (
@@ -340,7 +344,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	public function shippingZoneGet( array $payload ): array {
+	public function shipping_zone_get( array $payload ): array {
 		$this->assert_woo();
 		$id_value = $payload['id'] ?? null;
 		if ( ! is_int( $id_value ) && ( ! is_string( $id_value ) || 1 !== preg_match( '/^(0|[1-9][0-9]*)$/D', $id_value ) ) ) {
@@ -396,7 +400,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	public function taxRateList( array $payload ): array {
+	public function tax_rate_list( array $payload ): array {
 		global $wpdb;
 		$this->assert_woo();
 		if (

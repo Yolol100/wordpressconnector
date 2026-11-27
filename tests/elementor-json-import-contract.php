@@ -35,7 +35,7 @@ if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->r
 
 // The private upload parsers are intentionally not standalone HTTP entrypoints.
 // Keep their only public call paths behind the action-specific nonce checks.
-$singleStart = strpos($source, 'public function handleImport(): void {');
+$singleStart = strpos($source, 'public function handle_import(): void {');
 $singleNonce = false !== $singleStart ? strpos($source, 'check_admin_referer( self::ACTION );', $singleStart) : false;
 $singleParser = false !== $singleNonce ? strpos($source, '$this->uploaded_payload()', $singleNonce) : false;
 $bulkStart = strpos($source, 'public function preview_bulk(): void {');

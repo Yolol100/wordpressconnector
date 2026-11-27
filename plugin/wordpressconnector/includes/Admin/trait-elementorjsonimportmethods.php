@@ -260,4 +260,22 @@ trait ElementorJsonImportMethods {
 			$store->releaseMutationLock( $lock );
 		}
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param string $post_type Input for the operation.
+	 */
+	private function render_import_page_compat( string $post_type ): void {
+		$this->render_import_page( $post_type );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function handle_import_compat(): void {
+		$this->handle_import();
+	}
 }

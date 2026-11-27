@@ -36,7 +36,7 @@ foreach (array(
     'Runtime/ProcessedStore.php',
     'Runtime/class-result.php',
     'Runtime/Runner.php',
-    'CLI/Command.php',
+    'CLI/class-command.php',
 ) as $file) {
     require_once $root . $file;
 }

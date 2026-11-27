@@ -36,8 +36,8 @@ $adapter .= $filesystemImplementation;
 foreach (array('mk_file_folder_manager_action_callback','elFinderConnector','shell_exec(','exec(','passthru(','proc_open(','popen(') as $forbidden) { if (strpos($adapter, $forbidden) !== false) { fwrite(STDERR, "Forbidden filesystem adapter primitive/protocol found: {$forbidden}\n"); exit(1); } }
 // The same WordPress Filesystem backend must read back both successful
 // writes and attempted recovery; raw PHP reads can bypass the write API.
-$writeStart = strpos($adapter, 'public function writeText(');
-$writeEnd = false !== $writeStart ? strpos($adapter, 'public function createText(', $writeStart) : false;
+$writeStart = strpos($adapter, 'public function write_text(');
+$writeEnd = false !== $writeStart ? strpos($adapter, 'public function create_text(', $writeStart) : false;
 if (false === $writeStart || false === $writeEnd) {
     fwrite(STDERR, "Filesystem write method boundaries are missing.\n");
     exit(1);
@@ -51,4 +51,28 @@ if (2 !== substr_count($writeMethod, '$filesystem->get_contents( $absolute )')
 }
 $docs = file_get_contents($root . '/docs/PLUGIN-CONTROL.md'); if ($docs === false) { exit(1); }
 foreach (array('AndrewBaeten.nl','Observed version','observed on 2026-') as $residue) { if (stripos($docs, $residue) !== false) { fwrite(STDERR, "Client/runtime residue remains in generic plugin-control docs: {$residue}\n"); exit(1); } }
+// Read the actual filesystem timestamp, and fail safely if the file vanishes.
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php';
+$timestampMethod = new ReflectionMethod(\Webactueel\WordPressConnector\Adapters\FilesystemAdapter::class, 'modified_gmt');
+$timestampMethod->setAccessible(true);
+$instance = new \Webactueel\WordPressConnector\Adapters\FilesystemAdapter();
+$fixture = tempnam(sys_get_temp_dir(), 'wpconnector-time-');
+if (!is_string($fixture)) { throw new RuntimeException('Cannot create timestamp fixture.'); }
+set_error_handler(static function ($severity, $message) {
+    throw new ErrorException($message, 0, $severity);
+});
+try {
+    if (!touch($fixture, 1234567890) ||
+        $timestampMethod->invoke($instance, $fixture) !== gmdate('c', 1234567890)) {
+        throw new RuntimeException('Exact filesystem timestamp changed.');
+    }
+    unlink($fixture);
+    clearstatcache(true, $fixture);
+    if (null !== $timestampMethod->invoke($instance, $fixture)) {
+        throw new RuntimeException('Missing file did not return a null timestamp.');
+    }
+} finally {
+    restore_error_handler();
+    if (is_file($fixture)) { unlink($fixture); }
+}
 echo "filesystem zero-config control contract OK\n";
