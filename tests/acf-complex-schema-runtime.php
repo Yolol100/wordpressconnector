@@ -390,4 +390,101 @@ if (empty($groupDeleted['_rollback']) || 'acf.schema.create_field_group' !== ($g
     exit(1);
 }
 
+// Invalid schema input must be rejected without reflecting caller-controlled
+// names, coercing arrays to strings, or changing persistent ACF state.
+$opaque = 'qa_opaque_diagnostic_marker_4e62';
+$baseField = array('key' => 'field_test_safe123', 'name' => 'safe_name', 'label' => 'Safe label', 'type' => 'text');
+$schemaPayload = array('post_id' => 4470, 'group_key' => 'group_existing123', 'fields' => array($baseField));
+$cases = array();
+foreach (array('ensureFields', 'removeFields') as $operation) {
+    $bad = $schemaPayload;
+    $bad[$opaque] = true;
+    $cases[] = array($operation, $bad, 'Unknown ACF');
+}
+foreach (array('createFieldGroup', 'deleteFieldGroup') as $operation) {
+    $bad = $operation === 'createFieldGroup' ? $groupPayload : $rollback;
+    $bad[$opaque] = true;
+    $cases[] = array($operation, $bad, 'Unknown ACF');
+}
+foreach (array('ensureTextFields', 'ensureFields') as $operation) {
+    $valid = $schemaPayload;
+    if ('ensureTextFields' === $operation) {
+        unset($valid['fields'][0]['type']);
+    }
+    foreach (array('key' => 'Invalid ACF field key', 'name' => 'Invalid ACF field name') as $field => $message) {
+        foreach (array('<' . $opaque . '>', array($opaque)) as $input) {
+            $bad = $valid;
+            $bad['fields'][0][$field] = $input;
+            $cases[] = array($operation, $bad, $message);
+        }
+    }
+    $bad = $valid;
+    $bad['fields'][0]['label'] = array($opaque);
+    $cases[] = array($operation, $bad, 'Invalid ACF field label');
+    $bad = $valid;
+    $bad['fields'][0][$opaque] = true;
+    $cases[] = array($operation, $bad, 'Unknown ACF');
+    $bad = $valid;
+    $bad['fields'] = array($opaque => 'invalid');
+    $cases[] = array($operation, $bad, 'ACF schema field at index 0');
+}
+foreach (array($opaque, array($opaque)) as $input) {
+    $bad = $schemaPayload;
+    $bad['fields'][0]['type'] = $input;
+    $cases[] = array('ensureFields', $bad, 'Unsupported ACF complex schema field type');
+    $bad = $groupPayload;
+    $bad['group']['key'] = $input;
+    $cases[] = array('createFieldGroup', $bad, 'Invalid ACF field-group key');
+    $bad = $groupPayload;
+    $bad['group']['hide_on_screen'] = array($input);
+    $cases[] = array('createFieldGroup', $bad, 'Invalid ACF hide_on_screen item');
+    foreach (array('param' => 'Unsupported ACF location parameter', 'operator' => 'Unsupported ACF location operator') as $field => $message) {
+        $bad = $groupPayload;
+        $bad['group']['location'][0][0][$field] = $input;
+        $cases[] = array('createFieldGroup', $bad, $message);
+    }
+}
+$bad = $groupPayload;
+$bad['group']['location'][0][0]['value'] = array($opaque);
+$cases[] = array('createFieldGroup', $bad, 'Invalid ACF location value at group 0, rule 0');
+$bad = $groupPayload;
+$bad['group']['location'][0][0][$opaque] = true;
+$cases[] = array('createFieldGroup', $bad, 'Unknown ACF location rule property');
+$bad = $groupPayload;
+$bad['group']['location'] = array($opaque => array());
+$cases[] = array('createFieldGroup', $bad, 'ACF location group at index 0');
+$bad = $groupPayload;
+$bad['group'][$opaque] = true;
+$cases[] = array('createFieldGroup', $bad, 'Unknown ACF field-group property');
+$bad = $schemaPayload;
+$bad['fields'][0]['wrapper'] = array($opaque => 'unknown');
+$cases[] = array('ensureFields', $bad, 'Unknown ACF wrapper property');
+$bad = $schemaPayload;
+$bad['fields'][0]['conditional_logic'] = array(array(array('field' => 'field_test_safe123', 'operator' => '==', 'value' => 'yes', $opaque => true)));
+$cases[] = array('ensureFields', $bad, 'Unknown ACF conditional_logic property');
+
+$beforeInvalid = array($GLOBALS['acf_test_groups'], $GLOBALS['acf_test_fields'], $GLOBALS['acf_test_next_id']);
+set_error_handler(static function (int $severity, string $message): bool {
+    throw new ErrorException($message, 0, $severity);
+});
+try {
+    foreach ($cases as $case) {
+        list($operation, $payload, $expected) = $case;
+        $rejected = false;
+        try {
+            $adapter->$operation($payload, array('dry_run' => false));
+        } catch (RuntimeException $error) {
+            if (false === strpos($error->getMessage(), $expected) || false !== strpos($error->getMessage(), $opaque)) {
+                throw new LogicException('Unexpected or reflected ACF diagnostic for ' . $operation . ': ' . $expected);
+            }
+            $rejected = true;
+        }
+        if (!$rejected || $beforeInvalid !== array($GLOBALS['acf_test_groups'], $GLOBALS['acf_test_fields'], $GLOBALS['acf_test_next_id'])) {
+            throw new LogicException('Invalid ACF request changed state: ' . $operation . ' / ' . $expected);
+        }
+    }
+} finally {
+    restore_error_handler();
+}
+echo "ACF malformed schema rejection cases: " . count($cases) . "\n";
 echo "complex ACF schema runtime contract OK\n";
