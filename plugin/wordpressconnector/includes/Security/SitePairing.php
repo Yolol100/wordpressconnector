@@ -11,6 +11,8 @@ namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
+require_once __DIR__ . '/trait-sitepairingmethods.php';
+
 /**
  * Ordinary WordPress admin activation pairs this site with the pinned GitHub
  * OIDC control plane, without a second approval screen. A database clone or
@@ -18,6 +20,11 @@ use RuntimeException;
  * Direct authenticated WordPress REST/MCP is intentionally unaffected.
  */
 final class SitePairing {
+	use SitePairingMethods {
+		paired_administrator_id as pairedAdministratorId;
+		approve_on_activation as approveOnActivation;
+	}
+
 	private const OPTION    = 'wpconnector_github_oidc_site_pairing_v1';
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 
@@ -37,50 +44,6 @@ final class SitePairing {
 	 */
 	private static function fingerprint(): string {
 		return hash( 'sha256', self::audience() );
-	}
-
-	/**
-	 * Process the paired administrator id operation in the SitePairing component.
-	 *
-	 * @return int Operation result.
-	 */
-	public static function pairedAdministratorId(): int {
-		$state = get_option( self::OPTION, null );
-		if ( ! is_array( $state ) ||
-			1 !== ( $state['enabled'] ?? null ) ||
-			! is_string( $state['audience_sha256'] ?? null ) ||
-			! preg_match( '/^[a-f0-9]{64}\z/', $state['audience_sha256'] ) ||
-			! hash_equals( self::fingerprint(), $state['audience_sha256'] ) ) {
-			return 0;
-		}
-		$id = $state['administrator_id'] ?? null;
-		if ( ! is_int( $id ) || $id <= 0 || ! user_can( $id, 'manage_options' ) ) {
-			return 0;
-		}
-		return $id;
-	}
-
-	/**
-	 * WordPress plugin activation is an explicit administrator action guarded by
-	 * Core's own activation permissions and nonce. Reuse that single step for
-	 * this trusted, pinned GitHub control plane; never pair a mere upload,
-	 * an automated CLI install, or a network-wide activation.
-	 *
-	 * Existing installations are NOT silently re-paired during upgrades.
-	 *
-	 * @param bool $network_wide Whether the operation is network-wide.
-	 */
-	public static function approveOnActivation( bool $network_wide = false ): void {
-		if ( $network_wide || ! is_admin() ||
-			! current_user_can( 'activate_plugins' ) ||
-			! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		$user_id = get_current_user_id();
-		if ( ! is_int( $user_id ) || $user_id <= 0 ) {
-			return;
-		}
-		self::enableForAdministrator( $user_id );
 	}
 
 	/**
