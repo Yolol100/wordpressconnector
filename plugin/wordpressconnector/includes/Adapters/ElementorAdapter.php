@@ -133,8 +133,8 @@ final class ElementorAdapter {
 		}
 
 		$id = wp_insert_post( wp_slash( $post_fields ), true );
-		if ( is_wp_error( $id ) ) {
-			throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) || ! is_int( $id ) || $id <= 0 ) {
+			throw new RuntimeException( 'WordPress Elementor document creation failed.' );
 		}
 
 		try {
@@ -669,7 +669,7 @@ final class ElementorAdapter {
 		}
 
 		if ( is_wp_error( $result ) ) {
-			throw new RuntimeException( $result->get_error_message() );
+			throw new RuntimeException( 'Elementor rejected the document save.' );
 		}
 		if ( false === $result || null === $result ) {
 			throw new RuntimeException( 'Elementor rejected the document save.' );

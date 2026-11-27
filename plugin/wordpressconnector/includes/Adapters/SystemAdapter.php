@@ -434,8 +434,8 @@ final class SystemAdapter {
 		}
 		$password = wp_generate_password( 32, true, true );
 		$id       = wp_create_user( $login, $password, $email );
-		if ( is_wp_error( $id ) ) {
-			throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) || ! is_int( $id ) || $id <= 0 ) {
+			throw new RuntimeException( 'WordPress user creation failed.' );
 		}
 		$user = get_user_by( 'id', $id );
 		if ( isset( $payload['role'] ) ) {
@@ -1497,7 +1497,7 @@ final class SystemAdapter {
 		$upgrader = new \Core_Upgrader( new \Automatic_Upgrader_Skin() );
 		$updated  = $upgrader->upgrade( $candidate );
 		if ( is_wp_error( $updated ) || false === $updated ) {
-			throw new RuntimeException( is_wp_error( $updated ) ? $updated->get_error_message() : 'Core update failed.' );
+			throw new RuntimeException( 'Core update failed.' );
 		}
 		return array(
 			'updated'            => true,
@@ -1592,9 +1592,9 @@ final class SystemAdapter {
 				'_current_fingerprint' => Fingerprint::make( wp_next_scheduled( $hook ) ),
 			);
 		}
-		$count = wp_clear_scheduled_hook( $hook, isset( $payload['args'] ) && is_array( $payload['args'] ) ? $payload['args'] : array() );
-		if ( is_wp_error( $count ) ) {
-			throw new RuntimeException( $count->get_error_message() );
+		$count = wp_clear_scheduled_hook( $hook, isset( $payload['args'] ) && is_array( $payload['args'] ) ? $payload['args'] : array(), true );
+		if ( is_wp_error( $count ) || ! is_int( $count ) || $count < 0 ) {
+			throw new RuntimeException( 'WordPress cron deletion failed.' );
 		}
 		return array(
 			'cleared'            => (int) $count,
@@ -1644,8 +1644,8 @@ final class SystemAdapter {
 			);
 		}
 		$result = '' === $recurrence ? wp_schedule_single_event( $timestamp, $hook, $args, true ) : wp_schedule_event( $timestamp, $recurrence, $hook, $args, true );
-		if ( is_wp_error( $result ) ) {
-			throw new RuntimeException( $result->get_error_message() );
+		if ( is_wp_error( $result ) || true !== $result ) {
+			throw new RuntimeException( 'WordPress cron schedule failed.' );
 		}
 		return array(
 			'scheduled'          => true,
@@ -1755,8 +1755,8 @@ final class SystemAdapter {
 				'public'     => (int) $public,
 			)
 		);
-		if ( is_wp_error( $site_id ) ) {
-			throw new RuntimeException( $site_id->get_error_message() );
+		if ( is_wp_error( $site_id ) || ! is_int( $site_id ) || $site_id <= 0 ) {
+			throw new RuntimeException( 'WordPress site creation failed.' );
 		}
 		return array(
 			'site'      => $this->site_snapshot( get_site( $site_id ) ),
@@ -1823,8 +1823,8 @@ final class SystemAdapter {
 			);
 		}
 		$updated = wp_update_site( $id, $data );
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || $id !== $updated ) {
+			throw new RuntimeException( 'WordPress site update failed.' );
 		}
 		return array(
 			'site'      => $this->site_snapshot( get_site( $id ) ),
@@ -1865,8 +1865,8 @@ final class SystemAdapter {
 			);
 		}
 		$deleted = wp_delete_site( $id );
-		if ( is_wp_error( $deleted ) ) {
-			throw new RuntimeException( $deleted->get_error_message() );
+		if ( is_wp_error( $deleted ) || ! $deleted instanceof \WP_Site || $id !== (int) $deleted->blog_id ) {
+			throw new RuntimeException( 'WordPress site delete failed.' );
 		}
 		return array(
 			'deleted'            => $id,
@@ -1943,8 +1943,8 @@ final class SystemAdapter {
 		}
 		if ( count( $fields ) > 1 ) {
 			$result = wp_update_user( $fields );
-			if ( is_wp_error( $result ) ) {
-				throw new RuntimeException( $result->get_error_message() );
+			if ( is_wp_error( $result ) || $id !== $result ) {
+				throw new RuntimeException( 'WordPress user profile update failed.' );
 			}
 		}
 	}

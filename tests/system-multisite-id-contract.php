@@ -39,12 +39,14 @@ function get_site($id) {
     }
     return 52 === $id ? $GLOBALS['site_fixture'] : false;
 }
-function is_wp_error($value): bool { return false; }
+class WP_Error { public function get_error_message(): string { return 'private provider diagnostic'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
 function wp_update_site($id, $data) {
     ++$GLOBALS['site_updates'];
     if (52 !== $id || ! is_int($id)) {
         throw new RuntimeException('Wrong site update target.');
     }
+    if (array_key_exists('site_provider_update',$GLOBALS)) { return $GLOBALS['site_provider_update']; }
     $GLOBALS['last_site_update'] = $data;
     foreach ($data as $field => $value) {
         $GLOBALS['site_fixture']->$field = $value;
@@ -56,6 +58,7 @@ function wp_delete_site($id) {
     if (52 !== $id || ! is_int($id)) {
         throw new RuntimeException('Wrong site delete target.');
     }
+    if (array_key_exists('site_provider_delete',$GLOBALS)) { return $GLOBALS['site_provider_delete']; }
     return $GLOBALS['site_fixture'];
 }
 
@@ -178,4 +181,41 @@ foreach (array('siteUpdate', 'siteDelete') as $method) {
 if ($GLOBALS['site_updates'] !== 1 || $GLOBALS['site_deletes'] !== 1) {
     throw new RuntimeException('Non-multisite guard modified site data.');
 }
+$GLOBALS['is_multisite'] = true;
+foreach (array('siteUpdate'=>'update','siteDelete'=>'delete') as $method=>$kind) {
+    $cases = 'update' === $kind ? array(new WP_Error(),false,0,53,'52') : array(new WP_Error(),false,null,new WP_Site(53));
+    foreach ($cases as $failure) {
+        $GLOBALS['site_provider_'.$kind]=$failure;
+        try {
+            $adapter->$method(array('id'=>52,'domain'=>'unsafe.example.test'),array('dry_run'=>false));
+            throw new RuntimeException('Rejected multisite provider result accepted.');
+        } catch (RuntimeException $error) {
+            if ('WordPress site '.$kind.' failed.' !== $error->getMessage()) throw $error;
+        }
+    }
+    unset($GLOBALS['site_provider_'.$kind]);
+}
+function sanitize_key($value): string { return strtolower((string)$value); }
+function wp_get_scheduled_event($hook,$args) { return (object)array('timestamp'=>123,'schedule'=>false,'args'=>$args); }
+function wp_schedule_single_event($timestamp,$hook,$args,$wp_error) { return $GLOBALS['cron_provider_result']; }
+function wp_schedule_event($timestamp,$recurrence,$hook,$args,$wp_error) { return $GLOBALS['cron_provider_result']; }
+function wp_clear_scheduled_hook($hook,$args,$wp_error=false) {
+    if (true !== $wp_error) throw new RuntimeException('Cron deletion must request typed errors.');
+    return $GLOBALS['cron_provider_result'];
+}
+foreach (array('cronSchedule'=>'schedule','cronDelete'=>'deletion') as $method=>$kind) {
+    foreach (array(new WP_Error(),false,null,'1',-1) as $failure) {
+        $GLOBALS['cron_provider_result']=$failure;
+        try {
+            $adapter->$method(array('hook'=>'fixture_hook','timestamp'=>456),array('dry_run'=>false));
+            throw new RuntimeException('Rejected cron provider result accepted.');
+        } catch (RuntimeException $error) {
+            if ('WordPress cron '.$kind.' failed.' !== $error->getMessage()) throw $error;
+        }
+    }
+}
+$GLOBALS['cron_provider_result']=0;
+if (0 !== ($adapter->cronDelete(array('hook'=>'fixture_hook'),array('dry_run'=>false))['cleared'] ?? null)) throw new RuntimeException('Valid zero cron clear rejected.');
+$GLOBALS['cron_provider_result']=true;
+if (true !== ($adapter->cronSchedule(array('hook'=>'fixture_hook','timestamp'=>456),array('dry_run'=>false))['scheduled'] ?? null)) throw new RuntimeException('Valid cron scheduling rejected.');
 echo "Multisite exact-ID update/delete and main-site guard contract OK\n";

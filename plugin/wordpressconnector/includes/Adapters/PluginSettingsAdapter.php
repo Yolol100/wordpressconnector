@@ -1032,7 +1032,7 @@ final class PluginSettingsAdapter {
 		}
 		$result = $ability->execute( $input );
 		if ( is_wp_error( $result ) ) {
-			throw new RuntimeException( $result->get_error_message() );
+			throw new RuntimeException( 'WordPress ability execution failed.' );
 		}
 		if ( ! is_array( $result ) ) {
 			throw new RuntimeException( 'WordPress ability returned an unsupported result type: ' . $name . '.' );

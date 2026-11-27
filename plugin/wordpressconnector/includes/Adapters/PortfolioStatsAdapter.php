@@ -171,7 +171,7 @@ final class PortfolioStatsAdapter {
 					true
 				);
 				if ( is_wp_error( $updated ) ) {
-					throw new RuntimeException( 'Portfolio case content update failed: ' . $updated->get_error_message() );
+					throw new RuntimeException( 'Portfolio case content update failed.' );
 				}
 			}
 			foreach ( $description_keys as $name ) {

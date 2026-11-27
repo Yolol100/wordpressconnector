@@ -913,8 +913,8 @@ final class WooCommerceAdapter {
 			);
 		}
 		$id = wc_create_attribute( $args );
-		if ( is_wp_error( $id ) ) {
-			throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) || ! is_int( $id ) || $id <= 0 ) {
+			throw new RuntimeException( 'WooCommerce attribute creation failed.' );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		return array(
@@ -951,8 +951,8 @@ final class WooCommerceAdapter {
 			return $result;
 		}
 		$updated = wc_update_attribute( $id, $args );
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || $id !== $updated ) {
+			throw new RuntimeException( 'WooCommerce attribute update failed.' );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		$result['after']     = $this->attribute_snapshot( $this->find_attribute( $id ) );
@@ -985,8 +985,8 @@ final class WooCommerceAdapter {
 			return $result;
 		}
 		$deleted = wc_delete_attribute( $id );
-		if ( is_wp_error( $deleted ) ) {
-			throw new RuntimeException( $deleted->get_error_message() );
+		if ( is_wp_error( $deleted ) || true !== $deleted ) {
+			throw new RuntimeException( 'WooCommerce attribute deletion failed.' );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		$result['_rollback'] = array(

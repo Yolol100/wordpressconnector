@@ -114,7 +114,7 @@ final class CustomCssAdapter {
 
 		$updated = wp_update_custom_css_post( $css, array( 'stylesheet' => $stylesheet ) );
 		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+			throw new RuntimeException( 'WordPress Additional CSS update failed.' );
 		}
 		if ( ! $updated instanceof \WP_Post ) {
 			throw new RuntimeException( 'WordPress did not return an Additional CSS post after update.' );
@@ -217,7 +217,7 @@ final class CustomCssAdapter {
 
 		$updated = wp_update_custom_css_post( $after_css, array( 'stylesheet' => $stylesheet ) );
 		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+			throw new RuntimeException( 'WordPress Additional CSS patch failed.' );
 		}
 		if ( ! $updated instanceof \WP_Post ) {
 			throw new RuntimeException( 'WordPress did not return an Additional CSS post after managed patch.' );
