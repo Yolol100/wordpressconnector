@@ -9,14 +9,18 @@ if ($source === false) {
     exit(1);
 }
 
-$start = strpos($source, 'public function userForcePasswordReset');
-$end = strpos($source, 'public function userDelete', $start === false ? 0 : $start);
+$implementation = file_get_contents(dirname($path) . '/trait-systemadapteractions.php');
+if ($implementation === false || strpos($source, 'user_force_password_reset as userForcePasswordReset;') === false) {
+    throw new RuntimeException('Emergency password reset compatibility alias is missing.');
+}
+$start = strpos($implementation, 'public function user_force_password_reset');
+$end = strpos($implementation, 'public function user_delete', $start === false ? 0 : $start);
 if ($start === false || $end === false || $end <= $start) {
     fwrite(STDERR, "Emergency password reset action is missing.\n");
     exit(1);
 }
-$method = substr($source, $start, $end - $start);
-$normalizedSource = preg_replace('/\\s+/', '', $source);
+$method = substr($implementation, $start, $end - $start);
+$normalizedSource = preg_replace('/\\s+/', '', $source . $implementation);
 $normalizedMethod = preg_replace('/\\s+/', '', $method);
 if (! is_string($normalizedSource) || ! is_string($normalizedMethod)) {
     throw new RuntimeException('Could not normalize emergency password reset contract source.');

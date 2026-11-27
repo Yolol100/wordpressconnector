@@ -85,6 +85,7 @@ foreach (array('connector.update.check', 'connector.update.apply') as $action) {
 }
 
 $system = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
+$system .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-systemadapteractions.php');
 $core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-coreadapter.php');
 $core .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-coreadapteractions.php');
 $filesystem = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
