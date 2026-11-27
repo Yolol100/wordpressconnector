@@ -1169,8 +1169,11 @@ final class Runner {
 					throw new RuntimeException( 'Public Code Snippets replacement contains unsupported key.' );
 				}
 			}
+			if ( ! isset( $replacement['replace'] ) || ! is_string( $replacement['replace'] ) ) {
+				throw new RuntimeException( 'Public Code Snippets replacement requires an explicit string replace value.' );
+			}
 			$find    = isset( $replacement['find'] ) && is_string( $replacement['find'] ) ? $replacement['find'] : '';
-			$replace = isset( $replacement['replace'] ) && is_string( $replacement['replace'] ) ? $replacement['replace'] : '';
+			$replace = $replacement['replace'];
 			if ( '' === $find || strlen( $find ) > 131072 || strlen( $replace ) > 131072 ) {
 				throw new RuntimeException( 'Public Code Snippets replacement exceeds the bounded size limit.' );
 			}
