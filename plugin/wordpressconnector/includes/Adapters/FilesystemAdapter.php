@@ -381,7 +381,7 @@ final class FilesystemAdapter {
 			return $result;
 		}
 
-		$this->filesystem();
+		$filesystem = $this->filesystem();
 		// Exclusive create: a concurrent file or symlink must not be overwritten.
 		$handle = @fopen( $absolute, 'x' );
 		if ( false === $handle ) {
@@ -402,15 +402,23 @@ final class FilesystemAdapter {
 			$ok = false;
 		}
 		@fclose( $handle );
-		@chmod( $absolute, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
 		if ( ! $ok || $offset !== $size ) {
-			@unlink( $absolute );
+			$this->remove_failed_create( $filesystem, $absolute );
 			throw new RuntimeException( 'New file write failed; partial content was removed.' );
+		}
+		try {
+			$permissions_ok = $filesystem->chmod( $absolute, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
+		} catch ( Throwable $error ) {
+			$permissions_ok = false;
+		}
+		if ( ! $permissions_ok ) {
+			$this->remove_failed_create( $filesystem, $absolute );
+			throw new RuntimeException( 'New file permissions could not be set; incomplete file was removed.' );
 		}
 		clearstatcache( true, $absolute );
 		$readback = @file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read back the exact local file for SHA-256 verification after atomic create; not a remote resource.
 		if ( ! is_string( $readback ) || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ) {
-			@unlink( $absolute );
+			$this->remove_failed_create( $filesystem, $absolute );
 			throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
 		}
 		$result['after']     = $this->state( $relative, $readback, $absolute );
@@ -423,6 +431,38 @@ final class FilesystemAdapter {
 			),
 		);
 		return $result;
+	}
+
+	/**
+	 * Verify cleanup of a failed exclusive file creation.
+	 *
+	 * @param \WP_Filesystem_Base $filesystem Initialized direct filesystem backend.
+	 * @param string              $absolute   Previously validated file path.
+	 * @throws \RuntimeException When cleanup cannot be independently verified.
+	 */
+	private function remove_failed_create( \WP_Filesystem_Base $filesystem, string $absolute ): void {
+		clearstatcache( true, $absolute );
+		if ( ! file_exists( $absolute ) && ! is_link( $absolute ) ) {
+			return;
+		}
+		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
+			throw new RuntimeException( 'Failed create target is no longer a regular file; manual recovery required.' );
+		}
+
+		try {
+			$removed = $filesystem->delete( $absolute, false, 'f' );
+		} catch ( Throwable $error ) {
+			$removed = false;
+		}
+		// A backend can return false after deletion, or true without deleting.
+		// The independent absence check determines the actual recovery outcome.
+		clearstatcache( true, $absolute );
+		if ( file_exists( $absolute ) || is_link( $absolute ) ) {
+			if ( ! $removed ) {
+				throw new RuntimeException( 'New file cleanup failed; manual recovery required.' );
+			}
+			throw new RuntimeException( 'New file cleanup readback failed; manual recovery required.' );
+		}
 	}
 
 	/**
