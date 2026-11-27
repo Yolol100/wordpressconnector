@@ -503,7 +503,7 @@ final class CodeSnippetsAdapter {
 		foreach ( array( 'get_snippet', 'get_snippets', 'update_snippet_fields' ) as $function ) {
 			$qualified = '\\Code_Snippets\\' . $function;
 			if ( ! function_exists( $qualified ) ) {
-				throw new RuntimeException( 'Code Snippets API is unavailable: ' . $function . '.' );
+				throw new RuntimeException( 'Code Snippets API is unavailable: ' . esc_html( $function ) . '.' );
 			}
 		}
 

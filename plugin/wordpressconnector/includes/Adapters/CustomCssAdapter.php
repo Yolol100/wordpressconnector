@@ -260,13 +260,13 @@ final class CustomCssAdapter {
 		$end_count   = substr_count( $current_css, $end );
 
 		if ( $start_count > 1 || $end_count > 1 || $start_count !== $end_count ) {
-			throw new RuntimeException( 'Managed CSS patch markers are duplicated or incomplete for patch_id: ' . $patch_id );
+			throw new RuntimeException( 'Managed CSS patch markers are duplicated or incomplete for patch_id: ' . esc_html( $patch_id ) );
 		}
 
 		$start_pos = strpos( $current_css, $start );
 		$end_pos   = false !== $start_pos ? strpos( $current_css, $end, $start_pos + strlen( $start ) ) : false;
 		if ( false !== $start_pos && ( false === $end_pos || $end_pos < $start_pos ) ) {
-			throw new RuntimeException( 'Managed CSS patch markers are malformed for patch_id: ' . $patch_id );
+			throw new RuntimeException( 'Managed CSS patch markers are malformed for patch_id: ' . esc_html( $patch_id ) );
 		}
 
 		if ( 'remove' === $operation ) {
@@ -355,7 +355,7 @@ final class CustomCssAdapter {
 
 		$themes = wp_get_themes();
 		if ( ! isset( $themes[ $stylesheet ] ) ) {
-			throw new RuntimeException( 'Theme stylesheet is not installed: ' . $stylesheet );
+			throw new RuntimeException( 'Theme stylesheet is not installed.' );
 		}
 
 		return $stylesheet;
@@ -372,16 +372,16 @@ final class CustomCssAdapter {
 	 */
 	private function assert_css( string $css, int $max_bytes, string $label ): void {
 		if ( strlen( $css ) > $max_bytes ) {
-			throw new RuntimeException( $label . ' exceeds the connector size limit.' );
+			throw new RuntimeException( esc_html( $label ) . ' exceeds the connector size limit.' );
 		}
 		if ( preg_match( '/[\x00-\x08\x0B\x0E-\x1F\x7F]/', $css ) ) {
-			throw new RuntimeException( $label . ' contains unsupported control characters.' );
+			throw new RuntimeException( esc_html( $label ) . ' contains unsupported control characters.' );
 		}
 		if ( false !== stripos( $css, '</style' ) ) {
-			throw new RuntimeException( $label . ' may not contain a closing style tag.' );
+			throw new RuntimeException( esc_html( $label ) . ' may not contain a closing style tag.' );
 		}
 		if ( preg_match( '/<\/s(?:t(?:y(?:l(?:e)?)?)?)?\s*\z/i', $css ) ) {
-			throw new RuntimeException( $label . ' may not end with a partial closing style tag.' );
+			throw new RuntimeException( esc_html( $label ) . ' may not end with a partial closing style tag.' );
 		}
 	}
 }

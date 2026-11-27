@@ -325,11 +325,11 @@ final class DiscoveryAdapter {
 	private function rest_catalog_positive_integer( $value, int $maximum, string $field ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) ||
 			1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
-			throw new \RuntimeException( $field . ' must be a positive integer.' );
+			throw new \RuntimeException( esc_html( $field ) . ' must be a positive integer.' );
 		}
 		$number = (int) $value;
 		if ( $number <= 0 || $number > $maximum ) {
-			throw new \RuntimeException( $field . ' exceeds the supported limit.' );
+			throw new \RuntimeException( esc_html( $field ) . ' exceeds the supported limit.' );
 		}
 		return $number;
 	}

@@ -242,7 +242,7 @@ final class FilesystemAdapter {
 		$active_content      = FilesystemPolicy::affectsBrowserExecution( $relative );
 		$required_capability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
 		if ( ! current_user_can( $required_capability ) ) {
-			throw new RuntimeException( 'Current user lacks the required filesystem capability: ' . $required_capability . '.' );
+			throw new RuntimeException( 'Current user lacks the required filesystem capability: ' . esc_html( $required_capability ) . '.' );
 		}
 		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) ) {
@@ -551,7 +551,7 @@ final class FilesystemAdapter {
 		}
 		$capability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
 		if ( ! current_user_can( $capability ) ) {
-			throw new RuntimeException( 'WordPress denied capability ' . $capability . ' (file editor or server policy may be disabled).' );
+			throw new RuntimeException( 'WordPress denied capability ' . esc_html( $capability ) . ' (file editor or server policy may be disabled).' );
 		}
 		if ( function_exists( 'wp_is_file_mod_allowed' ) && ! wp_is_file_mod_allowed( 'connector_filesystem' ) ) {
 			throw new RuntimeException( 'WordPress or a policy plugin disallows file modifications; check DISALLOW_FILE_MODS and file_mod_allowed.' );

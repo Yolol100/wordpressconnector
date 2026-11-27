@@ -541,7 +541,7 @@ final class WooCommerceFulfillmentAdapter {
 	 */
 	private function positive( $id, string $name ): int {
 		if ( ! is_int( $id ) || $id < 1 || $id > 2147483647 ) {
-			throw new RuntimeException( $name . ' must be a positive integer.' );
+			throw new RuntimeException( esc_html( $name ) . ' must be a positive integer.' );
 		}
 		return $id;
 	}
@@ -595,7 +595,7 @@ final class WooCommerceFulfillmentAdapter {
 		$status = (int) $response->get_status();
 		$data   = $response->get_data();
 		if ( $status < 200 || $status >= 300 || ! is_array( $data ) ) {
-			throw new RuntimeException( 'WooCommerce provider returned HTTP ' . $status . '.' );
+			throw new RuntimeException( 'WooCommerce provider returned HTTP ' . intval( $status ) . '.' );
 		}
 		return $data;
 	}

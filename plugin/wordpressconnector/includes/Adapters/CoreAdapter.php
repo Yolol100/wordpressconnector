@@ -2023,7 +2023,7 @@ final class CoreAdapter {
 	private function require_key( array $payload, string $field ): string {
 		$value = isset( $payload[ $field ] ) ? (string) $payload[ $field ] : '';
 		if ( '' === $value || strlen( $value ) > 191 ) {
-			throw new RuntimeException( $field . ' is required and must be <= 191 characters.' );
+			throw new RuntimeException( esc_html( $field ) . ' is required and must be <= 191 characters.' );
 		}
 		return $value;
 	}

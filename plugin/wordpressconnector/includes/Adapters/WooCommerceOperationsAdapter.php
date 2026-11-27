@@ -623,7 +623,7 @@ final class WooCommerceOperationsAdapter {
 	 */
 	private function number( $value, string $field ): int {
 		if ( ! is_int( $value ) || $value < 1 || $value > 2147483647 ) {
-			throw new RuntimeException( 'WooCommerce ' . $field . ' must be a positive integer.' );
+			throw new RuntimeException( 'WooCommerce ' . esc_html( $field ) . ' must be a positive integer.' );
 		}
 		return $value;
 	}
@@ -668,7 +668,7 @@ final class WooCommerceOperationsAdapter {
 		}
 		$status = (int) $response->get_status();
 		if ( $status < 200 || $status >= 300 || ! is_array( $response->get_data() ) ) {
-			throw new RuntimeException( 'WooCommerce provider REST request failed: HTTP ' . $status . '.' );
+			throw new RuntimeException( 'WooCommerce provider REST request failed: HTTP ' . intval( $status ) . '.' );
 		}
 		return $response->get_data();
 	}

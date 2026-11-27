@@ -1194,7 +1194,7 @@ final class WooCommerceAdapter {
 				if ( class_exists( $class ) && is_subclass_of( $class, 'WC_Product' ) ) {
 					return new $class();
 				}
-				throw new RuntimeException( 'Unsupported product type: ' . $type );
+				throw new RuntimeException( 'Unsupported product type.' );
 		}
 	}
 
