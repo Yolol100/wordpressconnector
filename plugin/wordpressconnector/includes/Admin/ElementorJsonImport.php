@@ -132,7 +132,10 @@ final class ElementorJsonImport {
 					'post_status'    => $post_statuses,
 					'posts_per_page' => 100,
 					'offset'         => $offset,
-					'orderby'        => array( 'modified' => 'DESC', 'ID' => 'DESC' ),
+					'orderby'        => array(
+						'modified' => 'DESC',
+						'ID'       => 'DESC',
+					),
 				)
 			);
 			foreach ( $page as $post ) {
