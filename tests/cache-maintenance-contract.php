@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CacheMaintenanceAdapter.php');
+$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php');
+$implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-cachemaintenanceadaptermethods.php');
+if (!is_string($adapter) || !is_string($implementation)) { throw new RuntimeException('Missing cache maintenance callback implementation.'); }
+$adapter .= $implementation;
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 

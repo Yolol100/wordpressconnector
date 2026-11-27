@@ -76,6 +76,7 @@ function rest_url( string $path ): string {
 	return 'https://example.invalid/wp-json/' . $path;
 }
 function is_ssl(): bool { return $GLOBALS['oauth_case']['ssl']; }
+function wp_unslash( $value ) { return is_string( $value ) ? stripslashes( $value ) : $value; }
 function add_action( string $name, $callback, int $priority = 10 ): void {
 	$GLOBALS['oauth_case']['hooks'][ $name ] = $callback;
 }
@@ -312,6 +313,24 @@ assert_oauth( $blocked instanceof WP_Error
 	&& ! $authed
 	&& $before === count( $GLOBALS['oauth_case']['calls'] ),
 	'Thirteenth call from the same verified remote address must be denied before provider introspection.' );
+// Raw malformed IPs must never receive a separate valid-address bucket
+// after unslashing. Valid IPv6 remains an exact, independent bucket.
+foreach ( array( null, array( '192.0.2.12' ), '192.0.2.12 ', "\\192.0.2.12", '192.0.2.12' . "\n" ) as $bad_address ) {
+	if ( null === $bad_address ) { unset( $_SERVER['REMOTE_ADDR'] ); }
+	else { $_SERVER['REMOTE_ADDR'] = $bad_address; }
+	$GLOBALS['oauth_case']['transients'] = array();
+	list( $allowed, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+	assert_oauth( true === $allowed && $authed, 'Malformed addresses use the shared unknown bucket.' );
+	$prefix = 'wpconnector_oauth_ip_' . substr( hash( 'sha256', 'unknown' ), 0, 24 ) . '_';
+	assert_oauth( 1 === count( array_filter( array_keys( $GLOBALS['oauth_case']['transients'] ), static function ( $key ) use ( $prefix ) { return 0 === strpos( $key, $prefix ); } ) ), 'Malformed raw address must not be normalized into a valid IP bucket.' );
+}
+$_SERVER['REMOTE_ADDR'] = '2001:db8::12';
+$GLOBALS['oauth_case']['transients'] = array();
+list( $allowed, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $allowed && $authed, 'Valid IPv6 must retain its own rate bucket.' );
+$prefix = 'wpconnector_oauth_ip_' . substr( hash( 'sha256', $_SERVER['REMOTE_ADDR'] ), 0, 24 ) . '_';
+assert_oauth( 1 === count( array_filter( array_keys( $GLOBALS['oauth_case']['transients'] ), static function ( $key ) use ( $prefix ) { return 0 === strpos( $key, $prefix ); } ) ), 'Valid IPv6 bucket bytes must stay unchanged.' );
+$_SERVER['REMOTE_ADDR'] = '192.0.2.12';
 // Simulate database-backed transient scalar rehydration and reject malformed counts.
 foreach ( array( '01', '-1', '+1', '1e3', '99999', 'not-a-number' ) as $invalid_count ) {
 	$GLOBALS['oauth_case']['transients'] = array( 'wpconnector_oauth_all_' . (string) floor( time() / 60 ) => $invalid_count );

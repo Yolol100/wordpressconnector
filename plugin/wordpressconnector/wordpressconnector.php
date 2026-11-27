@@ -66,7 +66,7 @@ $wpconnector_files = array(
 	'includes/Adapters/class-gtranslatesettingsadapter.php',
 	'includes/Adapters/class-optimizersettingsadapter.php',
 	'includes/Adapters/class-pluginsettingsadapter.php',
-	'includes/Adapters/CacheMaintenanceAdapter.php',
+	'includes/Adapters/class-cachemaintenanceadapter.php',
 	'includes/Adapters/CodeSnippetsAdapter.php',
 	'includes/Adapters/class-customcssadapter.php',
 	'includes/Adapters/FilesystemAdapter.php',
