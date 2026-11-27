@@ -95,6 +95,9 @@ final class YoastFeatureSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->assert_private_provider();
 		if ( $payload ) {
 			throw new RuntimeException( 'Yoast feature inspection does not accept arbitrary option keys.' );

@@ -24,7 +24,7 @@ define('WPSEO_VERSION', '28.7');
 
 $base = dirname(__DIR__);
 foreach (array('Support/class-fingerprint.php', 'Security/Policy.php', 'Runtime/class-registry.php',
-    'Adapters/YoastSnippetAdapter.php', 'Runtime/Runner.php') as $file) {
+    'Adapters/class-yoastsnippetadapter.php', 'Runtime/Runner.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
 }
 use Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter;

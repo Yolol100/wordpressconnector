@@ -63,6 +63,9 @@ final class CacheMaintenanceAdapter {
 	 * @return array Operation result.
 	 */
 	public function capabilities( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$layers = array();
 		foreach ( self::LAYERS as $layer ) {
 			$layers[ $layer ] = $this->layer_state( $layer );

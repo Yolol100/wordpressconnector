@@ -780,6 +780,9 @@ final class PluginSettingsAdapter {
 	 * @return array Result of the operation.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$plugin   = $this->profile( $payload );
 		$settings = Policy::redact( $this->read_profile( $plugin ) );
 		return array(

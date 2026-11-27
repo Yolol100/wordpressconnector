@@ -92,6 +92,9 @@ final class FilesystemAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
@@ -143,6 +146,9 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function listPath( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$relative = FilesystemPolicy::assertListable( isset( $payload['path'] ) ? (string) $payload['path'] : '.' );
 		$absolute = $this->resolve_existing( $relative, true );
 		if ( ! is_dir( $absolute ) ) {
@@ -200,6 +206,9 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function readText( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$relative = FilesystemPolicy::assertReadableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
 		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) ) {

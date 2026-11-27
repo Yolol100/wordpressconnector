@@ -136,6 +136,9 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function catalog( array $payload = array(), array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->reject_extra( $payload, array() );
 		$groups = $this->api( 'GET', '/wc/v3/settings' );
 		if ( count( $groups ) > 80 ) {
@@ -187,6 +190,9 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->reject_extra( $payload, array( 'group', 'offset', 'limit' ) );
 		$group  = $this->group_id( $payload );
 		$offset = $this->bounded_int( $payload['offset'] ?? 0, 0, 2000, 'offset' );
@@ -380,6 +386,9 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspectSection( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->reject_extra( $payload, array( 'tab', 'section', 'offset', 'limit' ) );
 		$tab     = $payload['tab'] ?? null;
 		$section = $payload['section'] ?? '';

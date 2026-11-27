@@ -81,6 +81,9 @@ final class YoastTemplateSettingsAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$fields = $this->snapshot();
 		if ( Policy::publicRepositoryContext() ) {
 			return array(

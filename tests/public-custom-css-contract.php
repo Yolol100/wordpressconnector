@@ -7,7 +7,7 @@ $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 $policyPath = $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
 $runnerPath = $root . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
-$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/CustomCssAdapter.php';
+$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/class-customcssadapter.php';
 
 $tmp = sys_get_temp_dir() . '/wpconnector-public-css-' . bin2hex(random_bytes(6));
 if (! mkdir($tmp, 0700, true) && ! is_dir($tmp)) {

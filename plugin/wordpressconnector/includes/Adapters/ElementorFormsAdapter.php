@@ -74,6 +74,9 @@ final class ElementorFormsAdapter {
 	 * @return array Result of the operation.
 	 */
 	public function capabilities( array $payload, array $context ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$environment = $this->environment();
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return array(
@@ -125,6 +128,9 @@ final class ElementorFormsAdapter {
 	 * @return array Result of the operation.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
 		$snapshot = $this->snapshot( (int) $post->ID );

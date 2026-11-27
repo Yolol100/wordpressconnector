@@ -95,6 +95,9 @@ final class WooCommerceOperationsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function lists( array $payload = array(), array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->assert_keys( $payload, array( 'area', 'zone_id', 'page', 'per_page' ) );
 		$area = $payload['area'] ?? null;
 		if ( ! is_string( $area ) || ! in_array(
@@ -168,6 +171,9 @@ final class WooCommerceOperationsAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$this->assert_keys( $payload, array( 'area', 'id', 'zone_id' ) );
 		$area  = $this->area( $payload );
 		$path  = $this->path( $area, $payload );

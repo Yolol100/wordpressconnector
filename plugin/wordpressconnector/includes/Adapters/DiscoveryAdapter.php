@@ -164,6 +164,9 @@ final class DiscoveryAdapter {
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	public function restCatalog( array $payload, array $context = array() ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( $key, array( 'namespace', 'page', 'per_page' ), true ) ) {
 				throw new \RuntimeException( 'Unsupported REST discovery filter.' );

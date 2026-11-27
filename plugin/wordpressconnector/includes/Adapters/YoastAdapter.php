@@ -114,6 +114,9 @@ final class YoastAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$post   = $this->post( $payload );
 		$fields = $this->snapshot( (int) $post->ID );
 
@@ -298,6 +301,9 @@ final class YoastAdapter {
 	 * @param array $context Authorized execution context.
 	 */
 	public function inspectSiteRepresentation( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$fields = $this->site_representation_snapshot();
 		return array(
 			'fields'      => $fields,

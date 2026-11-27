@@ -140,6 +140,9 @@ final class ConnectorUpdateAdapter {
 	 * @return array|false
 	 */
 	public function nativeUpdateOffer( $update, array $plugin_data, string $plugin_file, array $locales ) {
+		// WordPress supplies locales to this filter; release identity is locale-independent.
+		unset( $locales );
+
 		if ( self::PLUGIN_FILE !== $plugin_file || self::UPDATE_URI !== ( $plugin_data['UpdateURI'] ?? '' ) ) {
 			return $update;
 		}
@@ -187,6 +190,9 @@ final class ConnectorUpdateAdapter {
 	 * @return array Operation result.
 	 */
 	public function check( array $payload = array(), array $context = array() ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$release = $this->release();
 		$current = defined( 'WPCONNECTOR_VERSION' ) ? (string) WPCONNECTOR_VERSION : '0.0.0';
 		$state   = array(

@@ -49,6 +49,9 @@ final class ElementorCapabilitiesAdapter {
 	 * @return array Operation result.
 	 */
 	public function capabilities( array $payload, array $context ): array {
+		// This read is independent of request input; retain the common registry callback signature.
+		unset( $payload, $context );
+
 		$environment = $this->environment();
 
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
@@ -88,6 +91,9 @@ final class ElementorCapabilitiesAdapter {
 	 * @return array Operation result.
 	 */
 	public function inventory( array $payload, array $context ): array {
+		// Registry supplies execution context; this read does not consume it.
+		unset( $context );
+
 		$environment = $this->environment();
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return array(
