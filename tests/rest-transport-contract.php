@@ -8,15 +8,21 @@ $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes
 if ($implementation === false || !is_string($controller)) { throw new RuntimeException('Missing canonical implementation: REST/trait-restcontrollermethods.php'); }
 $controller .= $implementation;
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/class-assetstore.php');
-$assetStore .= file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
+$assetStoreImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-assetstoremethods.php');
+if (!is_string($assetStore) || !is_string($assetStoreImplementation)) { throw new RuntimeException('Missing canonical assetstore source.'); }
+$assetStore .= $assetStoreImplementation;
 $settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/class-settings.php');
 $settingsImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/trait-settingsmethods.php');
 if ($settingsImplementation === false) { throw new RuntimeException('Missing canonical Settings implementation.'); }
 $settings .= $settingsImplementation;
 $policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
-$policy .= file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+$policyImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+if (!is_string($policy) || !is_string($policyImplementation)) { throw new RuntimeException('Missing canonical policy source.'); }
+$policy .= $policyImplementation;
 $oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-githuboidc.php');
-$oidc .= file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-githuboidcmethods.php');
+$oidcImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-githuboidcmethods.php');
+if (!is_string($oidc) || !is_string($oidcImplementation)) { throw new RuntimeException('Missing canonical githuboidc source.'); }
+$oidc .= $oidcImplementation;
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 foreach (array('controller'=>$controller,'asset store'=>$assetStore,'settings'=>$settings,'policy'=>$policy,'oidc'=>$oidc,'bootstrap'=>$bootstrap) as $name=>$contents) {
     if (false === $contents) { fwrite(STDERR,"Unable to read REST {$name}.\n"); exit(1); }

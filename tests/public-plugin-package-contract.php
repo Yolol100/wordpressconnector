@@ -8,8 +8,10 @@ $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 $runnerSource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
-$policySource = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
-$policySource .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+$policySource = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/class-policy.php');
+$policySourceImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/trait-policymethods.php');
+if (!is_string($policySource) || !is_string($policySourceImplementation)) { throw new RuntimeException('Missing canonical policy source.'); }
+$policySource .= $policySourceImplementation;
 
 require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
