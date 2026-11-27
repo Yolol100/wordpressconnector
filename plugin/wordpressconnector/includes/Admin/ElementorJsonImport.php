@@ -536,7 +536,7 @@ final class ElementorJsonImport {
 			}
 			$payload = json_decode( $raw, true );
 			if ( ! is_array( $payload ) || json_last_error() !== JSON_ERROR_NONE ) {
-				throw new RuntimeException( 'Invalid JSON in ' . $name );
+				throw new RuntimeException( 'Invalid JSON in ' . esc_html( $name ) );
 			}
 			if ( isset( $payload['format'] ) && 'wordpressconnector/elementor-site-parts-bundle' === $payload['format'] ) {
 				$source  = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
@@ -546,7 +546,7 @@ final class ElementorJsonImport {
 				}
 			}
 			if ( ! isset( $payload['content'] ) || ! is_array( $payload['content'] ) || empty( $payload['content'] ) ) {
-				throw new RuntimeException( 'Missing Elementor content in ' . $name );
+				throw new RuntimeException( 'Missing Elementor content in ' . esc_html( $name ) );
 			}
 			$entries[] = array(
 				'name'    => $name,

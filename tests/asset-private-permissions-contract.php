@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 namespace Webactueel\WordPressConnector\REST {
     // Simulate filesystem permission failures without changing the real server.
     function chmod(string $path, int $mode): bool
