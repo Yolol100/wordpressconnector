@@ -62,13 +62,22 @@ function wp_slash( $value ) {
 
 function wp_update_post( $fields, $return_error = false ) {
 	++$GLOBALS['gutenberg_contract_write_calls'];
+	if ( array_key_exists( 'gutenberg_contract_provider_result', $GLOBALS ) ) {
+		return $GLOBALS['gutenberg_contract_provider_result'];
+	}
 	$id = (int) $fields['ID'];
 	$GLOBALS['gutenberg_contract_posts'][ $id ]->post_content = (string) $fields['post_content'];
 	return $id;
 }
 
+class WP_Error {
+	public function get_error_message(): string {
+		return 'qa_private_gutenberg_provider_detail_758e';
+	}
+}
+
 function is_wp_error( $value ): bool {
-	return false;
+	return $value instanceof WP_Error;
 }
 
 $root = dirname( __DIR__ );
@@ -262,4 +271,26 @@ if ( 71 !== ( $string_preview['post_id'] ?? 0 )
 if ( ! in_array( 71, $GLOBALS['gutenberg_contract_checked_ids'], true ) ) {
 	throw new RuntimeException( 'Gutenberg permission check did not bind to the target post ID.' );
 }
+// A rejected or mismatched provider result must never be reported as a successful write.
+foreach ( array( new WP_Error(), 0, false, 72, '71' ) as $provider_result ) {
+	$GLOBALS['gutenberg_contract_provider_result'] = $provider_result;
+	foreach ( array( 'replace' => $replace, 'patch' => $patch ) as $method => $payload ) {
+		$before = $GLOBALS['gutenberg_contract_posts'][71]->post_content;
+		$calls = $GLOBALS['gutenberg_contract_write_calls'];
+		try {
+			$adapter->$method( $payload, array( 'dry_run' => false ) );
+			throw new RuntimeException( 'Invalid Gutenberg provider result accepted.' );
+		} catch ( RuntimeException $error ) {
+			if ( 'WordPress Gutenberg document update failed.' !== $error->getMessage() ) {
+				throw $error;
+			}
+		}
+		if ( $before !== $GLOBALS['gutenberg_contract_posts'][71]->post_content
+			|| $calls + 1 !== $GLOBALS['gutenberg_contract_write_calls'] ) {
+			throw new RuntimeException( 'Rejected Gutenberg result changed fixture content or retried the write.' );
+		}
+	}
+}
+unset( $GLOBALS['gutenberg_contract_provider_result'] );
+
 echo "Gutenberg post editing permission contract OK\n";
