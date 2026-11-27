@@ -563,7 +563,7 @@ final class AcfAdapter {
 		$requested = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'group_key', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF complex schema payload property: ' . (string) $key );
+				throw new RuntimeException( 'Unknown ACF complex schema payload property.' );
 			}
 		}
 		if ( $post_id <= 0 || ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $group_key ) ) {
@@ -713,7 +713,7 @@ final class AcfAdapter {
 		$requested = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'group_key', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF complex schema rollback property: ' . (string) $key );
+				throw new RuntimeException( 'Unknown ACF complex schema rollback property.' );
 			}
 		}
 		if ( $post_id <= 0 || ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $group_key ) || ! $requested || count( $requested ) > 12 ) {
@@ -797,7 +797,7 @@ final class AcfAdapter {
 		$this->assert_acf_complex_schema();
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'group', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF field-group schema payload property: ' . (string) $key );
+				throw new RuntimeException( 'Unknown ACF field-group schema payload property.' );
 			}
 		}
 		$group_input  = isset( $payload['group'] ) && is_array( $payload['group'] ) ? $payload['group'] : array();
@@ -879,7 +879,7 @@ final class AcfAdapter {
 		$this->assert_acf_complex_schema();
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'group_key', 'expected_schema' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF field-group deletion payload property: ' . (string) $key );
+				throw new RuntimeException( 'Unknown ACF field-group deletion payload property.' );
 			}
 		}
 		$group_key = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
@@ -1040,23 +1040,23 @@ final class AcfAdapter {
 		$normalized = array();
 		$keys       = array();
 		$names      = array();
-		foreach ( $requested as $index => $field ) {
+		foreach ( array_values( $requested ) as $index => $field ) {
 			if ( ! is_array( $field ) ) {
-				throw new RuntimeException( 'ACF schema field at index ' . $index . ' must be an object.' );
+				throw new RuntimeException( 'ACF schema field at index ' . (int) $index . ' must be an object.' );
 			}
 			foreach ( array_keys( $field ) as $key ) {
 				if ( ! in_array( (string) $key, array( 'key', 'name', 'label' ), true ) ) {
-					throw new RuntimeException( 'Unknown ACF schema field property: ' . (string) $key );
+					throw new RuntimeException( 'Unknown ACF schema field property.' );
 				}
 			}
-			$key   = isset( $field['key'] ) ? (string) $field['key'] : '';
-			$name  = isset( $field['name'] ) ? (string) $field['name'] : '';
-			$label = isset( $field['label'] ) ? trim( (string) $field['label'] ) : '';
+			$key   = isset( $field['key'] ) && is_string( $field['key'] ) ? $field['key'] : '';
+			$name  = isset( $field['name'] ) && is_string( $field['name'] ) ? $field['name'] : '';
+			$label = isset( $field['label'] ) && is_scalar( $field['label'] ) ? trim( (string) $field['label'] ) : '';
 			if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $key ) ) {
-				throw new RuntimeException( 'Invalid ACF field key: ' . $key );
+				throw new RuntimeException( 'Invalid ACF field key.' );
 			}
 			if ( ! preg_match( '/^[a-z][a-z0-9_]{2,63}\z/', $name ) ) {
-				throw new RuntimeException( 'Invalid ACF field name: ' . $name );
+				throw new RuntimeException( 'Invalid ACF field name.' );
 			}
 			if ( '' === $label || strlen( $label ) > 80 || preg_match( '/[\x00-\x1F\x7F]/', $label ) ) {
 				throw new RuntimeException( 'Invalid ACF field label for: ' . $key );
@@ -1159,13 +1159,13 @@ final class AcfAdapter {
 		);
 		foreach ( array_keys( $group ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
-				throw new RuntimeException( 'Unknown ACF field-group property: ' . (string) $key );
+				throw new RuntimeException( 'Unknown ACF field-group property.' );
 			}
 		}
-		$key   = isset( $group['key'] ) ? (string) $group['key'] : '';
+		$key   = isset( $group['key'] ) && is_string( $group['key'] ) ? $group['key'] : '';
 		$title = isset( $group['title'] ) ? trim( (string) $group['title'] ) : '';
 		if ( ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $key ) ) {
-			throw new RuntimeException( 'Invalid ACF field-group key: ' . $key );
+			throw new RuntimeException( 'Invalid ACF field-group key.' );
 		}
 		Policy::assertKeyAllowed( $key );
 		if ( '' === $title || strlen( $title ) > 120 || $this->has_invalid_control( $title, false ) ) {
@@ -1229,13 +1229,12 @@ final class AcfAdapter {
 				'tags',
 				'send-trackbacks',
 			);
-			$hidden         = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
-			foreach ( $hidden as $item ) {
-				if ( ! in_array( $item, $allowed_hidden, true ) ) {
-					throw new RuntimeException( 'Invalid ACF hide_on_screen item: ' . $item );
+			foreach ( $group['hide_on_screen'] as $item ) {
+				if ( ! is_string( $item ) || ! in_array( $item, $allowed_hidden, true ) ) {
+					throw new RuntimeException( 'Invalid ACF hide_on_screen item.' );
 				}
 			}
-			$normalized['hide_on_screen'] = $hidden;
+			$normalized['hide_on_screen'] = array_values( array_unique( $group['hide_on_screen'] ) );
 		}
 		return $normalized;
 	}
@@ -1265,7 +1264,7 @@ final class AcfAdapter {
 		$normalized = array();
 		foreach ( array_values( $location ) as $group_index => $rules ) {
 			if ( ! is_array( $rules ) || ! $rules || count( $rules ) > 8 ) {
-				throw new RuntimeException( 'ACF location group at index ' . $group_index . ' requires 1-8 rules.' );
+				throw new RuntimeException( 'ACF location group at index ' . (int) $group_index . ' requires 1-8 rules.' );
 			}
 			$normalized_rules = array();
 			foreach ( array_values( $rules ) as $rule_index => $rule ) {
@@ -1274,21 +1273,21 @@ final class AcfAdapter {
 				}
 				foreach ( array_keys( $rule ) as $key ) {
 					if ( ! in_array( (string) $key, array( 'param', 'operator', 'value' ), true ) ) {
-						throw new RuntimeException( 'Unknown ACF location rule property: ' . (string) $key );
+						throw new RuntimeException( 'Unknown ACF location rule property.' );
 					}
 				}
-				$param    = isset( $rule['param'] ) ? (string) $rule['param'] : '';
-				$operator = isset( $rule['operator'] ) ? (string) $rule['operator'] : '';
-				$value    = isset( $rule['value'] ) ? (string) $rule['value'] : '';
+				$param    = isset( $rule['param'] ) && is_string( $rule['param'] ) ? $rule['param'] : '';
+				$operator = isset( $rule['operator'] ) && is_string( $rule['operator'] ) ? $rule['operator'] : '';
+				$value    = isset( $rule['value'] ) && is_scalar( $rule['value'] ) ? (string) $rule['value'] : '';
 				if ( ! isset( $types[ $param ] ) ) {
-					throw new RuntimeException( 'Unsupported ACF location parameter: ' . $param );
+					throw new RuntimeException( 'Unsupported ACF location parameter.' );
 				}
 				$operators = (array) acf_get_location_rule_operators( array( 'param' => $param ) );
 				if ( ! isset( $operators[ $operator ] ) ) {
-					throw new RuntimeException( 'Unsupported ACF location operator for ' . $param . ': ' . $operator );
+					throw new RuntimeException( 'Unsupported ACF location operator.' );
 				}
 				if ( '' === $value || strlen( $value ) > 200 || $this->has_invalid_control( $value, false ) ) {
-					throw new RuntimeException( 'Invalid ACF location value at group ' . $group_index . ', rule ' . $rule_index . '.' );
+					throw new RuntimeException( 'Invalid ACF location value at group ' . (int) $group_index . ', rule ' . (int) $rule_index . '.' );
 				}
 				Policy::assertKeyAllowed( $param );
 				$normalized_rules[] = array(
@@ -1325,7 +1324,7 @@ final class AcfAdapter {
 		$names      = array();
 		foreach ( array_values( $requested ) as $index => $field ) {
 			if ( ! is_array( $field ) ) {
-				throw new RuntimeException( 'ACF schema field at index ' . $index . ' must be an object.' );
+				throw new RuntimeException( 'ACF schema field at index ' . (int) $index . ' must be an object.' );
 			}
 			++$total;
 			if ( $total > 50 ) {
@@ -1354,7 +1353,7 @@ final class AcfAdapter {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalize_schema_field( array $field, int $depth, int &$total, array &$keys ): array {
-		$type            = isset( $field['type'] ) ? (string) $field['type'] : '';
+		$type            = isset( $field['type'] ) && is_string( $field['type'] ) ? $field['type'] : '';
 		$type_properties = array(
 			'text'         => array( 'default_value', 'placeholder', 'prepend', 'append', 'maxlength' ),
 			'textarea'     => array( 'default_value', 'placeholder', 'maxlength', 'rows', 'new_lines' ),
@@ -1367,7 +1366,7 @@ final class AcfAdapter {
 			'repeater'     => array( 'sub_fields', 'min', 'max', 'layout', 'button_label', 'collapsed', 'rows_per_page' ),
 		);
 		if ( ! isset( $type_properties[ $type ] ) ) {
-			throw new RuntimeException( 'Unsupported ACF complex schema field type: ' . $type );
+			throw new RuntimeException( 'Unsupported ACF complex schema field type.' );
 		}
 		if ( ! acf_get_field_type( $type ) ) {
 			throw new RuntimeException( 'ACF field type is unavailable in the installed runtime: ' . $type );
@@ -1379,17 +1378,17 @@ final class AcfAdapter {
 		);
 		foreach ( array_keys( $field ) as $property ) {
 			if ( ! in_array( (string) $property, $allowed, true ) ) {
-				throw new RuntimeException( 'Unknown ACF ' . $type . ' field property: ' . (string) $property );
+				throw new RuntimeException( 'Unknown ACF field property.' );
 			}
 		}
-		$key   = isset( $field['key'] ) ? (string) $field['key'] : '';
-		$name  = isset( $field['name'] ) ? (string) $field['name'] : '';
-		$label = isset( $field['label'] ) ? trim( (string) $field['label'] ) : '';
+		$key   = isset( $field['key'] ) && is_string( $field['key'] ) ? $field['key'] : '';
+		$name  = isset( $field['name'] ) && is_string( $field['name'] ) ? $field['name'] : '';
+		$label = isset( $field['label'] ) && is_scalar( $field['label'] ) ? trim( (string) $field['label'] ) : '';
 		if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $key ) ) {
-			throw new RuntimeException( 'Invalid ACF field key: ' . $key );
+			throw new RuntimeException( 'Invalid ACF field key.' );
 		}
 		if ( ! preg_match( '/^[a-z][a-z0-9_]{2,63}\z/', $name ) ) {
-			throw new RuntimeException( 'Invalid ACF field name: ' . $name );
+			throw new RuntimeException( 'Invalid ACF field name.' );
 		}
 		if ( '' === $label || strlen( $label ) > 120 || $this->has_invalid_control( $label, false ) ) {
 			throw new RuntimeException( 'Invalid ACF field label for: ' . $key );
@@ -1634,7 +1633,7 @@ final class AcfAdapter {
 		}
 		foreach ( array_keys( $wrapper ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'width', 'class', 'id' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF wrapper property: ' . (string) $key );
+				throw new RuntimeException( 'Unknown ACF wrapper property.' );
 			}
 		}
 		$width = isset( $wrapper['width'] ) ? (string) $wrapper['width'] : '';
@@ -1684,7 +1683,7 @@ final class AcfAdapter {
 				}
 				foreach ( array_keys( $rule ) as $key ) {
 					if ( ! in_array( (string) $key, array( 'field', 'operator', 'value' ), true ) ) {
-						throw new RuntimeException( 'Unknown ACF conditional_logic property: ' . (string) $key );
+						throw new RuntimeException( 'Unknown ACF conditional_logic property.' );
 					}
 				}
 				$field    = isset( $rule['field'] ) ? (string) $rule['field'] : '';
