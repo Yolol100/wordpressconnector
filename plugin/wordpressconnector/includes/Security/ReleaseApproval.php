@@ -54,7 +54,7 @@ final class ReleaseApproval {
 	}
 
 	/** Does the current authenticated browser belong to the explicitly linked owner? */
-	private static function ownerBrowser(): bool {
+	private static function owner_browser(): bool {
 		if ( ! is_ssl() || ! OAuthResourceServer::selfUpdateConfigured()
 			|| ! is_user_logged_in() || ! current_user_can( 'manage_options' )
 			|| ! current_user_can( 'update_plugins' )
@@ -107,7 +107,7 @@ final class ReleaseApproval {
 
 	/** Display exactly which published release the linked owner would approve. */
 	public function render_form(): void {
-		if ( ! function_exists( 'get_current_screen' ) || ! self::ownerBrowser() ) {
+		if ( ! function_exists( 'get_current_screen' ) || ! self::owner_browser() ) {
 			return;
 		}
 		$screen = get_current_screen();
@@ -152,8 +152,7 @@ final class ReleaseApproval {
 
 	/** Create short-lived, single-use consent through the real wp-admin session. */
 	public function approve(): void {
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Exact POST literal check with capability and session validation.
-		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! self::ownerBrowser() ) {
+		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'] || ! self::owner_browser() ) {
 			wp_die( esc_html__( 'A logged-in owner session is required.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( self::NONCE_ACTION );
