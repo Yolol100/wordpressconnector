@@ -642,7 +642,11 @@ final class FilesystemAdapter {
 	 * @return string|null Operation result.
 	 */
 	private function modified_gmt( string $absolute ): ?string {
-		$modified = @filemtime( $absolute );
+		try {
+			$modified = ( new \SplFileInfo( $absolute ) )->getMTime();
+		} catch ( RuntimeException $error ) {
+			return null;
+		}
 		return false === $modified ? null : gmdate( 'c', (int) $modified );
 	}
 
