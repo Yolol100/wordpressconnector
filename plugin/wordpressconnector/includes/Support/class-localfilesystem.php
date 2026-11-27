@@ -56,6 +56,52 @@ final class LocalFilesystem {
 	}
 
 	/**
+	 * Capture a validated local path's observable identity.
+	 *
+	 * @param string $path Validated local path.
+	 * @param int    $mode Expected private mode.
+	 * @return array|null Observed identity, or null on failure.
+	 */
+	public static function private_identity( string $path, int $mode ): ?array {
+		clearstatcache( true, $path );
+		if ( is_link( $path ) || ( 0700 === $mode ? ! is_dir( $path ) : ! is_file( $path ) ) ) {
+			return null;
+		}
+		try {
+			$info     = new \SplFileInfo( $path );
+			$resolved = $info->getRealPath();
+			$inode    = $info->getInode();
+			if ( false === $resolved || false === $inode || is_link( $path ) ) {
+				return null;
+			}
+			return array( $resolved, $inode );
+		} catch ( Throwable $error ) {
+			return null;
+		}
+	}
+
+	/**
+	 * Verify exact POSIX mode and the observed path identity.
+	 *
+	 * Windows mode bits cannot establish the effective Windows ACL.
+	 *
+	 * @param string     $path     Validated local path.
+	 * @param int        $mode     Expected private mode.
+	 * @param array|null $identity Identity before the permission change.
+	 * @return bool Whether observable state matches.
+	 */
+	public static function private_mode_matches( string $path, int $mode, ?array $identity ): bool {
+		if ( null === $identity || self::private_identity( $path, $mode ) !== $identity ) {
+			return false;
+		}
+		try {
+			return '/' !== DIRECTORY_SEPARATOR || ( ( new \SplFileInfo( $path ) )->getPerms() & 07777 ) === $mode;
+		} catch ( Throwable $error ) {
+			return false;
+		}
+	}
+
+	/**
 	 * Check actual absence, including dangling symbolic links.
 	 *
 	 * @param string $path Local path.

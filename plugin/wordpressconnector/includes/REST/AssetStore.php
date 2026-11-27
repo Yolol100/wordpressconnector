@@ -12,8 +12,10 @@ namespace Webactueel\WordPressConnector\REST;
 use RuntimeException;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\LocalFilesystem;
+use Webactueel\WordPressConnector\Support\LocalFileIdentity;
 
 require_once __DIR__ . '/../Support/class-localfilesystem.php';
+require_once __DIR__ . '/../Support/class-localfileidentity.php';
 
 /**
  * Implements Asset Store handling for authenticated REST requests.
@@ -72,7 +74,14 @@ final class AssetStore {
 		}
 		// Validate symlinks before a chmod can follow an escaped path.
 		Policy::assertLocalAssetPath( $parent, $root );
+		$identity = LocalFilesystem::private_identity( $parent, 0700 );
+		if ( null === $identity ) {
+			throw new RuntimeException( 'Could not secure request asset directory.' );
+		}
 		if ( ! @chmod( $parent, 0700 ) ) {
+			throw new RuntimeException( 'Could not secure request asset directory.' );
+		}
+		if ( ! LocalFilesystem::private_mode_matches( $parent, 0700, $identity ) ) {
 			throw new RuntimeException( 'Could not secure request asset directory.' );
 		}
 
@@ -82,8 +91,24 @@ final class AssetStore {
 		if ( ! move_uploaded_file( $tmp_name, $destination ) ) {
 			throw new RuntimeException( 'Could not store uploaded request asset.' );
 		}
+		$resolved = realpath( $destination );
+		if ( false === $resolved || is_link( $destination ) ) {
+			throw new RuntimeException( 'Uploaded request asset identity changed; manual recovery is required.' );
+		}
+		$handle       = new \SplFileObject( $resolved, 'rb' );
+		$created_stat = $handle->fstat();
+		$identity     = LocalFilesystem::private_identity( $destination, 0600 );
+		if ( ! is_array( $created_stat ) || ! LocalFileIdentity::matches( $resolved, $created_stat ) || null === $identity ) {
+			throw new RuntimeException( 'Uploaded request asset identity changed; manual recovery is required.' );
+		}
+		$secured = true;
 		if ( ! @chmod( $destination, 0600 ) ) {
-			if ( ! LocalFilesystem::remove_file( $destination ) ) {
+			$secured = false;
+		}
+		if ( ! $secured || ! LocalFilesystem::private_mode_matches( $destination, 0600, $identity ) ||
+			! LocalFileIdentity::matches( $resolved, $created_stat ) ) {
+			if ( ! LocalFileIdentity::matches( $resolved, $created_stat ) ||
+				! LocalFilesystem::remove_file( $resolved, $handle ) ) {
 				throw new RuntimeException( 'Could not secure or remove uploaded request asset; manual recovery is required.' );
 			}
 			throw new RuntimeException( 'Could not secure uploaded request asset.' );
@@ -93,10 +118,16 @@ final class AssetStore {
 		// asset as stored if this root timestamp could not be refreshed.
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_touch -- This private root needs a checked, local timestamp operation; an unhandled PHP warning would expose filesystem details.
 		if ( ! @touch( $root ) ) {
-			if ( ! LocalFilesystem::remove_file( $destination ) ) {
+			if ( ! LocalFileIdentity::matches( $resolved, $created_stat ) ||
+				! LocalFilesystem::remove_file( $resolved, $handle ) ) {
 				throw new RuntimeException( 'Could not refresh uploaded asset retention or remove the new file; manual cleanup is required.' );
 			}
 			throw new RuntimeException( 'Could not refresh uploaded asset retention; the new upload was removed.' );
+		}
+
+		if ( ! LocalFileIdentity::matches( $resolved, $created_stat ) ||
+			! LocalFilesystem::private_mode_matches( $destination, 0600, $identity ) ) {
+			throw new RuntimeException( 'Uploaded request asset identity changed; manual recovery is required.' );
 		}
 
 		return array(
@@ -128,7 +159,14 @@ final class AssetStore {
 		if ( $create && ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
 			throw new RuntimeException( 'Could not create request asset root.' );
 		}
+		$identity = $create ? LocalFilesystem::private_identity( $directory, 0700 ) : null;
+		if ( $create && null === $identity ) {
+			throw new RuntimeException( 'Could not secure request asset root directory.' );
+		}
 		if ( $create && ! @chmod( $directory, 0700 ) ) {
+			throw new RuntimeException( 'Could not secure request asset root directory.' );
+		}
+		if ( $create && ! LocalFilesystem::private_mode_matches( $directory, 0700, $identity ) ) {
 			throw new RuntimeException( 'Could not secure request asset root directory.' );
 		}
 
@@ -241,7 +279,14 @@ final class AssetStore {
 			throw new RuntimeException( 'Could not create connector asset base directory.' );
 		}
 		if ( $create ) {
+			$identity = LocalFilesystem::private_identity( $base, 0700 );
+			if ( null === $identity ) {
+				throw new RuntimeException( 'Could not secure connector asset base directory.' );
+			}
 			if ( ! @chmod( $base, 0700 ) ) {
+				throw new RuntimeException( 'Could not secure connector asset base directory.' );
+			}
+			if ( ! LocalFilesystem::private_mode_matches( $base, 0700, $identity ) ) {
 				throw new RuntimeException( 'Could not secure connector asset base directory.' );
 			}
 			$resolved = realpath( $base );
@@ -397,12 +442,20 @@ final class AssetStore {
 				if ( ! @rmdir( $entry->getPathname() ) ) {
 					throw new RuntimeException( 'Could not remove private request asset directory.' );
 				}
+				clearstatcache( true, $entry->getPathname() );
+				if ( file_exists( $entry->getPathname() ) || is_link( $entry->getPathname() ) ) {
+					throw new RuntimeException( 'Could not verify removal of private request asset directory.' );
+				}
 			} elseif ( ! LocalFilesystem::remove_file( $entry->getPathname() ) ) {
 				throw new RuntimeException( 'Could not remove private request asset.' );
 			}
 		}
 		if ( ! @rmdir( $real ) ) {
 			throw new RuntimeException( 'Could not remove private request asset root.' );
+		}
+		clearstatcache( true, $real );
+		if ( file_exists( $real ) || is_link( $real ) ) {
+			throw new RuntimeException( 'Could not verify removal of private request asset directory.' );
 		}
 	}
 }

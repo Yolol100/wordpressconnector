@@ -12,6 +12,8 @@ namespace Webactueel\WordPressConnector\Support;
 use RuntimeException;
 
 require_once __DIR__ . '/trait-jsonmethods.php';
+require_once __DIR__ . '/class-localfilesystem.php';
+require_once __DIR__ . '/class-localfileidentity.php';
 
 /**
  * Provides Json utilities shared by connector services.
@@ -100,37 +102,96 @@ final class Json {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public static function write_file_atomic( string $path, array $data ): void {
-		// Encode before any side effects; never overwrite after partial writes.
-		$encoded   = self::encode( $data ) . PHP_EOL;
+		self::publish_atomic(
+			$path,
+			self::encode( $data ) . PHP_EOL,
+			static function ( string $temporary ): \SplFileObject {
+				return new \SplFileObject( $temporary, 'x+b' );
+			}
+		);
+	}
+
+	/**
+	 * Publish complete JSON using an exclusively owned local handle.
+	 *
+	 * The private opener is an I/O test seam, not a connector API.
+	 * Locking the temporary handle does not serialize unrelated writers.
+	 *
+	 * @param string   $path    Output path.
+	 * @param string   $encoded Fully encoded content.
+	 * @param callable $open    Exclusive local file opener.
+	 * @throws \RuntimeException When publication cannot complete safely.
+	 * @throws \Throwable When native storage fails.
+	 */
+	private static function publish_atomic( string $path, string $encoded, callable $open ): void {
 		$directory = dirname( $path );
 		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
 			throw new RuntimeException( 'Could not create output directory.' );
 		}
-
-		$temporary = tempnam( $directory, '.wpconnector-' );
-		if ( false === $temporary ) {
-			throw new RuntimeException( 'Could not create temporary output file.' );
+		$resolved = realpath( $directory );
+		if ( false === $resolved ) {
+			throw new RuntimeException( 'Could not resolve output directory.' );
 		}
+		$target = $resolved . DIRECTORY_SEPARATOR . basename( $path );
+		clearstatcache( true, $target );
+		if ( is_link( $target ) || ( file_exists( $target ) && ! is_file( $target ) ) ) {
+			throw new RuntimeException( 'Output path must be a regular file or absent.' );
+		}
+		$prior      = is_file( $target ) ? new \SplFileObject( $target, 'rb' ) : null;
+		$prior_stat = null === $prior ? null : $prior->fstat();
+		if ( null !== $prior && ( ! is_array( $prior_stat ) || ! LocalFileIdentity::matches( $target, $prior_stat ) ) ) {
+			throw new RuntimeException( 'Existing output identity could not be verified.' );
+		}
+		$temporary    = $resolved . DIRECTORY_SEPARATOR . '.wpconnector-' . bin2hex( random_bytes( 16 ) );
+		$handle       = null;
+		$created_stat = null;
 		try {
-			// tempnam() may fall back to another filesystem; no cross-volume rename.
-			if ( realpath( dirname( $temporary ) ) !== realpath( $directory ) ) {
-				throw new RuntimeException( 'Temporary output file is outside the destination directory.' );
+			// The CLI output path needs a private, exclusive temporary file.
+			// Restore the process umask on every exit from creation.
+			$previous_mask = umask( 0077 );
+			try {
+				$handle = $open( $temporary );
+			} finally {
+				umask( $previous_mask );
 			}
-			$bytes = file_put_contents( $temporary, $encoded, LOCK_EX );
+			$created_stat = $handle->fstat();
+			if ( ! is_array( $created_stat ) || ! LocalFileIdentity::matches( $temporary, $created_stat ) ||
+				( '/' === DIRECTORY_SEPARATOR && 0600 !== ( $created_stat['mode'] & 07777 ) ) ) {
+				throw new RuntimeException( 'Temporary output file identity or private mode could not be verified.' );
+			}
+			if ( ! $handle->flock( LOCK_EX ) ) {
+				throw new RuntimeException( 'Could not lock temporary output file.' );
+			}
+			$bytes = $handle->fwrite( $encoded );
+			if ( ! $handle->fflush() || ! LocalFileIdentity::matches( $temporary, $created_stat ) ) {
+				throw new RuntimeException( 'Could not write complete output file.' );
+			}
+			// Revalidate the destination immediately before native rename.
+			// Portable PHP cannot make this observation and rename a CAS.
+			clearstatcache( true, $target );
+			if ( realpath( $directory ) !== $resolved ||
+				( null === $prior ? ( file_exists( $target ) || is_link( $target ) ) :
+					! LocalFileIdentity::matches( $target, $prior_stat ) ) ) {
+				throw new RuntimeException( 'Output destination changed before publication.' );
+			}
+			// Core move may unlink the destination and fall back to copy.
+			// Keep the native same-filesystem atomic rename.
+			$path = $target;
 			if ( strlen( $encoded ) !== $bytes || ! rename( $temporary, $path ) ) {
 				throw new RuntimeException( 'Could not write complete output file.' );
 			}
-		} catch ( \Throwable $error ) {
-			$removed = true;
-			try {
-				if ( is_file( $temporary ) && ! @unlink( $temporary ) ) {
-					$removed = false;
-				}
-			} catch ( \Throwable $cleanup_error ) {
-				$removed = false;
+			if ( ! LocalFileIdentity::matches( $target, $created_stat ) ) {
+				throw new RuntimeException( 'Output identity changed after publication; reconcile before retrying.' );
 			}
-			// A filesystem backend can report success without removing the file,
-			// or fail after removal. Verify actual absence before reporting recovery.
+		} catch ( \Throwable $error ) {
+			$removed = false;
+			clearstatcache( true, $temporary );
+			if ( ! file_exists( $temporary ) && ! is_link( $temporary ) ) {
+				$removed = true;
+			} elseif ( LocalFileIdentity::matches( $temporary, $created_stat ) ) {
+				$removed = LocalFilesystem::remove_file( $temporary, $handle );
+			}
+			// Never delete a replacement or infer recovery from a return code.
 			clearstatcache( true, $temporary );
 			if ( file_exists( $temporary ) || is_link( $temporary ) ) {
 				if ( ! $removed ) {
@@ -139,6 +200,9 @@ final class Json {
 				throw new RuntimeException( 'Temporary output file cleanup readback failed; manual cleanup required.' );
 			}
 			throw $error;
+		} finally {
+			$handle = null;
+			$prior  = null;
 		}
 	}
 }

@@ -10,6 +10,15 @@ namespace Webactueel\WordPressConnector\REST {
         if (($GLOBALS['wpconn_test_parent_alias'] ?? null) === $path) {
             return true; // Detect unsafe chmod-before-boundary without touching target.
         }
+        if (($GLOBALS['wpconn_chmod_false_success'] ?? null) === $mode) {
+            return true;
+        }
+        if (0600 === $mode && !empty($GLOBALS['wpconn_chmod_replace'])) {
+            $bytes = file_get_contents($path);
+            \rename($path, $path . '.original');
+            file_put_contents($path, $bytes);
+            return true;
+        }
         if (($GLOBALS['deny_wpconn_chmod_mode'] ?? null) === $mode) {
             return false;
         }
@@ -136,6 +145,37 @@ namespace {
     if (11 !== ($stored['bytes'] ?? null) || ! is_file($root . '/sample.json')
         || (fileperms($root . '/sample.json') & 0077) !== 0) {
         throw new RuntimeException('Successful HTTP upload lost secure file permissions.');
+    }
+
+    // A successful chmod return must not substitute for actual private mode.
+    \chmod($base, 0755);
+    $GLOBALS['wpconn_chmod_false_success'] = 0700;
+    try {
+        $rejected = false;
+        try { $store->rootForRequest($id, true); }
+        catch (RuntimeException $error) { $rejected = 'Could not secure connector asset base directory.' === $error->getMessage(); }
+        if (!$rejected) throw new LogicException('False-success directory chmod was accepted.');
+    } finally {
+        unset($GLOBALS['wpconn_chmod_false_success']);
+        \chmod($base, 0700);
+    }
+    // Keep the replacement even when its bytes match the originally moved upload.
+    $temp = tempnam(sys_get_temp_dir(), 'wpconn-replacement');
+    file_put_contents($temp, '{"replacement":true}');
+    $GLOBALS['wpconn_chmod_replace'] = true;
+    try {
+        $rejected = false;
+        try { $store->put($id,'replacement.json',array('error'=>UPLOAD_ERR_OK,'tmp_name'=>$temp)); }
+        catch (RuntimeException $error) { $rejected = strpos($error->getMessage(),'manual recovery') !== false; }
+        if (!$rejected || !is_file($root . '/replacement.json') || !is_file($root . '/replacement.json.original')
+            || file_get_contents($root . '/replacement.json') !== '{"replacement":true}') {
+            throw new LogicException('Foreign upload replacement was accepted or deleted.');
+        }
+    } finally {
+        unset($GLOBALS['wpconn_chmod_replace']);
+        foreach (array($root . '/replacement.json',$root . '/replacement.json.original') as $path) {
+            if (is_file($path)) \unlink($path);
+        }
     }
 
     // A nested upload must not be reported as successfully retained when
