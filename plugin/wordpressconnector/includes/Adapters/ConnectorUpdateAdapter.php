@@ -716,10 +716,7 @@ final class ConnectorUpdateAdapter {
 				),
 			)
 		);
-		if ( is_wp_error( $response ) ) {
-			throw new RuntimeException( $response->get_error_message() );
-		}
-		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			throw new RuntimeException( 'Canonical WordPress Connector release metadata is unavailable.' );
 		}
 
@@ -1026,10 +1023,7 @@ final class ConnectorUpdateAdapter {
 				'headers'             => array( 'User-Agent' => 'Webactueel-WordPressConnector' ),
 			)
 		);
-		if ( is_wp_error( $response ) ) {
-			throw new RuntimeException( $response->get_error_message() );
-		}
-		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			throw new RuntimeException( 'Connector checksum asset could not be downloaded.' );
 		}
 
