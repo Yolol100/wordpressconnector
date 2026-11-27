@@ -74,7 +74,7 @@ final class AssetStore {
 		}
 
 		if ( file_exists( $destination ) || is_link( $destination ) ) {
-			throw new RuntimeException( 'Duplicate request asset path: ' . $relativePath );
+			throw new RuntimeException( 'Duplicate request asset path: ' . esc_html( $relativePath ) );
 		}
 		if ( ! move_uploaded_file( $tmp_name, $destination ) ) {
 			throw new RuntimeException( 'Could not store uploaded request asset.' );

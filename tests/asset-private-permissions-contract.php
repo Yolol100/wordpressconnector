@@ -48,6 +48,7 @@ namespace Webactueel\WordPressConnector\REST {
 }
 
 namespace {
+    require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
     $base = sys_get_temp_dir() . '/wpconnector-permission-contract-' . bin2hex(random_bytes(6));
     define('WPCONNECTOR_ASSET_ROOT', $base);
     function home_url(string $path = ''): string { return 'https://example.test/' . ltrim($path, '/'); }
