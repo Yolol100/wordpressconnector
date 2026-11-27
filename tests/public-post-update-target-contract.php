@@ -49,7 +49,7 @@ function current_user_can($capability, ...$args): bool
 }
 
 $root = dirname(__DIR__);
-require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 
 use Webactueel\WordPressConnector\Runtime\Registry;

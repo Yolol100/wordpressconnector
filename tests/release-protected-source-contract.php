@@ -101,7 +101,7 @@ $GLOBALS['wpconn_direct_file_delete'] = static function ($path): bool {
     $GLOBALS['source_case']['deleted_downloads'][] = $path;
     return !file_exists($path) || unlink($path);
 };
-require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
 

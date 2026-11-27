@@ -170,7 +170,7 @@ function wp_die( string $message, string $title = '', array $args = array() ): v
 function wp_json_encode( $value, int $flags = 0 ): string { return (string) json_encode( $value, $flags ); }
 
 require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/class-nativeoauthserver.php';
-require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
+require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/class-oauthresourceserver.php';
 
 use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;

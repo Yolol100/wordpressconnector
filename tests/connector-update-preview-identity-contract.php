@@ -49,7 +49,7 @@ namespace {
         );
     }
 
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
     $adapter = new \Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
 
     $first = $adapter->apply(array(), array('dry_run' => true));

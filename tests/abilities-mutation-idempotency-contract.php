@@ -264,16 +264,16 @@ function wp_get_ability(string $name)
     return 'elementor/manage-global-variable' === $name ? $ability : null;
 }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-result.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-processedstore.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-abilitiesadapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();

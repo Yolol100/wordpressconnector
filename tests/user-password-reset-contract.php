@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$path = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
+$path = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php';
 $source = file_get_contents($path);
 if ($source === false) {
     fwrite(STDERR, "Unable to read SystemAdapter.php.\n");

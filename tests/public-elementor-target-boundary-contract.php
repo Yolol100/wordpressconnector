@@ -50,7 +50,7 @@ function current_user_can($capability, ...$args): bool
 }
 
 $root = dirname(__DIR__);
-require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
 
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -137,8 +137,8 @@ if (($privatePatch['post_id'] ?? 0) !== 202 || 2 !== $patchCalls) {
 // Exercise the real Elementor adapter target resolver rather than a registry
 // double. Malformed IDs must fail before WordPress lookup for reads, previews,
 // or confirmed document changes.
-require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-input.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php';
 $elementorAdapter = new \Webactueel\WordPressConnector\Adapters\ElementorAdapter();
 $postResolver = new ReflectionMethod($elementorAdapter, 'post');
 if (PHP_VERSION_ID < 80100) {

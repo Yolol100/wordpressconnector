@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$store = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php');
-$runner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+$store = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-processedstore.php');
+$runner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
 if ($store === false || $runner === false) { fwrite(STDERR, "Unable to read runtime lock sources.\n"); exit(1); }
 $normalizedStore = preg_replace('/\\s+/', '', $store);
 if (! is_string($normalizedStore)) { throw new RuntimeException('Could not normalize processed lock implementation.'); }

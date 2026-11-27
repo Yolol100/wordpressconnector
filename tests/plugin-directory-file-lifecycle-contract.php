@@ -172,9 +172,9 @@ function plugins_api($action, $args = array()) {
 class WP_Error { public function get_error_message(): string { return 'qa_private_provider_detail_758e'; } }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 
-foreach (array('Support/Json.php', 'Support/class-fingerprint.php', 'Support/Input.php', 'Runtime/class-diagnostics.php', 'Security/Policy.php',
-    'Security/class-filesystempolicy.php', 'Adapters/FilesystemAdapter.php',
-    'Adapters/SystemAdapter.php') as $file) {
+foreach (array('Support/class-json.php', 'Support/class-fingerprint.php', 'Support/class-input.php', 'Runtime/class-diagnostics.php', 'Security/class-policy.php',
+    'Security/class-filesystempolicy.php', 'Adapters/class-filesystemadapter.php',
+    'Adapters/class-systemadapter.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
 }
 use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;

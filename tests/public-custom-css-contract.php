@@ -5,8 +5,8 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
-$policyPath = $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
-$runnerPath = $root . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+$policyPath = $root . '/plugin/wordpressconnector/includes/Security/class-policy.php';
+$runnerPath = $root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 $adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/class-customcssadapter.php';
 
 $tmp = sys_get_temp_dir() . '/wpconnector-public-css-' . bin2hex(random_bytes(6));

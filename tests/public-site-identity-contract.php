@@ -19,7 +19,7 @@ function get_available_languages() { return $GLOBALS['identity_locales']; }
 function sanitize_text_field($value) { return trim(strip_tags((string) $value)); }
 
 $root = dirname(__DIR__);
-foreach (array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php','Runtime/class-registry.php','Adapters/class-siteidentityadapter.php') as $p) {
+foreach (array('Support/class-json.php','Support/class-fingerprint.php','Security/class-policy.php','Runtime/class-registry.php','Adapters/class-siteidentityadapter.php') as $p) {
     require_once $root.'/plugin/wordpressconnector/includes/'.$p;
 }
 use Webactueel\WordPressConnector\Runtime\Registry;

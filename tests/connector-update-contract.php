@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
+$adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php');
 $implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-connectorupdateadapteractions.php');
 if ($implementation === false || !is_string($adapter)) { throw new RuntimeException('Missing canonical implementation: Adapters/trait-connectorupdateadapteractions.php'); }
 $adapter .= $implementation;
@@ -89,7 +89,7 @@ if (strpos($adapterCompact, "Yolol100/wordpressconnector/releases/download/") ==
     fwrite(STDERR, "Connector updater is not pinned to the canonical GitHub release path.\n");
     exit(1);
 }
-if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false || strpos($plugin, 'new ConnectorUpdateAdapter()') === false) {
+if (strpos($bootstrap, "includes/Adapters/class-connectorupdateadapter.php") === false || strpos($plugin, 'new ConnectorUpdateAdapter()') === false) {
     fwrite(STDERR, "Connector updater is not bootstrapped and registered.\n");
     exit(1);
 }

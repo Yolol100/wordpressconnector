@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$source = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/MediaAdapter.php');
+$source = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php');
 if (! is_string($source)) {
     throw new RuntimeException('MediaAdapter source missing.');
 }
@@ -54,8 +54,8 @@ function get_post($id) {
     $GLOBALS['media_test_lookups'][] = $id;
     return 101 === $id ? new WP_Post(101) : (102 === $id ? new WP_Post(102, 'page') : null);
 }
-require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/MediaAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-input.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php';
 $adapter = new \Webactueel\WordPressConnector\Adapters\MediaAdapter();
 $resolve = new ReflectionMethod($adapter, 'attachment_id');
 $resolve->setAccessible(true);
@@ -93,7 +93,7 @@ try {
 function current_user_can($capability, ...$args): bool { return true; }
 function sanitize_key($value): string { return is_string($value) ? strtolower($value) : ''; }
 function get_post_thumbnail_id($id): int { return 0; }
-require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 $badTargets = array(true, 102.5, '102junk', '1.02e2', ' 102', -102,
     0, '0', array(102), '9999999999999999999999999', null);

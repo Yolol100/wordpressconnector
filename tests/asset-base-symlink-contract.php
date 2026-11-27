@@ -24,7 +24,7 @@ namespace {
     function home_url(string $path = ''): string { return 'https://example.test/' . ltrim($path, '/'); }
     function wp_mkdir_p(string $path): bool { return is_dir($path) || mkdir($path, 0700, true); }
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/class-assetstore.php';
     $store = new \Webactueel\WordPressConnector\REST\AssetStore();
     $GLOBALS['wpconn_base_chmod_paths'] = array();
     $deniedCreate = false;

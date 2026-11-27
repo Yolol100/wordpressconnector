@@ -83,7 +83,7 @@ function rest_do_request($request) {
     return new WooOpsResponse(200,$store);
 }
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
-foreach(array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php',
+foreach(array('Support/class-json.php','Support/class-fingerprint.php','Security/class-policy.php',
     'Runtime/class-registry.php','Adapters/class-woocommerceoperationsadapter.php') as $file)require $root.$file;
 $registry=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\WooCommerceOperationsAdapter())->register($registry);

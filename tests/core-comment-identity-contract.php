@@ -52,8 +52,8 @@ function wp_trash_comment($id): bool {
     return 101 === $id;
 }
 $root = dirname(__DIR__);
-foreach (array('Support/Json.php', 'Support/class-fingerprint.php', 'Support/Input.php',
-    'Security/Policy.php', 'Adapters/class-coreadapter.php') as $path) {
+foreach (array('Support/class-json.php', 'Support/class-fingerprint.php', 'Support/class-input.php',
+    'Security/class-policy.php', 'Adapters/class-coreadapter.php') as $path) {
     require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 }
 $adapter = new \Webactueel\WordPressConnector\Adapters\CoreAdapter();

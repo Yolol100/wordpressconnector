@@ -23,8 +23,8 @@ function sanitize_text_field($value) { return trim(strip_tags((string) $value));
 define('WPSEO_VERSION', '28.7');
 
 $base = dirname(__DIR__);
-foreach (array('Support/class-fingerprint.php', 'Security/Policy.php', 'Runtime/class-registry.php',
-    'Adapters/class-yoastsnippetadapter.php', 'Runtime/Runner.php') as $file) {
+foreach (array('Support/class-fingerprint.php', 'Security/class-policy.php', 'Runtime/class-registry.php',
+    'Adapters/class-yoastsnippetadapter.php', 'Runtime/class-runner.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
 }
 use Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter;

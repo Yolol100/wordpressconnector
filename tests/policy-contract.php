@@ -7,7 +7,7 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 define('ABSPATH', __DIR__ . '/');
 $GLOBALS['wpconnector_test_caps'] = array();
 function current_user_can($capability): bool { return in_array((string) $capability, $GLOBALS['wpconnector_test_caps'], true); }
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 
 use Webactueel\WordPressConnector\Security\Policy;
 

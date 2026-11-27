@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CacheMaintenanceAdapter.php');
+$adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php');
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 

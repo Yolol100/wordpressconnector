@@ -86,8 +86,8 @@ function wp_get_abilities(): array
 }
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-abilitiesadapter.php';
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 

@@ -72,8 +72,8 @@ namespace {
 
     require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
     $GLOBALS['wpconn_direct_file_delete'] = '\\Webactueel\\WordPressConnector\\REST\\unlink';
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/Controller.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/class-assetstore.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/class-controller.php';
 
     $store = new \Webactueel\WordPressConnector\REST\AssetStore();
     $root = $store->rootForRequest('request-12345678', true);

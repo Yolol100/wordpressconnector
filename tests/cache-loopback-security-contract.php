@@ -96,7 +96,7 @@ namespace {
         throw new LoopbackTestResponse(true, $status, $payload);
     }
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/CacheMaintenanceAdapter.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php';
 
     $adapter = new CacheMaintenanceAdapter();
     $token = str_repeat('ab12', 16);

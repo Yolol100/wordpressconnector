@@ -70,15 +70,15 @@ function add_option($key, $value, $deprecated = '', $autoload = true): bool { re
 function wp_json_encode($value): string { return json_encode($value); }
 function wp_cache_delete($key, $group = ''): bool { return true; }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-result.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-processedstore.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -178,8 +178,8 @@ foreach ($cases as $label => $request) {
     }
 }
 
-$source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
-$snapshotSource = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php');
+$source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
+$snapshotSource = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-snapshotstore.php');
 foreach (array('assert_public_acf_update_payload', 'assert_public_rollback_record', 'publicRepositoryContext') as $needle) {
     if (false === strpos($source, $needle)) {
         fwrite(STDERR, "Runner is missing guarded public ACF/rollback boundary token: {$needle}\n");

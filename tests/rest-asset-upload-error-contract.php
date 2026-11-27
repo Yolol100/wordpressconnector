@@ -67,8 +67,8 @@ namespace {
         }
     }
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/Controller.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/class-assetstore.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/class-controller.php';
     $controller = new \Webactueel\WordPressConnector\REST\Controller(
         new \Webactueel\WordPressConnector\Runtime\Runner(),
         new \Webactueel\WordPressConnector\REST\AssetStore()

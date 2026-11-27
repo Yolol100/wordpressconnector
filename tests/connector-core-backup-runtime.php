@@ -70,7 +70,7 @@ class FakeFilesystem
 }
 $GLOBALS['wp_filesystem'] = new FakeFilesystem();
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
 $updater = new \Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
 $install = new ReflectionMethod($updater, 'install_with_core_backup');
 $install->setAccessible(true);

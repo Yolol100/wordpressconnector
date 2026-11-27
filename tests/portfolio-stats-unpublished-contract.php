@@ -69,11 +69,11 @@ function update_field($key, $value, $postId): bool
     return true;
 }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-registry.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/PortfolioStatsAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;

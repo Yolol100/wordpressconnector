@@ -154,7 +154,7 @@ foreach (array_unique($adapterMatches[1]) as $adapterName) {
         $registrationPaths[] = $traitPath;
     }
 }
-$registrationPaths[] = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+$registrationPaths[] = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php';
 $registered = array();
 foreach ($registrationPaths as $registrationPath) {
     $registrationSource = file_get_contents($registrationPath);
@@ -198,7 +198,7 @@ foreach ($expected as $action => $security) {
     }
 }
 
-$source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
+$source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php');
 if ($source === false) {
     fwrite(STDERR, "Unable to read SystemAdapter.php.\n");
     exit(1);

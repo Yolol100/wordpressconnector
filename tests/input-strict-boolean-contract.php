@@ -6,7 +6,7 @@ require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
 use Webactueel\WordPressConnector\Support\Input;
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-input.php';
 
 $cases = array(
     array('input' => array(), 'default' => false, 'expected' => false),

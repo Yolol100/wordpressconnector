@@ -178,8 +178,8 @@ namespace {
         }
     }
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-input.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/class-elementorjsonexport.php';
 
     \Elementor\Plugin::$instance = (object) array(
         'documents' => new FakeElementorDocumentsManager(),

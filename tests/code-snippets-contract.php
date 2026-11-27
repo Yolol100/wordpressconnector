@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php');
+$adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php');
 $adapter .= (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-codesnippetsadapteractions.php');
 $normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
 if (! is_string($normalizedAdapter)) {
@@ -139,7 +139,7 @@ if (0 === $status) {
 
 // Missing or mistyped replacement text must never silently become deletion.
 // Explicit empty text remains a valid, intentional exact deletion.
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
 $adapterInstance = new \Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter();
 $parse = new ReflectionMethod($adapterInstance, 'replacements');
 if (PHP_VERSION_ID < 80100) {

@@ -16,9 +16,9 @@ namespace {
     function wp_json_encode($value, int $flags = 0) { return json_encode($value, $flags); }
     function wp_get_theme() { return new class { public function get(string $key): string { return 'Version' === $key ? '1.0.0' : 'Test Theme'; } }; }
 
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-json.php';
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-elementorformsadapter.php';
 
     final class FakeManager {
         private $types;
@@ -280,7 +280,7 @@ namespace {
         restore_error_handler();
     }
 
-    $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
+    $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-elementorformsadapter.php');
     if (! is_string($source)) { throw new RuntimeException('Elementor Forms source is unavailable.'); }
     $normalizedSource = preg_replace('/\\s+/', '', $source);
     if (! is_string($normalizedSource)) { throw new RuntimeException('Could not normalize Elementor Forms source.'); }

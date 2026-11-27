@@ -46,7 +46,7 @@ function get_site_transient(string $name) { return false; }
 function wp_is_file_mod_allowed(string $context): bool { return true; }
 function sanitize_text_field(string $value): string { return $value; }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php';
 $adapter = new \Webactueel\WordPressConnector\Adapters\SystemAdapter();
 
 $siteItems = $adapter->pluginList()['plugins'];

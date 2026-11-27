@@ -56,7 +56,7 @@ namespace {
         return true;
     }
 
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/ReleaseApproval.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-releaseapproval.php';
     use Webactueel\WordPressConnector\Security\ReleaseApproval;
     use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
@@ -168,7 +168,7 @@ namespace {
     $GLOBALS['owner_options'][$key] = $make(str_repeat('e', 32), 7, $now+10, $now+610);
     ensure(! $consume($fingerprint), 'Future-issued approval must be denied.');
 
-    $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/ReleaseApproval.php');
+    $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-releaseapproval.php');
     ensure(strpos($source, 'wpconnector_review_release') !== false
         && strpos($source, 'wp_verify_nonce( $nonce, self::NONCE_ACTION )') !== false
         && strpos($source, 'wp_nonce_url(') !== false,
@@ -189,9 +189,9 @@ namespace {
     ) as $guard) {
         ensure(is_string($source) && strpos($source, $guard) !== false, 'Owner approval guard missing: ' . $guard);
     }
-    $runner = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
-    $adapter = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
-    $controller = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/MCP/Controller.php');
+    $runner = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
+    $adapter = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php');
+    $controller = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/MCP/class-controller.php');
     ensure(is_string($runner) && strpos($runner, 'ReleaseApproval::idForFingerprint(') !== false
         && strpos($runner, 'ReleaseApproval::idForFingerprint(') < strpos($runner, '$this->processed->begin('),
         'Owner preflight must run before reserving a mutation request ID.');

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$system = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
-$runner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+$system = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-systemadapter.php');
+$runner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-runner.php');
 $runnerImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/trait-runnermethods.php');
 
 if (false === $system || false === $runner || false === $runnerImplementation) {

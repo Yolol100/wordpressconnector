@@ -24,7 +24,7 @@ function ewww_image_optimizer_set_option($name,$value){$network=$GLOBALS['multis
 function sanitize_text_field($value){return trim(strip_tags((string)$value));}
 function current_user_can($cap){return $cap==='manage_options'||($cap==='manage_network_options'&&$GLOBALS['network_capable']);}
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
-foreach(array('Support/Json.php','Support/class-fingerprint.php','Security/Policy.php','Runtime/class-registry.php','Runtime/Runner.php','Adapters/class-optimizersettingsadapter.php') as $file) require_once $root.$file;
+foreach(array('Support/class-json.php','Support/class-fingerprint.php','Security/class-policy.php','Runtime/class-registry.php','Runtime/class-runner.php','Adapters/class-optimizersettingsadapter.php') as $file) require_once $root.$file;
 $r=new \Webactueel\WordPressConnector\Runtime\Registry();
 (new \Webactueel\WordPressConnector\Adapters\OptimizerSettingsAdapter())->register($r);
 $assertError=static function($run,$fragment){

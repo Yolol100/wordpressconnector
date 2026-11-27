@@ -10,14 +10,14 @@ if (! defined('ABSPATH')) {
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';
 foreach (array(
-    'Support/Json.php',
+    'Support/class-json.php',
     'Support/class-fingerprint.php',
-    'Security/Policy.php',
+    'Security/class-policy.php',
     'Runtime/class-registry.php',
     'Runtime/class-diagnostics.php',
-    'Runtime/SnapshotStore.php',
-    'Runtime/ProcessedStore.php',
-    'Runtime/Runner.php',
+    'Runtime/class-snapshotstore.php',
+    'Runtime/class-processedstore.php',
+    'Runtime/class-runner.php',
 ) as $path) {
     require_once $root . $path;
 }

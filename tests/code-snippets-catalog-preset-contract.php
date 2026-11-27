@@ -81,10 +81,10 @@ namespace {
     }
 
     $root = dirname(__DIR__);
-    require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/class-json.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Support/class-input.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
 
     $fail = static function (string $message): void {
         fwrite(STDERR, 'Code Snippets catalogue preset: ' . $message . PHP_EOL);

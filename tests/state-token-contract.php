@@ -4,51 +4,51 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Json.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-json.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-fingerprint.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-request.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-filesystempolicy.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-siteeditoradapter.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-systemadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommerceadapter.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-acfadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercefulfillmentadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastadapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/Input.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-abilitiesadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Support/class-input.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-elementorjsonexport.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastsnippetadapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-settings.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/MediaAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/Policy.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/SitePairing.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/GitHubOidc.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-policy.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-sitepairing.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-githuboidc.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/MCP/Controller.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/Controller.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/ReleaseApproval.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-connectorupdateadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-elementorjsonimport.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/MCP/class-controller.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/REST/class-controller.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-processedstore.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-oauthresourceserver.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/class-releaseapproval.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-discoveryadapter.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-filesystemadapter.php';
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercesettingsadapter.php';
 
 if (!defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/fixtures/'); }
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/Runner.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/class-runner.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/PortfolioStatsAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
 $serviceAliases = array(
     'Webactueel\WordPressConnector\Support\Json' => array(

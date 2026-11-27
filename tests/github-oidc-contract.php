@@ -63,9 +63,9 @@ function current_user_can($capability): bool {
     return true;
 }
 
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/SitePairing.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/GitHubOidc.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-sitepairing.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/class-githuboidc.php';
 
 use Webactueel\WordPressConnector\Security\GitHubOidc;
 use Webactueel\WordPressConnector\Security\Policy;

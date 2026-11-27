@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';
+$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/class-acfadapter.php';
 $validatorPath = $root . '/scripts/validate-public-request.php';
 $legacyValidatorPath = $root . '/scripts/validate-public-request-legacy.php';
 

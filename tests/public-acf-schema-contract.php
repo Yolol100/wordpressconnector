@@ -5,7 +5,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
-$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';
+$adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/class-acfadapter.php';
 
 foreach (array($validator, $receiptBuilder, $adapterPath) as $required) {
     if (! is_file($required)) {
