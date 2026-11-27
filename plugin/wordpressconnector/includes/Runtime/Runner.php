@@ -212,10 +212,10 @@ final class Runner {
 				$data = $this->execute_with_state_guards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
 			}
 			if ( isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['fingerprint'] ) ) {
-				$data['state_token'] = Fingerprint::site_token_from_fingerprint( $data['fingerprint'] );
+				$data['state_token'] = Fingerprint::siteTokenFromFingerprint( $data['fingerprint'] );
 			}
 			if ( isset( $data['_current_fingerprint'] ) && is_string( $data['_current_fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['_current_fingerprint'] ) ) {
-				$data['current_state_token'] = Fingerprint::site_token_from_fingerprint( $data['_current_fingerprint'] );
+				$data['current_state_token'] = Fingerprint::siteTokenFromFingerprint( $data['_current_fingerprint'] );
 			}
 			$rollback         = isset( $data['_rollback'] ) && is_array( $data['_rollback'] ) ? $data['_rollback'] : null;
 			$terminal_error   = isset( $data['_terminal_error'] ) && is_string( $data['_terminal_error'] )
@@ -1548,7 +1548,7 @@ final class Runner {
 			if ( null !== $expected_fingerprint && ! hash_equals( $expected_fingerprint, $current ) ) {
 				throw new RuntimeException( 'Stale target: expected_fingerprint does not match current state.' );
 			}
-			if ( null !== $expected_state_token && ! hash_equals( $expected_state_token, Fingerprint::site_token_from_fingerprint( $current ) ) ) {
+			if ( null !== $expected_state_token && ! hash_equals( $expected_state_token, Fingerprint::siteTokenFromFingerprint( $current ) ) ) {
 				throw new RuntimeException( 'Stale target: expected_state_token does not match current site state.' );
 			}
 			$context['expected_prewrite_fingerprint'] = $current;

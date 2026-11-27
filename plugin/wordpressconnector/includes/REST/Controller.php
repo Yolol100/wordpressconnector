@@ -281,7 +281,7 @@ final class Controller {
 			return new \WP_Error( 'wpconnector_invalid_json', 'Request body must be a JSON object.', array( 'status' => 400 ) );
 		}
 		try {
-			$connector_request = Request::from_array( $data );
+			$connector_request = Request::fromArray( $data );
 		} catch ( RuntimeException $error ) {
 			return new \WP_Error( 'wpconnector_invalid_request', $error->getMessage(), array( 'status' => 400 ) );
 		}

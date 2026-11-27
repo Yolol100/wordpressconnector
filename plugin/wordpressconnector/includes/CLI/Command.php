@@ -64,7 +64,7 @@ final class Command {
 		}
 
 		try {
-			$request = Request::from_file( $request_path );
+			$request = Request::fromFile( $request_path );
 			$context = array(
 				'asset_root' => isset( $assoc_args['asset-root'] ) ? (string) $assoc_args['asset-root'] : '',
 			);
@@ -94,7 +94,7 @@ final class Command {
 	 * @param array $assoc_args Associative command-line arguments.
 	 */
 	public function actions( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI passes both positional and associative arguments; preserve the public signature.
-		$request = Request::from_array(
+		$request = Request::fromArray(
 			array(
 				'version'    => 1,
 				'request_id' => 'actions-list-0001',
@@ -116,7 +116,7 @@ final class Command {
 	 * @param array $assoc_args Associative command-line arguments.
 	 */
 	public function doctor( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI passes both positional and associative arguments; preserve the public signature.
-		$request = Request::from_array(
+		$request = Request::fromArray(
 			array(
 				'version'    => 1,
 				'request_id' => 'doctor-run-00001',

@@ -154,5 +154,4 @@ final class Request {
 	public function confirm(): bool {
 		return $this->confirm;
 	}
-
 }

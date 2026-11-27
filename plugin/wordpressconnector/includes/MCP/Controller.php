@@ -776,7 +776,7 @@ final class Controller {
 		}
 		$path = $payload['path'];
 		try {
-			$normalized = FilesystemPolicy::assert_listable( $path );
+			$normalized = FilesystemPolicy::assertListable( $path );
 		} catch ( RuntimeException $error ) {
 			return false;
 		}
@@ -798,7 +798,7 @@ final class Controller {
 			return false;
 		}
 		try {
-			FilesystemPolicy::assert_writable_text( $path );
+			FilesystemPolicy::assertWritableText( $path );
 		} catch ( RuntimeException $error ) {
 			return false;
 		}
@@ -994,7 +994,7 @@ final class Controller {
 			$data['expected_state_token'] = $expected_state_token;
 		}
 
-		$connector_request = Request::from_array( $data );
+		$connector_request = Request::fromArray( $data );
 		return $this->runner->run(
 			$connector_request,
 			array(
