@@ -1,6 +1,6 @@
 <?php
 /**
- * Canonical methods for CacheMaintenanceAdapter.
+ * Canonical cache maintenance callback implementation.
  *
  * @package WordPressConnector
  */
@@ -10,16 +10,14 @@ declare( strict_types = 1 );
 namespace Webactueel\WordPressConnector\Adapters;
 
 /**
- * Native aliases preserve the legacy public method contracts.
+ * Native method alias preserves the existing hook callback identity.
  */
 trait CacheMaintenanceAdapterMethods {
 	/**
 	 * Process the handle asset cleanup loopback operation in the CacheMaintenance adapter.
 	 */
 	public function handle_asset_cleanup_loopback(): void {
-		$method = $_SERVER['REQUEST_METHOD'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP method is checked case-insensitively against POST and revalidated after sanitization; token authorization is separate.
-		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method )
-			|| 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
+		if ( '' === $this->validated_server_text( 'REQUEST_METHOD', '/\APOST\z/i' ) ) {
 			wp_send_json_error( array( 'code' => 'method_not_allowed' ), 405 );
 			return;
 		}

@@ -370,14 +370,29 @@ final class CacheMaintenanceAdapter {
 	 * @return string Operation result.
 	 */
 	private function loopback_hex_header( string $header_name, int $length ): string {
-		$raw = $_SERVER[ $header_name ] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reject invalid raw header bytes with exact-size hex regex before sanitization; verified by negative loopback auth tests.
+		return strtolower( $this->validated_server_text( $header_name, '/\A[a-f0-9]{' . $length . '}\z/i' ) );
+	}
 
-		// Check the original bytes before lowercasing: malformed headers must not become valid tokens.
-		if ( ! is_string( $raw ) || ! preg_match( '/\A[a-f0-9]{' . $length . '}\z/i', $raw ) ) {
+	/**
+	 * Validate exact protocol bytes without normalizing malformed input.
+	 *
+	 * @param string $header_name Trusted server variable name.
+	 * @param string $pattern     Exact validation expression.
+	 * @return string Validated text or an empty string.
+	 */
+	private function validated_server_text( string $header_name, string $pattern ): string {
+		if ( ! isset( $_SERVER[ $header_name ] ) || ! is_string( $_SERVER[ $header_name ] ) ) {
 			return '';
 		}
-
-		return strtolower( sanitize_text_field( wp_unslash( $raw ) ) );
+		$validated = filter_var(
+			wp_unslash( $_SERVER[ $header_name ] ),
+			FILTER_VALIDATE_REGEXP,
+			array( 'options' => array( 'regexp' => $pattern ) )
+		);
+		if ( false === $validated || $_SERVER[ $header_name ] !== $validated ) {
+			return '';
+		}
+		return $validated;
 	}
 
 	/**

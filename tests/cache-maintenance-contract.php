@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php');
-$adapterImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-cachemaintenanceadaptermethods.php');
-if (!is_string($adapter) || !is_string($adapterImplementation)) { throw new RuntimeException('Missing canonical cachemaintenanceadapter source.'); }
-$adapter .= $adapterImplementation;
+$implementation = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/trait-cachemaintenanceadaptermethods.php');
+if (!is_string($adapter) || !is_string($implementation)) { throw new RuntimeException('Missing cache maintenance callback implementation.'); }
+$adapter .= $implementation;
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 

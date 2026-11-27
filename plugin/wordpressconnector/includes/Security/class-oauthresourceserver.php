@@ -223,15 +223,20 @@ final class OAuthResourceServer {
 	 * additionally configure an edge/WAF limit for this MCP endpoint.
 	 */
 	private static function can_introspect(): bool {
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REMOTE_ADDR is validated with FILTER_VALIDATE_IP below; invalid values are assigned the shared unknown bucket.
-		$address = $_SERVER['REMOTE_ADDR'] ?? '';
-		$address = is_string( $address ) && filter_var( $address, FILTER_VALIDATE_IP ) ? $address : 'unknown';
-		$bucket  = (string) floor( time() / 60 );
-		$limits  = array(
+		$address = 'unknown';
+		if ( isset( $_SERVER['REMOTE_ADDR'] ) && is_string( $_SERVER['REMOTE_ADDR'] ) ) {
+			$validated = filter_var( wp_unslash( $_SERVER['REMOTE_ADDR'] ), FILTER_VALIDATE_IP );
+			// Never turn malformed raw input into a different valid IP.
+			if ( false !== $validated && $_SERVER['REMOTE_ADDR'] === $validated ) {
+				$address = $validated;
+			}
+		}
+		$bucket = (string) floor( time() / 60 );
+		$limits = array(
 			'wpconnector_oauth_ip_' . substr( hash( 'sha256', $address ), 0, 24 ) . '_' . $bucket => self::RATE_LIMIT_PER_IP,
 			'wpconnector_oauth_all_' . $bucket => self::RATE_LIMIT_GLOBAL,
 		);
-		$counts  = array();
+		$counts = array();
 		foreach ( $limits as $key => $limit ) {
 			$value = get_transient( $key );
 			if ( false !== $value && ! is_int( $value )
