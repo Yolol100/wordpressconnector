@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
+
 define('ABSPATH', __DIR__ . '/');
 
 class WP_Post
@@ -160,8 +162,16 @@ $case = $base; $case['request_id'] = 'public-acf-boundary-1007'; $case['payload'
 $case = $base; $case['request_id'] = 'public-acf-boundary-1008'; $case['payload']['unexpected'] = true; $cases['unknown payload key'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1009'; $case['payload']['post_id'] = 98; $cases['unpublished attachment target'] = $case;
 
+$expectedDiagnostics = array(
+    'non-text field' => 'Public ACF field is missing or is not an allowed textual field: field_portfolio_nontext',
+    'WYSIWYG markup' => 'Public multiline ACF values must be plain text without HTML markup: field_portfolio_wysiwyg',
+    'field outside target group' => 'Public ACF field does not belong to a field group for the target post: field_portfolio_wrongparent',
+);
 foreach ($cases as $label => $request) {
     $result = $runner->run(Request::fromArray($request));
+    if (isset($expectedDiagnostics[$label]) && ($result['error'] ?? null) !== $expectedDiagnostics[$label]) {
+        throw new RuntimeException('Incorrect bounded ACF rejection diagnostic: ' . $label);
+    }
     if (! empty($result['ok'])) {
         fwrite(STDERR, "Forbidden public ACF boundary case passed: {$label}\n");
         exit(1);

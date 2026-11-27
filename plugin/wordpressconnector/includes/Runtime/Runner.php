@@ -399,7 +399,7 @@ final class Runner {
 				'expected_state_token' => $expected_state_token,
 			) as $guard => $value ) {
 				if ( null !== $value && ( ! is_string( $value ) || ! preg_match( '/^[a-f0-9]{64}\\z/', $value ) ) ) {
-					throw new RuntimeException( 'Invalid ' . $guard . ' at batch index ' . $index . '.' );
+					throw new RuntimeException( 'Invalid ' . esc_html( $guard ) . ' at batch index ' . (int) $index . '.' );
 				}
 			}
 			if ( Policy::publicRepositoryContext() && empty( $context['dry_run'] ) && null === $expected ) {
@@ -1294,7 +1294,7 @@ final class Runner {
 		}
 		foreach ( array( 'acf_get_field_groups', 'acf_get_field', 'get_field', 'update_field' ) as $function ) {
 			if ( ! function_exists( $function ) ) {
-				throw new RuntimeException( 'ACF public update API is unavailable: ' . $function );
+				throw new RuntimeException( 'ACF public update API is unavailable: ' . esc_html( $function ) );
 			}
 		}
 		$fields = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? $payload['fields'] : array();
@@ -1328,15 +1328,15 @@ final class Runner {
 			$field      = acf_get_field( $field_key );
 			$field_type = is_array( $field ) ? (string) ( $field['type'] ?? '' ) : '';
 			if ( ! is_array( $field ) || ! in_array( $field_type, array( 'text', 'textarea', 'wysiwyg' ), true ) ) {
-				throw new RuntimeException( 'Public ACF field is missing or is not an allowed textual field: ' . $field_key );
+				throw new RuntimeException( 'Public ACF field is missing or is not an allowed textual field: ' . esc_html( $field_key ) );
 			}
 			if ( in_array( $field_type, array( 'textarea', 'wysiwyg' ), true ) && ( false !== strpos( $value, '<' ) || false !== strpos( $value, '>' ) ) ) {
-				throw new RuntimeException( 'Public multiline ACF values must be plain text without HTML markup: ' . $field_key );
+				throw new RuntimeException( 'Public multiline ACF values must be plain text without HTML markup: ' . esc_html( $field_key ) );
 			}
 			$name   = (string) ( $field['name'] ?? '' );
 			$parent = (string) ( $field['parent'] ?? '' );
 			if ( '' === $name || ! isset( $allowed_parents[ $parent ] ) ) {
-				throw new RuntimeException( 'Public ACF field does not belong to a field group for the target post: ' . $field_key );
+				throw new RuntimeException( 'Public ACF field does not belong to a field group for the target post: ' . esc_html( $field_key ) );
 			}
 			Policy::assertKeyAllowed( $name );
 		}
@@ -1542,7 +1542,7 @@ final class Runner {
 		if ( ( null !== $expected_fingerprint || null !== $expected_state_token ) && empty( $context['dry_run'] ) ) {
 			$preview = $this->registry->execute( $action, $payload, array_merge( $context, array( 'dry_run' => true ) ) );
 			if ( ! isset( $preview['_current_fingerprint'] ) || ! is_string( $preview['_current_fingerprint'] ) ) {
-				throw new RuntimeException( 'Action cannot enforce stale-state protection: ' . $action );
+				throw new RuntimeException( 'Action cannot enforce stale-state protection: ' . esc_html( $action ) );
 			}
 			$current = $preview['_current_fingerprint'];
 			if ( null !== $expected_fingerprint && ! hash_equals( $expected_fingerprint, $current ) ) {

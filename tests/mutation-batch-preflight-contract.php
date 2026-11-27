@@ -120,6 +120,18 @@ $rejectWithoutSideEffects(array($first, array('action' => 'test.first', 'payload
 $rejectWithoutSideEffects(array($first, array('action' => 'wordpress.ability.execute_approved', 'payload' => array())),
     'a delegated third-party Ability without compensation guarantees');
 
+foreach (array('expected_fingerprint', 'expected_state_token') as $guard) {
+    $bad = $first;
+    $bad[$guard] = 'invalid';
+    try {
+        $run(array($first, $bad));
+        throw new LogicException('Malformed guard accepted.');
+    } catch (RuntimeException $error) {
+        if ('Invalid ' . $guard . ' at batch index 1.' !== $error->getMessage() || 0 !== $writes) {
+            throw new RuntimeException('Incorrect batch guard diagnostic or unexpected write.');
+        }
+    }
+}
 $validDryRun = $run(array($first, $first), true);
 if (count($validDryRun['operations'] ?? array()) !== 2 || $writes !== 0) {
     throw new RuntimeException('Valid batch dry-run must remain side-effect free.');
