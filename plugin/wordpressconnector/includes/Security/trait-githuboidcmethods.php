@@ -23,5 +23,4 @@ trait GitHubOidcMethods {
 	public static function expected_audience(): string {
 		return rtrim( (string) rest_url( 'webactueel-wordpress-connector/v1' ), '/' );
 	}
-
 }

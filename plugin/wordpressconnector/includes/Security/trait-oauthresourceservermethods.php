@@ -98,5 +98,4 @@ trait OAuthResourceServerMethods {
 	public function is_authenticated(): bool {
 		return $this->authenticated;
 	}
-
 }

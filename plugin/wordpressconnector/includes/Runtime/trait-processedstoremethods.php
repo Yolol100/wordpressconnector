@@ -27,5 +27,4 @@ trait ProcessedStoreMethods {
 
 		$this->delete_lock_if_value( $existing );
 	}
-
 }

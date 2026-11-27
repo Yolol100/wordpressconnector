@@ -139,5 +139,4 @@ trait PolicyMethods {
 			throw new RuntimeException( 'Potentially sensitive post type export requires confirm=true on a non-public transport.' );
 		}
 	}
-
 }
