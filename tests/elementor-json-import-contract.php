@@ -78,7 +78,9 @@ if (! function_exists('sanitize_key')) {
     function sanitize_key($value): string { return is_string($value) ? strtolower($value) : ''; }
 }
 if (! function_exists('current_user_can')) {
-    function current_user_can(string $capability): bool { return true; }
+    function current_user_can(string $capability, int $postId = 0): bool {
+        return 'edit_post' !== $capability || 27 !== $postId;
+    }
 }
 if (! function_exists('esc_html__')) {
     function esc_html__(string $text, string $domain): string { return $text; }
@@ -187,17 +189,27 @@ if (! class_exists('WP_Post')) {
         public $ID;
         public $post_title;
         public $post_type;
-        public function __construct(int $id) {
+        public $post_status;
+        public function __construct(int $id, string $type = 'page', string $status = 'publish') {
             $this->ID = $id;
             $this->post_title = 'Existing page';
-            $this->post_type = 'page';
+            $this->post_type = $type;
+            $this->post_status = $status;
         }
     }
 }
 $GLOBALS['wpconnector_import_form_reads'] = 0;
 function get_posts(array $args): array {
     ++$GLOBALS['wpconnector_import_form_reads'];
-    return array(new WP_Post(23));
+    return array(new WP_Post(23), new WP_Post(27));
+}
+function get_post(int $id) {
+    switch ($id) {
+        case 23: case 27: case 204: return new WP_Post($id);
+        case 25: return new WP_Post($id, 'post');
+        case 26: return new WP_Post($id, 'page', 'trash');
+        default: return null;
+    }
 }
 function esc_url(string $value): string { return $value; }
 function esc_attr(string $value): string { return htmlspecialchars($value, ENT_QUOTES); }
@@ -231,6 +243,8 @@ try {
         array(array(), 0),
         array(array('post_id' => '0'), 0),
         array(array('post_id' => '23'), 23),
+        // Explicit targets outside the bounded recent-items query must not fall back to create.
+        array(array('post_id' => '204'), 204),
     ) as $validCase) {
         $_GET = $validCase[0];
         ob_start();
@@ -243,7 +257,29 @@ try {
         }
         $selectedOption = '<option value="' . $validCase[1] . '" selected="selected">';
         if (! is_string($html) || false === strpos($html, $selectedOption)) {
-            throw new RuntimeException('Canonical import form target did not select the intended item.');
+            throw new RuntimeException('Canonical import form target did not select the intended item: ' . $validCase[1]);
+        }
+        if (1 !== substr_count($html, $selectedOption) || false !== strpos($html, '<option value="27"')) {
+            throw new RuntimeException('Import form rendered duplicate selection or unauthorized option.');
+        }
+        if ($validCase[1] > 0 && false !== strpos($html, '<option value="0" selected="selected">')) {
+            throw new RuntimeException('Explicit existing target incorrectly selected create.');
+        }
+    }
+    // Deleted, wrong-type, trashed, and unauthorized explicit targets must stop
+    // before rendering a form that could submit an unintended new draft.
+    foreach (array(25 => 400, 26 => 400, 27 => 403, 28 => 400) as $id => $status) {
+        $_GET = array('post_id' => (string) $id);
+        ob_start();
+        try {
+            $import->renderImportPage('page');
+            throw new LogicException('Unavailable target unexpectedly rendered an import form: ' . $id);
+        } catch (DomainException $error) {
+            if ($status !== $error->getCode() || '' !== ob_get_contents()) {
+                throw new RuntimeException('Unavailable target did not fail closed: ' . $id);
+            }
+        } finally {
+            ob_end_clean();
         }
     }
 } finally {

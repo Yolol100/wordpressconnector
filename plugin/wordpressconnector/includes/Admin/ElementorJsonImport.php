@@ -110,15 +110,42 @@ final class ElementorJsonImport {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 			return;
 		}
+		$post_statuses = array( 'publish', 'draft', 'pending', 'private', 'future' );
+		$selected_post = null;
+		if ( $selected_id > 0 ) {
+			$selected_post = get_post( $selected_id );
+			if ( ! $selected_post instanceof \WP_Post || (int) $selected_post->ID !== $selected_id || (string) $selected_post->post_type !== $post_type || ! in_array( (string) $selected_post->post_status, $post_statuses, true ) ) {
+				wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+				return;
+			}
+			if ( ! current_user_can( 'edit_post', $selected_id ) ) {
+				wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
+				return;
+			}
+		}
 		$posts = get_posts(
 			array(
 				'post_type'      => $post_type,
-				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+				'post_status'    => $post_statuses,
 				'posts_per_page' => 200,
 				'orderby'        => 'modified',
 				'order'          => 'DESC',
 			)
 		);
+		// A row-action target can be older than the bounded recent-items list.
+		// Preserve its exact identity instead of silently selecting a new draft.
+		if ( $selected_post instanceof \WP_Post ) {
+			$listed = false;
+			foreach ( $posts as $post ) {
+				if ( $post instanceof \WP_Post && (int) $post->ID === $selected_id ) {
+					$listed = true;
+					break;
+				}
+			}
+			if ( ! $listed ) {
+				array_unshift( $posts, $selected_post );
+			}
+		}
 		echo '<div class="wrap"><h1>' . esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) . '</h1><p>' . esc_html__( 'Upload an Elementor JSON document. Choose an existing item to replace only its Elementor structure/settings, or choose Create new to make a new draft. Existing-item writes use Elementor readback and automatic rollback.', 'wordpressconnector' ) . '</p><form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::ACTION );
 		echo '<input type="hidden" name="action" value="' . esc_attr( self::ACTION ) . '"><input type="hidden" name="post_type" value="' . esc_attr( $post_type ) . '"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">' . esc_html__( 'Target', 'wordpressconnector' ) . '</label></th><td><select id="wpconnector-target-post" name="post_id">';
