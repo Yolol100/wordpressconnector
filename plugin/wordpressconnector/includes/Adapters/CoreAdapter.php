@@ -1116,8 +1116,8 @@ final class CoreAdapter {
 			);
 		}
 		$id = wp_create_nav_menu( $name );
-		if ( is_wp_error( $id ) ) {
-			throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) || ! is_int( $id ) || $id <= 0 ) {
+			throw new RuntimeException( 'WordPress menu creation failed.' );
 		}
 		return array(
 			'menu_id'   => (int) $id,
@@ -1160,8 +1160,8 @@ final class CoreAdapter {
 			);
 		}
 		$updated = wp_update_nav_menu_object( $id, array( 'menu-name' => $name ) );
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || $id !== $updated ) {
+			throw new RuntimeException( 'WordPress menu update failed.' );
 		}
 		return array(
 			'menu_id'   => (int) $updated,
@@ -1192,8 +1192,8 @@ final class CoreAdapter {
 			);
 		}
 		$deleted = wp_delete_nav_menu( $id );
-		if ( is_wp_error( $deleted ) ) {
-			throw new RuntimeException( $deleted->get_error_message() );
+		if ( true !== $deleted ) {
+			throw new RuntimeException( 'WordPress menu deletion failed.' );
 		}
 		return array(
 			'deleted'            => $id,
@@ -1268,8 +1268,8 @@ final class CoreAdapter {
 			);
 		}
 		$updated = wp_update_nav_menu_item( $menu_id, $item_id, $args );
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || ! is_int( $updated ) || $updated <= 0 || ( 0 !== $item_id && $item_id !== $updated ) ) {
+			throw new RuntimeException( 'WordPress menu item update failed.' );
 		}
 		return array(
 			'item_id'            => (int) $updated,
