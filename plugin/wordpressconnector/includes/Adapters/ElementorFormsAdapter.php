@@ -565,17 +565,23 @@ final class ElementorFormsAdapter {
 				if ( ! is_array( $field ) ) {
 					throw new RuntimeException( 'Each V3 form field must be an object/array.' );
 				}
+				if ( isset( $field['_id'] ) && ! is_scalar( $field['_id'] ) ) {
+					throw new RuntimeException( 'V3 form field _id must be scalar.' );
+				}
 				$id = isset( $field['_id'] ) ? (string) $field['_id'] : '';
 				if ( '' !== $id ) {
 					if ( isset( $seen_ids[ $id ] ) ) {
-						throw new RuntimeException( 'Duplicate V3 form field _id: ' . $id );
+						throw new RuntimeException( 'Duplicate V3 form field _id.' );
 					}
 					$seen_ids[ $id ] = true;
+				}
+				if ( isset( $field['custom_id'] ) && ! is_scalar( $field['custom_id'] ) ) {
+					throw new RuntimeException( 'V3 form field custom_id must be scalar.' );
 				}
 				$custom_id = isset( $field['custom_id'] ) ? (string) $field['custom_id'] : '';
 				if ( '' !== $custom_id ) {
 					if ( isset( $seen_custom_ids[ $custom_id ] ) ) {
-						throw new RuntimeException( 'Duplicate V3 form field custom_id: ' . $custom_id );
+						throw new RuntimeException( 'Duplicate V3 form field custom_id.' );
 					}
 					$seen_custom_ids[ $custom_id ] = true;
 				}
@@ -593,8 +599,8 @@ final class ElementorFormsAdapter {
 				throw new RuntimeException( 'V3 submit actions cannot be validated against the target runtime.' );
 			}
 			foreach ( $settings['submit_actions'] as $action ) {
-				if ( ! in_array( (string) $action, $available, true ) ) {
-					throw new RuntimeException( 'V3 submit action is not registered in the target runtime: ' . (string) $action );
+				if ( ! is_scalar( $action ) || ! in_array( (string) $action, $available, true ) ) {
+					throw new RuntimeException( 'V3 submit action is not registered in the target runtime.' );
 				}
 			}
 		}
@@ -645,7 +651,7 @@ final class ElementorFormsAdapter {
 	 */
 	private function validate_atomic_node( array $node, array $registered, array &$counts, bool $root ): void {
 		$this->assert_element_id( $node, $root ? 'atomic form' : 'atomic form child' );
-		$type = isset( $node['elType'] ) ? (string) $node['elType'] : '';
+		$type = isset( $node['elType'] ) && is_scalar( $node['elType'] ) ? (string) $node['elType'] : '';
 		if ( '' === $type || 0 !== strpos( $type, 'e-' ) ) {
 			throw new RuntimeException( 'V4 Atomic Form descendants must use registered Atomic e-* element types.' );
 		}
@@ -653,12 +659,12 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'V4 Atomic Forms cannot be nested inside another e-form.' );
 		}
 		if ( ! in_array( $type, $registered, true ) ) {
-			throw new RuntimeException( 'Atomic element type is not registered in the target runtime: ' . $type );
+			throw new RuntimeException( 'Atomic element type is not registered in the target runtime.' );
 		}
 		$counts[ $type ] = isset( $counts[ $type ] ) ? $counts[ $type ] + 1 : 1;
 
-		if ( ! isset( $node['version'] ) || '' === (string) $node['version'] ) {
-			throw new RuntimeException( 'Atomic element ' . $type . ' is missing its schema version.' );
+		if ( ! isset( $node['version'] ) || ! is_scalar( $node['version'] ) || '' === (string) $node['version'] ) {
+			throw new RuntimeException( 'Atomic element is missing its schema version.' );
 		}
 		foreach ( array( 'settings', 'editor_settings', 'styles', 'elements' ) as $key ) {
 			if ( ! array_key_exists( $key, $node ) || ! is_array( $node[ $key ] ) ) {
@@ -666,9 +672,9 @@ final class ElementorFormsAdapter {
 			}
 		}
 		if ( array_key_exists( 'interactions', $node ) && ! is_array( $node['interactions'] ) ) {
-			throw new RuntimeException( 'Atomic element ' . $type . ' interactions must be an array/object when present.' );
+			throw new RuntimeException( 'Atomic element interactions must be an array/object when present.' );
 		}
-		$this->validate_atomic_settings( $node['settings'], $type );
+		$this->validate_atomic_settings( $node['settings'] );
 
 		foreach ( $node['elements'] as $child ) {
 			if ( ! is_array( $child ) ) {
@@ -681,20 +687,19 @@ final class ElementorFormsAdapter {
 	/**
 	 * Validate atomic settings in the Elementor forms adapter.
 	 *
-	 * @param array  $settings Value used by this operation.
-	 * @param string $type Requested type.
+	 * @param array $settings Value used by this operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function validate_atomic_settings( array $settings, string $type ): void {
-		foreach ( $settings as $key => $value ) {
+	private function validate_atomic_settings( array $settings ): void {
+		foreach ( $settings as $value ) {
 			if ( ! is_array( $value ) ) {
-				throw new RuntimeException( 'Atomic setting ' . (string) $key . ' on ' . $type . ' must be a typed prop object.' );
+				throw new RuntimeException( 'Atomic setting must be a typed prop object.' );
 			}
 			$is_typed = isset( $value['$$type'] ) && is_string( $value['$$type'] ) && array_key_exists( 'value', $value );
 			$is_multi = ! empty( $value['$$multi-props'] ) && array_key_exists( 'value', $value );
 			if ( ! $is_typed && ! $is_multi ) {
-				throw new RuntimeException( 'Atomic setting ' . (string) $key . ' on ' . $type . ' is missing $$type/value metadata.' );
+				throw new RuntimeException( 'Atomic setting is missing $$type/value metadata.' );
 			}
 		}
 	}
@@ -922,7 +927,7 @@ final class ElementorFormsAdapter {
 		$this->assert_element_id( $element, $context );
 		$id = (string) $element['id'];
 		if ( isset( $ids[ $id ] ) ) {
-			throw new RuntimeException( 'Duplicate Elementor element id: ' . $id );
+			throw new RuntimeException( 'Duplicate Elementor element id.' );
 		}
 		$ids[ $id ] = true;
 		if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
@@ -966,7 +971,7 @@ final class ElementorFormsAdapter {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assert_element_id( array $element, string $context ): void {
-		$id = isset( $element['id'] ) ? (string) $element['id'] : '';
+		$id = isset( $element['id'] ) && is_scalar( $element['id'] ) ? (string) $element['id'] : '';
 		if ( '' === $id || ! preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $id ) ) {
 			throw new RuntimeException( 'Invalid or missing Elementor element id in ' . $context . '.' );
 		}
