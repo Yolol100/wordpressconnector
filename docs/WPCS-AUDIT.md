@@ -26,3 +26,11 @@ Local repeat: install `wp-coding-standards/wpcs:3.4.1` and
 `squizlabs/php_codesniffer:3.13.6` using Composer in a separate tool directory,
 then run its `vendor/bin/phpcs --standard=phpcs.xml.dist --report=summary`
 from the repository root.
+
+### Backward-compatible adapter filenames
+
+The canonical loader uses the lowercase class filenames for Code Snippets and
+Filesystem adapters. The original include paths remain as minimal require-once
+forwarders so existing direct PHP includes continue to resolve the same classes.
+The complete audit still scans these forwarders and reports their legacy casing.
+Do not remove them merely to reduce the report count.

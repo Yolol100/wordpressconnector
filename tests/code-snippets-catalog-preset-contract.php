@@ -84,7 +84,7 @@ namespace {
     require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
     require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-    require_once $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
 
     $fail = static function (string $message): void {
         fwrite(STDERR, 'Code Snippets catalogue preset: ' . $message . PHP_EOL);
@@ -108,7 +108,7 @@ namespace {
     if (!mkdir($probeRoot . '/Adapters', 0700, true) || !mkdir($probeRoot . '/Presets', 0700)) {
         throw new RuntimeException('Unable to allocate preset test fixture.');
     }
-    $adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+    $adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/class-codesnippetsadapter.php';
     $probeAdapter = $probeRoot . '/Adapters/' . basename($adapterPath);
     $probeTrait = $probeRoot . '/Adapters/trait-codesnippetsadapteractions.php';
     $probePreset = $probeRoot . '/Presets/woocommerce-catalog-no-orders.txt';
