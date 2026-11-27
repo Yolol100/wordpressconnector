@@ -123,9 +123,8 @@ final class CustomCssAdapter {
 		clean_post_cache( (int) $updated->ID );
 		$readback = $this->snapshot( $stylesheet );
 
-		if ( $readback['css'] !== $css ) {
-			wp_update_custom_css_post( (string) $before['css'], array( 'stylesheet' => $stylesheet ) );
-			throw new RuntimeException( 'Additional CSS readback verification failed; the previous CSS was restored.' );
+		if ( $readback['css'] !== $css || $readback['post_id'] !== (int) $updated->ID ) {
+			$this->restore_previous_css( $before );
 		}
 
 		$result['after']             = $readback;
@@ -225,9 +224,8 @@ final class CustomCssAdapter {
 
 		clean_post_cache( (int) $updated->ID );
 		$readback = $this->snapshot( $stylesheet );
-		if ( $readback['css'] !== $after_css ) {
-			wp_update_custom_css_post( (string) $before['css'], array( 'stylesheet' => $stylesheet ) );
-			throw new RuntimeException( 'Managed Additional CSS patch readback failed; the previous CSS was restored.' );
+		if ( $readback['css'] !== $after_css || $readback['post_id'] !== (int) $updated->ID ) {
+			$this->restore_previous_css( $before );
 		}
 
 		$result['after']             = $readback;
@@ -291,6 +289,33 @@ final class CustomCssAdapter {
 
 		$separator = preg_match( '/(?:\r\n|\r|\n)\z/', $current_css ) ? "\n" : "\n\n";
 		return $current_css . $separator . $block . "\n";
+	}
+
+	/**
+	 * Attempt exactly one recovery and report success only after readback.
+	 *
+	 * @param array $before Original CSS snapshot.
+	 * @throws \RuntimeException Always, because the requested mutation failed.
+	 */
+	private function restore_previous_css( array $before ): void {
+		$verified = false;
+		try {
+			$restored = wp_update_custom_css_post( (string) $before['css'], array( 'stylesheet' => $before['stylesheet'] ) );
+			if ( $restored instanceof \WP_Post ) {
+				clean_post_cache( (int) $restored->ID );
+				$readback = $this->snapshot( $before['stylesheet'] );
+				$verified = $readback['css'] === $before['css']
+					&& $readback['post_id'] === (int) $restored->ID
+					&& ( null === $before['post_id'] || $readback['post_id'] === $before['post_id'] );
+			}
+		} catch ( \Throwable $error ) {
+			// A provider exception is not evidence of successful recovery.
+			$verified = false;
+		}
+		if ( ! $verified ) {
+			throw new RuntimeException( 'Additional CSS readback verification failed; previous CSS restore could not be verified. Manual recovery is required.' );
+		}
+		throw new RuntimeException( 'Additional CSS readback verification failed; the previous CSS was restored.' );
 	}
 
 	/**
