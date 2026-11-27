@@ -13,8 +13,8 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-si
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AcfAdapter.php';
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-acfadapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-woocommercefulfillmentadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yoastadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
@@ -26,7 +26,7 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-yo
 
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Admin/class-settings.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/MediaAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/Policy.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/SitePairing.php';
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Security/GitHubOidc.php';
@@ -48,7 +48,7 @@ require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-wo
 if (!defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/fixtures/'); }
 require_once __DIR__ . '/../plugin/wordpressconnector/includes/Runtime/Runner.php';
 
-require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/PortfolioStatsAdapter.php';
+require_once __DIR__ . '/../plugin/wordpressconnector/includes/Adapters/class-portfoliostatsadapter.php';
 
 $serviceAliases = array(
     'Webactueel\WordPressConnector\Support\Json' => array(

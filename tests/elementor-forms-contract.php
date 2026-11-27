@@ -18,7 +18,7 @@ namespace {
 
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
     require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/class-fingerprint.php';
-    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php';
+    require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-elementorformsadapter.php';
 
     final class FakeManager {
         private $types;
@@ -280,7 +280,7 @@ namespace {
         restore_error_handler();
     }
 
-    $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
+    $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-elementorformsadapter.php');
     if (! is_string($source)) { throw new RuntimeException('Elementor Forms source is unavailable.'); }
     $normalizedSource = preg_replace('/\\s+/', '', $source);
     if (! is_string($normalizedSource)) { throw new RuntimeException('Could not normalize Elementor Forms source.'); }

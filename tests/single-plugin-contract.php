@@ -13,10 +13,10 @@ $read = static function (string $relative) use ($root): string {
 };
 $main=$read('plugin/wordpressconnector/wordpressconnector.php');
 $plugin=$read('plugin/wordpressconnector/includes/class-plugin.php');
-$elementor=$read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
+$elementor=$read('plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php');
 $elementor.=$read('plugin/wordpressconnector/includes/Adapters/trait-elementoradapteractions.php');
 $capabilities=$read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
-$forms=$read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
+$forms=$read('plugin/wordpressconnector/includes/Adapters/class-elementorformsadapter.php');
 $export=$read('plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php');
 $export.=$read('plugin/wordpressconnector/includes/Admin/trait-elementorjsonexportmethods.php');
 $import=$read('plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php');
@@ -31,7 +31,7 @@ $normalizedForms=preg_replace('/\s+/','',$forms);
 if(!is_string($normalizedExport)||!is_string($normalizedImport)||!is_string($normalizedCapabilities)||!is_string($normalizedForms)) {
     exit(1);
 }
-foreach(array('includes/Security/GitHubOidc.php','includes/Adapters/AbilitiesAdapter.php','includes/Adapters/CacheMaintenanceAdapter.php','includes/Adapters/CodeSnippetsAdapter.php','includes/Adapters/ElementorCapabilitiesAdapter.php','includes/Adapters/ElementorFormsAdapter.php','includes/Admin/ElementorJsonExport.php','includes/Admin/ElementorJsonImport.php','includes/Adapters/class-yoastadapter.php') as $relative) {
+foreach(array('includes/Security/GitHubOidc.php','includes/Adapters/AbilitiesAdapter.php','includes/Adapters/CacheMaintenanceAdapter.php','includes/Adapters/CodeSnippetsAdapter.php','includes/Adapters/ElementorCapabilitiesAdapter.php','includes/Adapters/class-elementorformsadapter.php','includes/Admin/ElementorJsonExport.php','includes/Admin/ElementorJsonImport.php','includes/Adapters/class-yoastadapter.php') as $relative) {
     if(strpos($main,$relative)===false) {
         fwrite(STDERR,"Main plugin bootstrap is missing {$relative}.\n");
         exit(1);

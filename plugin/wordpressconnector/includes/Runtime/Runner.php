@@ -485,7 +485,8 @@ final class Runner {
 					}
 				}
 			}
-			throw new RuntimeException( 'Batch failed at operation ' . count( $results ) . ': ' . $error->getMessage() . ( $compensation ? ' Compensation attempted: ' . wp_json_encode( $compensation ) : '' ), 0, $error );
+			$failure = $this->batch_failure( count( $results ), $error, $compensation );
+			throw $failure;
 		}
 		$output = array( 'operations' => $results );
 		if ( $rollbacks ) {
@@ -505,6 +506,30 @@ final class Runner {
 			);
 		}
 		return $output;
+	}
+
+	/**
+	 * Construct a batch diagnostic with a separately encoded JSON suffix.
+	 *
+	 * @param int       $completed    Number of completed operations.
+	 * @param Throwable $cause        Original failure.
+	 * @param array     $compensation Compensation outcomes.
+	 * @return RuntimeException Diagnostic retaining the original cause.
+	 */
+	private function batch_failure( int $completed, Throwable $cause, array $compensation ): RuntimeException {
+		$message = 'Batch failed at operation ' . $completed . ': ' . esc_html( $cause->getMessage() );
+		if ( $compensation ) {
+			// Redact structured keys before serialization. Escape markup within
+			// JSON string values without encoding the JSON syntax as HTML.
+			try {
+				$encoded = wp_json_encode( Policy::redact( $compensation ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+			} catch ( Throwable $encoding_error ) {
+				// An encoding failure must not replace the original provider error.
+				$encoded = false;
+			}
+			$message .= ' Compensation attempted: ' . ( false === $encoded ? '[unavailable]' : $encoded );
+		}
+		return new RuntimeException( $message, 0, $cause );
 	}
 
 	/**

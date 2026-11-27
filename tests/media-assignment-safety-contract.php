@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$source = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/MediaAdapter.php');
+$source = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php');
 if (! is_string($source)) {
     throw new RuntimeException('MediaAdapter source missing.');
 }
@@ -55,7 +55,7 @@ function get_post($id) {
     return 101 === $id ? new WP_Post(101) : (102 === $id ? new WP_Post(102, 'page') : null);
 }
 require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/MediaAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-mediaadapter.php';
 $adapter = new \Webactueel\WordPressConnector\Adapters\MediaAdapter();
 $resolve = new ReflectionMethod($adapter, 'attachment_id');
 $resolve->setAccessible(true);

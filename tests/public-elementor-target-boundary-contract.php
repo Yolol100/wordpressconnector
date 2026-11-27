@@ -138,7 +138,7 @@ if (($privatePatch['post_id'] ?? 0) !== 202 || 2 !== $patchCalls) {
 // double. Malformed IDs must fail before WordPress lookup for reads, previews,
 // or confirmed document changes.
 require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
-require_once $root . '/plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-elementoradapter.php';
 $elementorAdapter = new \Webactueel\WordPressConnector\Adapters\ElementorAdapter();
 $postResolver = new ReflectionMethod($elementorAdapter, 'post');
 if (PHP_VERSION_ID < 80100) {
