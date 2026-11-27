@@ -99,7 +99,29 @@ final class CodeSnippetsAdapter {
 	 */
 	private function catalog_code(): string {
 		$path = __DIR__ . '/../Presets/woocommerce-catalog-no-orders.txt';
-		$code = is_file( $path ) ? file_get_contents( $path ) : false; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read only bundled static preset at __DIR__; wp_remote_get() performs HTTP, not package I/O.
+		if ( ! is_file( $path ) ) {
+			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+		}
+		$code = '';
+		try {
+			$handle = new \SplFileObject( $path, 'rb' );
+			$stat   = $handle->fstat();
+			if ( ! is_array( $stat ) || 0100000 !== ( $stat['mode'] & 0170000 ) ) {
+				throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+			}
+			// Read at most the accepted size plus one byte, including if the file grows.
+			$remaining = self::MAX_CODE_BYTES + 1;
+			while ( $remaining > 0 && ! $handle->eof() ) {
+				$chunk = $handle->fread( $remaining );
+				if ( ! is_string( $chunk ) || ( '' === $chunk && ! $handle->eof() ) ) {
+					throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+				}
+				$code      .= $chunk;
+				$remaining -= strlen( $chunk );
+			}
+		} catch ( \Throwable $error ) {
+			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
+		}
 		if ( ! is_string( $code ) || '' === trim( $code ) ||
 			strlen( $code ) > self::MAX_CODE_BYTES ||
 			false === strpos( $code, self::CATALOG_MARKER ) ) {

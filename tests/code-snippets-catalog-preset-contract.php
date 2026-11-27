@@ -100,6 +100,71 @@ namespace {
     };
     $sourcePath = $root . '/plugin/wordpressconnector/includes/Presets/woocommerce-catalog-no-orders.txt';
     $source = (string) file_get_contents($sourcePath);
+
+    // Exercise the real fixed-path preset reader in a private package copy.
+    // A sparse oversized file must fail normally under a tight memory budget,
+    // not exhaust PHP memory before the size limit can be checked.
+    $probeRoot = sys_get_temp_dir() . '/wpconnector-preset-probe-' . bin2hex(random_bytes(8));
+    if (!mkdir($probeRoot . '/Adapters', 0700, true) || !mkdir($probeRoot . '/Presets', 0700)) {
+        throw new RuntimeException('Unable to allocate preset test fixture.');
+    }
+    $adapterPath = $root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php';
+    $probeAdapter = $probeRoot . '/Adapters/' . basename($adapterPath);
+    $probeTrait = $probeRoot . '/Adapters/trait-codesnippetsadapteractions.php';
+    $probePreset = $probeRoot . '/Presets/woocommerce-catalog-no-orders.txt';
+    $probeScript = $probeRoot . '/probe.php';
+    try {
+        if (!copy($adapterPath, $probeAdapter) ||
+            !copy(dirname($adapterPath) . '/trait-codesnippetsadapteractions.php', $probeTrait)) {
+            throw new RuntimeException('Unable to copy exact preset reader fixture.');
+        }
+        $probe = <<<'PHP'
+<?php
+require $argv[1];
+$reader = new ReflectionMethod(Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter::class, 'catalog_code');
+$reader->setAccessible(true);
+try {
+    $bytes = $reader->invoke(new Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter());
+    if ($argv[2] !== hash('sha256', $bytes)) exit(3);
+    echo "ACCEPTED\n";
+} catch (RuntimeException $error) {
+    if ($argv[2] !== 'reject' || $error->getMessage() !== 'Audited WooCommerce catalogue preset is unavailable.') exit(4);
+    echo "REJECTED\n";
+}
+PHP;
+        if (false === file_put_contents($probeScript, $probe)) throw new RuntimeException('Cannot write test probe.');
+        $runProbe = static function (string $expected) use ($probeScript, $probeAdapter): void {
+            $output = array();
+            $status = 0;
+            exec(escapeshellarg(PHP_BINARY) . ' -d memory_limit=16M ' . escapeshellarg($probeScript) . ' ' .
+                escapeshellarg($probeAdapter) . ' ' . escapeshellarg($expected) . ' 2>&1', $output, $status);
+            if (0 !== $status || $output !== array('reject' === $expected ? 'REJECTED' : 'ACCEPTED')) {
+                throw new RuntimeException('Bounded preset probe failed: ' . $status . ' ' . implode(' ', $output));
+            }
+        };
+        $exact = 'WAB_CATALOG_ONLY_2026' . str_repeat('x', 1048576 - strlen('WAB_CATALOG_ONLY_2026'));
+        file_put_contents($probePreset, $exact);
+        $runProbe(hash('sha256', $exact));
+        file_put_contents($probePreset, $exact . 'x');
+        $runProbe('reject');
+        $handle = fopen($probePreset, 'r+b');
+        if (false === $handle || !ftruncate($handle, 64 * 1024 * 1024)) throw new RuntimeException('Cannot create oversized fixture.');
+        fclose($handle);
+        $runProbe('reject');
+        file_put_contents($probePreset, 'no marker');
+        $runProbe('reject');
+        file_put_contents($probePreset, " \n\t");
+        $runProbe('reject');
+        unlink($probePreset);
+        $runProbe('reject');
+    } finally {
+        foreach (array($probePreset, $probeScript, $probeAdapter, $probeTrait) as $file) {
+            if (is_file($file)) unlink($file);
+        }
+        rmdir($probeRoot . '/Adapters');
+        rmdir($probeRoot . '/Presets');
+        rmdir($probeRoot);
+    }
     if (strlen($source) < 1000 || false === strpos($source, 'WAB_CATALOG_ONLY_2026')) {
         $fail('Versioned source preset is missing or empty.');
     }
