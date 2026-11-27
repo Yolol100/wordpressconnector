@@ -200,9 +200,9 @@ final class MediaAdapter {
 			'tmp_name' => $tmp,
 		);
 		$attachment_id = media_handle_sideload( $file_array, $planned['parent'], isset( $payload['description'] ) ? (string) $payload['description'] : null );
-		if ( is_wp_error( $attachment_id ) ) {
+		if ( is_wp_error( $attachment_id ) || ! is_int( $attachment_id ) || $attachment_id <= 0 ) {
 			wp_delete_file( $tmp );
-			throw new RuntimeException( $attachment_id->get_error_message() );
+			throw new RuntimeException( 'WordPress media import failed.' );
 		}
 
 		$update = array( 'id' => (int) $attachment_id );

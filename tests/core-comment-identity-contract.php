@@ -39,11 +39,13 @@ function get_comments($args): array {
     return array($GLOBALS['comment_fixture']);
 }
 function wp_slash($fields) { return $fields; }
-function is_wp_error($value): bool { return false; }
+class WP_Error { public function get_error_message(): string { return 'private provider diagnostic'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
 function wp_update_comment($fields, $return_error = false) {
     ++$GLOBALS['comment_writes'];
+    if (array_key_exists('comment_provider_result',$GLOBALS)) { return $GLOBALS['comment_provider_result']; }
     $GLOBALS['comment_fixture']->comment_content = (string) $fields['comment_content'];
-    return true;
+    return 1;
 }
 function wp_trash_comment($id): bool {
     ++$GLOBALS['comment_trashes'];
@@ -154,4 +156,19 @@ foreach (array(array(), array('post_id' => null), array('post_id' => 0),
         throw new RuntimeException('Comment list default/all-post behavior changed.');
     }
 }
+foreach (array(new WP_Error(), false, null, -1, '1') as $failure) {
+    $GLOBALS['comment_provider_result'] = $failure;
+    $before = $GLOBALS['comment_fixture']->comment_content;
+    try {
+        $adapter->commentUpdate(array('id'=>101, 'content'=>'Unsafe'), array('dry_run'=>false));
+        throw new RuntimeException('Rejected comment provider result accepted.');
+    } catch (RuntimeException $error) {
+        if ('WordPress comment update failed.' !== $error->getMessage()) throw $error;
+    }
+    if ($GLOBALS['comment_fixture']->comment_content !== $before) throw new RuntimeException('Rejected comment changed.');
+}
+$GLOBALS['comment_provider_result'] = 0;
+$unchanged = $adapter->commentUpdate(array('id'=>101,'content'=>$before),array('dry_run'=>false));
+if (($unchanged['comment']['content'] ?? null) !== $before) throw new RuntimeException('Valid no-op comment update rejected.');
+unset($GLOBALS['comment_provider_result']);
 echo "Core comment exact-ID read, update and trash contract OK\n";

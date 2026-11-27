@@ -1108,7 +1108,7 @@ final class ElementorFormsAdapter {
 			)
 		);
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
-			throw new RuntimeException( $result->get_error_message() );
+			throw new RuntimeException( 'Elementor rejected the form document save.' );
 		}
 		if ( false === $result || null === $result ) {
 			throw new RuntimeException( 'Elementor rejected the form document save.' );

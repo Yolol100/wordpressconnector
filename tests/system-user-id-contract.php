@@ -45,6 +45,7 @@ function wp_update_user($fields) {
     if (99 !== ($fields['ID'] ?? null)) {
         throw new RuntimeException('Wrong user update target.');
     }
+    if (array_key_exists('user_provider_result',$GLOBALS)) { return $GLOBALS['user_provider_result']; }
     $map = array(
         'user_email' => 'user_email',
         'display_name' => 'display_name',
@@ -60,7 +61,8 @@ function wp_update_user($fields) {
     }
     return 99;
 }
-function is_wp_error($value): bool { return false; }
+class WP_Error { public function get_error_message(): string { return 'private provider diagnostic'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
 function wp_delete_user($id, $reassign = null): bool {
     if (99 !== $id || (null !== $reassign && ! is_int($reassign))) {
         throw new RuntimeException('Wrong user deletion or reassignment target.');
@@ -219,4 +221,18 @@ try {
     rmdir($temp . '/wp-admin');
     rmdir($temp);
 }
+foreach (array(new WP_Error(), false, 0, 100, '99') as $failure) {
+    $GLOBALS['user_provider_result'] = $failure;
+    $before = clone $GLOBALS['user_fixture'];
+    try {
+        $adapter->userUpdate(array('id'=>99,'email'=>'unsafe@example.test','role'=>'administrator'),array('dry_run'=>false));
+        throw new RuntimeException('Rejected user provider result accepted.');
+    } catch (RuntimeException $error) {
+        if ('WordPress user profile update failed.' !== $error->getMessage()) throw $error;
+    }
+    if ($GLOBALS['user_fixture']->user_email !== $before->user_email || $GLOBALS['user_fixture']->roles !== $before->roles) {
+        throw new RuntimeException('Rejected provider result changed user or roles.');
+    }
+}
+unset($GLOBALS['user_provider_result']);
 echo "System user exact ID, reassignment, rollback and dry-run contract OK\n";

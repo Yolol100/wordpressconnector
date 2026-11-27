@@ -526,8 +526,8 @@ final class CoreAdapter {
 			),
 			true
 		);
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || (int) $post->ID !== $updated ) {
+			throw new RuntimeException( 'WordPress literal post update failed.' );
 		}
 		$actual = get_post( (int) $post->ID );
 		if ( ! $actual instanceof \WP_Post || (string) $actual->post_content !== $next ) {
@@ -1654,8 +1654,8 @@ final class CoreAdapter {
 			);
 		}
 		$updated = wp_update_comment( wp_slash( $fields ), true );
-		if ( is_wp_error( $updated ) ) {
-			throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) || ! in_array( $updated, array( 0, 1 ), true ) ) {
+			throw new RuntimeException( 'WordPress comment update failed.' );
 		}
 		return array(
 			'comment'   => $this->comment_snapshot( get_comment( (int) $comment->comment_ID ) ),

@@ -227,16 +227,19 @@ function wc_attribute_taxonomy_name(string $name): string { return 'pa_' . $name
 function sanitize_text_field($value): string { return (string) $value; }
 function sanitize_key($value): string { return strtolower((string) $value); }
 function wc_sanitize_taxonomy_name($name): string { return strtolower((string) $name); }
-function is_wp_error($value): bool { return false; }
-function wc_update_attribute(int $id, array $args): int {
+class WP_Error { public function get_error_message(): string { return 'private provider diagnostic'; } }
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
+function wc_create_attribute(array $args) { return $GLOBALS['woo_create_result'] ?? 12; }
+function wc_update_attribute(int $id, array $args) {
     $GLOBALS['woo_attribute_updates'][] = array($id, $args);
-    return $id;
+    return $GLOBALS['woo_update_result'] ?? $id;
 }
-function wc_delete_attribute(int $id): bool {
+function wc_delete_attribute(int $id) {
     $GLOBALS['woo_attribute_deletes'][] = $id;
-    return true;
+    return $GLOBALS['woo_delete_result'] ?? true;
 }
-function delete_transient(string $key): bool { return true; }
+function delete_transient(string $key): bool { ++$GLOBALS['woo_cache_deletes']; return true; }
+$GLOBALS['woo_cache_deletes']=0;
 
 foreach (array('12junk', '12.1', '1.2e1', ' 12', "12\\n", true, false, 12.5, 0, -12, null, array(12), '999999999999999999999999') as $invalidId) {
     foreach (array('attributeUpdate', 'attributeDelete') as $method) {
@@ -279,4 +282,24 @@ if (12 !== $GLOBALS['woo_attribute_updates'][0][0]
     throw new RuntimeException('Valid attribute mutation or rollback contract changed.');
 }
 
+$cases=array(
+    array('attributeCreate','create','creation',array(new WP_Error(),false,0,-1,'12')),
+    array('attributeUpdate','update','update',array(new WP_Error(),false,0,13,'12')),
+    array('attributeDelete','delete','deletion',array(new WP_Error(),false,0,1)),
+);
+foreach ($cases as list($method,$kind,$label,$results)) {
+    foreach ($results as $failure) {
+        $GLOBALS['woo_'.$kind.'_result']=$failure;
+        $before=$GLOBALS['woo_cache_deletes'];
+        try {
+            $adapter->$method(array('id'=>12,'name'=>'Updated'),array('dry_run'=>false));
+            throw new RuntimeException('Rejected WooCommerce provider result accepted.');
+        } catch (RuntimeException $error) {
+            if ('WooCommerce attribute '.$label.' failed.' !== $error->getMessage()) throw $error;
+        }
+        if ($before !== $GLOBALS['woo_cache_deletes']) throw new RuntimeException('Failed provider invalidated cache as successful.');
+    }
+    unset($GLOBALS['woo_'.$kind.'_result']);
+}
+if (12 !== ($adapter->attributeCreate(array('name'=>'Colour'),array('dry_run'=>false))['attribute_id'] ?? null)) throw new RuntimeException('Valid attribute creation rejected.');
 echo "WooCommerce catalog read contract OK\n";
