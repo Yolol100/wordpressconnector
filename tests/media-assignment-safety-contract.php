@@ -209,4 +209,42 @@ if (102 !== ($goodParentPreview['after']['parent'] ?? null)
     throw new RuntimeException('Media parent dry-run normalization or fingerprint changed.');
 }
 
+// A rejected native metadata post update must not continue to the alt-text writer.
+class WP_Error {
+    public function get_error_message(): string { return 'qa_private_media_provider_detail_758e'; }
+}
+function is_wp_error($value): bool { return $value instanceof WP_Error; }
+function sanitize_text_field($value): string { return trim((string)$value); }
+function wp_slash($value) { return $value; }
+function wp_update_post($fields, $return_error = false) {
+    ++$GLOBALS['media_test_update_calls'];
+    return $GLOBALS['media_test_update_result'];
+}
+function update_post_meta($id, $key, $value) {
+    ++$GLOBALS['media_test_alt_calls'];
+    return true;
+}
+$GLOBALS['media_test_update_calls'] = 0;
+$GLOBALS['media_test_alt_calls'] = 0;
+foreach (array(new WP_Error(), 0, false, 102, '101') as $providerResult) {
+    $GLOBALS['media_test_update_result'] = $providerResult;
+    $beforeWrites = $GLOBALS['media_test_update_calls'];
+    try {
+        $adapter->mediaUpdate(array('id'=>101, 'title'=>'New title', 'alt'=>'New alt'), array('dry_run'=>false));
+        throw new RuntimeException('Invalid media update result was accepted.');
+    } catch (RuntimeException $error) {
+        if ('WordPress media attachment update failed.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    if ($GLOBALS['media_test_update_calls'] !== $beforeWrites + 1 || 0 !== $GLOBALS['media_test_alt_calls']) {
+        throw new RuntimeException('Rejected native media post update continued to alt-text writes or retried.');
+    }
+}
+$GLOBALS['media_test_update_result'] = 101;
+$updated = $adapter->mediaUpdate(array('id'=>101, 'title'=>'New title', 'alt'=>'New alt'), array('dry_run'=>false));
+if (1 !== $GLOBALS['media_test_alt_calls'] || ($updated['_rollback']['action'] ?? '') !== 'media.update') {
+    throw new RuntimeException('Successful native media update no longer preserves alt and rollback contract.');
+}
+
 echo "Media assignment, guarded rollback and rename safety contract OK\n";
