@@ -32,6 +32,11 @@ namespace Webactueel\WordPressConnector\REST {
         if (! empty($GLOBALS['deny_wpconn_cleanup'])) {
             return false;
         }
+        switch ($GLOBALS['wpconn_cleanup_mode'] ?? '') {
+            case 'true_without_removal': return true;
+            case 'false_after_removal': \unlink($path); return false;
+            case 'throw_after_removal': \unlink($path); throw new \RuntimeException('Synthetic cleanup error.');
+        }
         return \unlink($path);
     }
 
@@ -61,6 +66,7 @@ namespace {
     function get_allowed_mime_types(): array { return array('json' => 'application/json'); }
 
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+    require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
 
     $store = new \Webactueel\WordPressConnector\REST\AssetStore();
@@ -95,6 +101,31 @@ namespace {
     }
     if (is_file($root . '/sample.json')) {
         throw new RuntimeException('Rejected uploaded file was not removed.');
+    }
+
+    // A cleanup return value alone must not determine whether private
+    // upload rollback succeeded. Test both lying and late-failure backends.
+    foreach (array('true_without_removal', 'false_after_removal', 'throw_after_removal') as $mode) {
+        $GLOBALS['wpconn_cleanup_mode'] = $mode;
+        $temp = tempnam(sys_get_temp_dir(), 'wpconn-cleanup');
+        file_put_contents($temp, '{"fixture":true}');
+        $message = '';
+        try {
+            $store->put($id, 'cleanup.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $temp));
+        } catch (RuntimeException $error) {
+            $message = $error->getMessage();
+        } finally {
+            unset($GLOBALS['wpconn_cleanup_mode']);
+        }
+        clearstatcache(true, $root . '/cleanup.json');
+        $remaining = is_file($root . '/cleanup.json');
+        if ($remaining) \unlink($root . '/cleanup.json');
+        $expected = 'true_without_removal' === $mode
+            ? 'Could not secure or remove uploaded request asset; manual recovery is required.'
+            : 'Could not secure uploaded request asset.';
+        if ($message !== $expected || $remaining !== ('true_without_removal' === $mode)) {
+            throw new LogicException('Private upload cleanup readback failed: ' . $mode);
+        }
     }
 
     $GLOBALS['deny_wpconn_chmod_mode'] = null;

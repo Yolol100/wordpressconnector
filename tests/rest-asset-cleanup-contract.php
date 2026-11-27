@@ -70,6 +70,7 @@ namespace {
         }
     }
 
+    require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/Controller.php';
 

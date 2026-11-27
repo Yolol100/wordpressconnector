@@ -347,6 +347,64 @@ try {
     }
 }
 
+// Exercise private asset cleanup through the real Core direct filesystem.
+$assetStore = new \Webactueel\WordPressConnector\REST\AssetStore();
+$assetRequest = 'qa-private-' . bin2hex(random_bytes(8));
+$assetRoot = $assetStore->rootForRequest($assetRequest, true);
+$assetOutside = $assetRoot . '-outside';
+$assetFilterCalls = 0;
+$assetFilter = static function ($path) use (&$assetFilterCalls) {
+    ++$assetFilterCalls;
+    return $path;
+};
+add_filter('wp_delete_file', $assetFilter);
+try {
+    if (! mkdir($assetOutside, 0700) || ! mkdir($assetRoot . '/nested', 0700)
+        || false === file_put_contents($assetOutside . '/keep.txt', 'outside')
+        || false === file_put_contents($assetRoot . '/nested/asset.txt', 'private')
+        || ! symlink($assetOutside, $assetRoot . '/outside-link')
+        || ! symlink($assetOutside . '/missing', $assetRoot . '/broken-link')) {
+        throw new RuntimeException('Could not create isolated private asset cleanup fixture.');
+    }
+    if (\Webactueel\WordPressConnector\Support\LocalFilesystem::remove_file($assetOutside)
+        || ! is_file($assetOutside . '/keep.txt')) {
+        throw new RuntimeException('Exact file cleanup accepted a directory.');
+    }
+    if ('/' === DIRECTORY_SEPARATOR) {
+        $literal = $assetRoot . '/literal' . chr(92) . 'name';
+        $lookalike = $assetRoot . '/literal/name';
+        if (! mkdir(dirname($lookalike), 0700)
+            || false === file_put_contents($literal, 'literal')
+            || false === file_put_contents($lookalike, 'lookalike')) {
+            throw new RuntimeException('Could not create path normalization fixture.');
+        }
+        try {
+            if (\Webactueel\WordPressConnector\Support\LocalFilesystem::remove_file($literal)
+                || file_get_contents($literal) !== 'literal'
+                || file_get_contents($lookalike) !== 'lookalike') {
+                throw new RuntimeException('Core path normalization redirected exact cleanup.');
+            }
+        } finally {
+            unlink($literal);
+        }
+    }
+    $assetStore->cleanup($assetRequest);
+    clearstatcache(true, $assetRoot);
+    if (file_exists($assetRoot) || is_link($assetRoot)
+        || file_get_contents($assetOutside . '/keep.txt') !== 'outside'
+        || 0 !== $assetFilterCalls) {
+        throw new RuntimeException('Private asset cleanup failed or followed a path filter/link.');
+    }
+} finally {
+    remove_filter('wp_delete_file', $assetFilter);
+    if (is_dir($assetRoot)) {
+        $assetStore->cleanup($assetRequest);
+    }
+    if (is_file($assetOutside . '/keep.txt')) unlink($assetOutside . '/keep.txt');
+    if (is_dir($assetOutside)) rmdir($assetOutside);
+}
+echo 'NATIVE_PRIVATE_ASSET_CLEANUP_PASS' . PHP_EOL;
+
 // Exercise media.rename on a disposable WordPress image attachment. This
 // verifies actual metadata and compatibility files, not only source markers.
 $uploads = wp_upload_dir();

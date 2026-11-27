@@ -11,6 +11,9 @@ namespace Webactueel\WordPressConnector\REST;
 
 use RuntimeException;
 use Webactueel\WordPressConnector\Security\Policy;
+use Webactueel\WordPressConnector\Support\LocalFilesystem;
+
+require_once __DIR__ . '/../Support/class-localfilesystem.php';
 
 /**
  * Implements Asset Store handling for authenticated REST requests.
@@ -80,7 +83,7 @@ final class AssetStore {
 			throw new RuntimeException( 'Could not store uploaded request asset.' );
 		}
 		if ( ! @chmod( $destination, 0600 ) ) {
-			if ( ! @unlink( $destination ) ) {
+			if ( ! LocalFilesystem::remove_file( $destination ) ) {
 				throw new RuntimeException( 'Could not secure or remove uploaded request asset; manual recovery is required.' );
 			}
 			throw new RuntimeException( 'Could not secure uploaded request asset.' );
@@ -90,8 +93,7 @@ final class AssetStore {
 		// asset as stored if this root timestamp could not be refreshed.
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_touch -- This private root needs a checked, local timestamp operation; an unhandled PHP warning would expose filesystem details.
 		if ( ! @touch( $root ) ) {
-			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink -- Failed retention must roll back only the newly uploaded private file; boolean failure detection is required.
-			if ( ! @unlink( $destination ) ) {
+			if ( ! LocalFilesystem::remove_file( $destination ) ) {
 				throw new RuntimeException( 'Could not refresh uploaded asset retention or remove the new file; manual cleanup is required.' );
 			}
 			throw new RuntimeException( 'Could not refresh uploaded asset retention; the new upload was removed.' );
@@ -395,7 +397,7 @@ final class AssetStore {
 				if ( ! @rmdir( $entry->getPathname() ) ) {
 					throw new RuntimeException( 'Could not remove private request asset directory.' );
 				}
-			} elseif ( ! @unlink( $entry->getPathname() ) ) {
+			} elseif ( ! LocalFilesystem::remove_file( $entry->getPathname() ) ) {
 				throw new RuntimeException( 'Could not remove private request asset.' );
 			}
 		}
