@@ -1,0 +1,186 @@
+name: Temporary PHPStan supported PHP version range diagnosis
+
+on:
+  push:
+    branches: ['diagnostic/phpstan-version-range-20261128']
+    paths: ['.github/workflows/diagnostic-phpstan-version-range.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  phpstan-symbols:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact public analysis target
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Yolol100/wordpressconnector
+          ref: 'ed944244d30a4006cbfb0dd92e846d87469e01e6'
+          path: connector
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Checkout existing pinned audit toolchain
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Yolol100/programmeren
+          ref: 'c501b205a84e3e98b3a7bfa342e8c2c4aa2b8001'
+          path: audit-harness
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify immutable source and toolchain revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C connector rev-parse HEAD)" = 'ed944244d30a4006cbfb0dd92e846d87469e01e6'
+          test "$(git -C audit-harness rev-parse HEAD)" = 'c501b205a84e3e98b3a7bfa342e8c2c4aa2b8001'
+          mkdir -p evidence
+          printf '%s\n' 'ed944244d30a4006cbfb0dd92e846d87469e01e6' > evidence/target-sha.txt
+          printf '%s\n' 'c501b205a84e3e98b3a7bfa342e8c2c4aa2b8001' > evidence/toolchain-sha.txt
+      - name: Set up matching PHP runtime
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        with:
+          php-version: '8.3'
+          tools: none
+          coverage: none
+        env:
+          fail-fast: true
+      - name: Bootstrap verified canonical Composer
+        shell: bash
+        run: bash audit-harness/.audit/scripts/install_pinned_composer.sh
+      - name: Verify and install existing locked analysis dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' 'f5f0768d29b41a4c5833bd74031d1409268ee28efb42259bb5202668ae6f57c8' audit-harness/.audit/tools/composer.lock | sha256sum -c -
+          composer audit --locked --no-interaction --format=json --working-dir=audit-harness/.audit/tools > evidence/composer-audit.json
+          composer install --working-dir=audit-harness/.audit/tools --no-interaction --no-progress --prefer-dist --no-plugins --no-scripts
+          php -v > evidence/php-version.txt
+          audit-harness/.audit/tools/vendor/bin/phpstan --version > evidence/phpstan-version.txt
+          sha256sum audit-harness/.audit/tools/composer.lock > evidence/composer-lock.sha256
+      - name: Acquire immutable public provider declarations without executing them
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/phpstan-symbols"
+          fetch_stub() {
+            local name="$1" url="$2" blob="$3" size="$4" file
+            file="$RUNNER_TEMP/phpstan-symbols/$name"
+            curl --fail --silent --show-error --retry 2 --connect-timeout 15 --max-time 90 --proto '=https' --tlsv1.2 --max-filesize "$size" "$url" -o "$file"
+            test "$(wc -c < "$file")" -eq "$size"
+            test "$(git hash-object --no-filters "$file")" = "$blob"
+            printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$url" "$blob" "$size" "$(sha256sum "$file" | cut -d' ' -f1)" >> evidence/provider-provenance.tsv
+          }
+          printf 'file\timmutable_url\tgit_blob\tbytes\tsha256\n' > evidence/provider-provenance.tsv
+          fetch_stub woocommerce-stubs.php 'https://raw.githubusercontent.com/php-stubs/woocommerce-stubs/80c661dc71012c7d82ebcb8098a11ef4b0f01bf3/woocommerce-stubs.php' '8e2a2d1c4f094626fc4c2c27220ad780b0b45150' 4819413
+          fetch_stub woocommerce-packages-stubs.php 'https://raw.githubusercontent.com/php-stubs/woocommerce-stubs/80c661dc71012c7d82ebcb8098a11ef4b0f01bf3/woocommerce-packages-stubs.php' '2fcd17596aeac9ef2311fc5599f13ba7011c4f9c' 237168
+          fetch_stub acf-pro-stubs.php 'https://raw.githubusercontent.com/php-stubs/acf-pro-stubs/b22454992d9651cd837439a2c1073a0955b68d94/acf-pro-stubs.php' 'b20d645988eb6c2aa24931829f152588f969ceb8' 749830
+          fetch_stub wp-cli-stubs.php 'https://raw.githubusercontent.com/php-stubs/wp-cli-stubs/af16401e299a3fd2229bd0fa9a037638a4174a9d/wp-cli-stubs.php' 'd370c54172be6b9513b958f47f4f3a85469d4c82' 212491
+          fetch_stub code-snippets-ops.php 'https://raw.githubusercontent.com/codesnippetspro/code-snippets/78f5f020ddec0a2987454024c1a2046d566622c6/src/php/snippet-ops.php' 'deae3755a968dd93790842425e64fd086c1b2d10' 28647
+          fetch_stub code-snippets-model.php 'https://raw.githubusercontent.com/codesnippetspro/code-snippets/78f5f020ddec0a2987454024c1a2046d566622c6/src/php/Model/Model.php' '94bdcf39288a8f986dbe297b69b64d6fd0296198' 6828
+          fetch_stub code-snippets-snippet.php 'https://raw.githubusercontent.com/codesnippetspro/code-snippets/78f5f020ddec0a2987454024c1a2046d566622c6/src/php/Model/Snippet.php' 'f74cd9ceb0b12e5d4741b2fc1536cddb9aac2887' 17361
+          fetch_stub elementor-plugin.php 'https://raw.githubusercontent.com/elementor/elementor/2e8b3c1ac363c7b955fb939efd48c786f59b56bc/includes/plugin.php' '6d182207fbe636f121da28075eb77201f5816675' 15981
+          fetch_stub elementor-files-manager.php 'https://raw.githubusercontent.com/elementor/elementor/2e8b3c1ac363c7b955fb939efd48c786f59b56bc/core/files/manager.php' '8dc2521d0bfe81911c1d44a29227decb35a8c9ec' 10774
+          fetch_stub elementor-documents-manager.php 'https://raw.githubusercontent.com/elementor/elementor/2e8b3c1ac363c7b955fb939efd48c786f59b56bc/core/documents-manager.php' 'b21d01dd8c79ae51e4eab32c62137775c9ccccbb' 20831
+          fetch_stub elementor-document.php 'https://raw.githubusercontent.com/elementor/elementor/2e8b3c1ac363c7b955fb939efd48c786f59b56bc/core/base/document.php' 'd38ae79dd32c6f5ce2d7fc16639410de351ec2c1' 54622
+          fetch_stub elementor-controls-stack.php 'https://raw.githubusercontent.com/elementor/elementor/2e8b3c1ac363c7b955fb939efd48c786f59b56bc/includes/base/controls-stack.php' '00b280e518b89925c8f85a059b34136177ff3d4d' 72443
+          fetch_stub elementor-base-object.php 'https://raw.githubusercontent.com/elementor/elementor/2e8b3c1ac363c7b955fb939efd48c786f59b56bc/core/base/base-object.php' 'd8cc369b0376987ae52146f0b8cb61b9a0725659' 5689
+          fetch_stub acf-upstream-fields.php 'https://raw.githubusercontent.com/AdvancedCustomFields/acf/c163ae45f052b986f663f711b5619529b8636362/includes/fields.php' '7879304dbceb4986608f248fe20c97602d18bdf7' 12833
+          python3 - <<'PY'
+          import difflib, hashlib, os, pathlib, re
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'phpstan-symbols'
+          actual = (root / 'acf-upstream-fields.php').read_text()
+          assert re.search(r'function acf_get_field_type\( \$name \) \{\s*return acf\(\)->fields->get_field_type\( \$name \);', actual)
+          assert re.search(r'function get_field_type\( \$name \) \{\s*return isset\( \$this->types\[ \$name \] \) \? \$this->types\[ \$name \] : null;', actual)
+          source = (root / 'acf-pro-stubs.php').read_text()
+          old = '     * @param   void\n     * @return  void\n     */\n    function acf_get_field_type($name)'
+          new = '     * @param   string $name\n     * @return  object|null\n     */\n    function acf_get_field_type($name)'
+          assert source.count(old) == 1, 'ACF upstream stub changed'
+          corrected = source.replace(old, new)
+          dest = root / 'acf-pro-stubs-corrected.php'
+          dest.write_text(corrected)
+          pathlib.Path('evidence/acf-type-correction.diff').write_text(''.join(difflib.unified_diff(source.splitlines(True), corrected.splitlines(True), fromfile='acf-pro-stubs.php', tofile=dest.name)))
+          pathlib.Path('evidence/acf-type-correction.sha256').write_text(hashlib.sha256(dest.read_bytes()).hexdigest() + '\n')
+          PY
+      - name: Compare exact same source with and without provider symbol discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/connector/plugin/wordpressconnector"
+          tools="$GITHUB_WORKSPACE/audit-harness/.audit/tools/vendor"
+          cat > evidence/phpstan-base.neon <<NEON
+          includes:
+              - $tools/szepeviktor/phpstan-wordpress/extension.neon
+          parameters:
+              level: 5
+              paths:
+                  - $root
+              excludePaths:
+                  analyse:
+                      - $root/vendor/*
+                      - $root/node_modules/*
+                      - $root/build/*
+                      - $root/dist/*
+              reportUnmatchedIgnoredErrors: false
+          NEON
+          cp evidence/phpstan-base.neon evidence/phpstan-provider.neon
+          cat >> evidence/phpstan-provider.neon <<NEON
+              scanFiles:
+                  - $RUNNER_TEMP/phpstan-symbols/woocommerce-stubs.php
+                  - $RUNNER_TEMP/phpstan-symbols/woocommerce-packages-stubs.php
+                  - $RUNNER_TEMP/phpstan-symbols/acf-pro-stubs.php
+          NEON
+          python3 - <<'PY'
+          import pathlib
+          p = pathlib.Path('evidence/phpstan-provider.neon')
+          s = p.read_text()
+          old = '/phpstan-symbols/acf-pro-stubs.php'
+          assert s.count(old) == 1
+          s = s.replace(old, '/phpstan-symbols/acf-pro-stubs-corrected.php')
+          for name in ('wp-cli-stubs.php', 'code-snippets-ops.php', 'code-snippets-model.php', 'code-snippets-snippet.php', 'elementor-plugin.php', 'elementor-files-manager.php', 'elementor-documents-manager.php', 'elementor-document.php', 'elementor-controls-stack.php', 'elementor-base-object.php'):
+              prefix = next(line.rsplit('/', 1)[0] for line in s.splitlines() if '/phpstan-symbols/acf-pro-stubs-corrected.php' in line)
+              s += prefix + '/' + name + '\n'
+          pathlib.Path('evidence/phpstan-extended.neon').write_text(s)
+          PY
+          cp evidence/phpstan-extended.neon evidence/phpstan-range.neon
+          printf '    phpVersion:\n        min: 70400\n        max: 80599\n' >> evidence/phpstan-range.neon
+          for mode in extended range; do
+            rc=0
+            "$tools/bin/phpstan" analyse --no-progress --error-format=json -c "evidence/phpstan-$mode.neon" > "evidence/phpstan-$mode.json" 2> "evidence/phpstan-$mode.stderr" || rc=$?
+            printf '%s\n' "$rc" > "evidence/phpstan-$mode.exit"
+          done
+          python3 - <<'PY'
+          import collections, json, pathlib
+          root = pathlib.Path('evidence')
+          output = {}
+          for mode in ('extended', 'range'):
+              result = json.loads((root / f'phpstan-{mode}.json').read_text())
+              rc = int((root / f'phpstan-{mode}.exit').read_text())
+              messages = [m for f in result.get('files', {}).values() for m in f['messages']]
+              totals = result['totals']
+              assert len(messages) == totals['file_errors'], 'incomplete file report'
+              assert len(result.get('errors', [])) == totals['errors'], 'incomplete global report'
+              assert rc == (1 if totals['errors'] or totals['file_errors'] else 0), 'unexpected analyzer exit'
+              output[mode] = {'exit': rc, 'totals': totals, 'identifiers': dict(collections.Counter(m.get('identifier', 'none') for m in messages))}
+          output['reference_tree'] = '3b456cadac9709386615264f98a44a6994dec47c'
+          output['range_file_error_delta'] = output['range']['totals']['file_errors'] - output['extended']['totals']['file_errors']
+          for mode in ('extended', 'range'):
+              assert output[mode]['totals']['errors'] == 0, 'global analysis error'
+          (root / 'summary.json').write_text(json.dumps(output, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(output, indent=2, sort_keys=True))
+          PY
+      - name: Retain diagnosis evidence only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: phpstan-supported-version-range-diagnosis
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve failing analysis as a diagnostic failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s evidence/summary.json
+          test "$(cat evidence/phpstan-extended.exit)" = 0 && test "$(cat evidence/phpstan-range.exit)" = 0
