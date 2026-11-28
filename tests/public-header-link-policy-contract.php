@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Webactueel\WordPressConnector\Runtime\Runner;
 
+define('ABSPATH', __DIR__ . '/fixtures/');
+
 function home_url($path = '/')
 {
     return 'https://example.test' . $path;
@@ -18,7 +20,7 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Run
 
 $reflection = new ReflectionClass(Runner::class);
 $runner = $reflection->newInstanceWithoutConstructor();
-$descriptorMethod = $reflection->getMethod('publicDescriptor');
+$descriptorMethod = $reflection->getMethod('public_descriptor');
 $descriptorMethod->setAccessible(true);
 $descriptor = array('privileged' => true, 'public_repository_safe' => true);
 $check = array(

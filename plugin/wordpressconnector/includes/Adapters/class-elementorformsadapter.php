@@ -417,7 +417,7 @@ final class ElementorFormsAdapter {
 			$record['responsive_devices'] = array_values( array_filter( array_map( 'strval', $control['responsive']['devices'] ) ) );
 		}
 		if ( isset( $control['options'] ) && is_array( $control['options'] ) ) {
-			$record['choice_keys'] = array_slice( array_values( array_map( 'strval', array_keys( $control['options'] ) ) ), 0, 250 );
+			$record['choice_keys'] = array_slice( array_map( 'strval', array_keys( $control['options'] ) ), 0, 250 );
 		}
 		if ( isset( $control['fields'] ) && is_array( $control['fields'] ) ) {
 			$record['fields'] = array();

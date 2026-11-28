@@ -356,12 +356,11 @@ final class AcfAdapter {
 			'group_key'            => $group_key,
 			'requested'            => $normalized,
 			'before'               => $before,
-			'would_create'         => array_values(
-				array_map(
-					static function ( array $field ): string {
-						return $field['key']; },
-					$would_create
-				)
+			'would_create'         => array_map(
+				static function ( array $field ): string {
+					return $field['key'];
+				},
+				$would_create
 			),
 			'_current_fingerprint' => Fingerprint::make( $state ),
 		);
@@ -401,13 +400,11 @@ final class AcfAdapter {
 		}
 
 		$result['after']   = $after;
-		$result['created'] = array_values(
-			array_map(
-				static function ( array $field ): string {
-					return $field['key'];
-				},
-				$created
-			)
+		$result['created'] = array_map(
+			static function ( array $field ): string {
+				return $field['key'];
+			},
+			$created
 		);
 		if ( $created ) {
 			$result['_rollback'] = array(
