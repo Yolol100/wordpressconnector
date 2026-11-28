@@ -588,10 +588,16 @@ final class WooCommerceAdapter {
 				return new \WC_Product_External();
 			case 'simple':
 				return new \WC_Product_Simple();
+			case 'variation':
+				throw new RuntimeException( 'Unsupported product type.' );
 			default:
-				$class = wc_get_product_classname( 0, $type );
-				if ( class_exists( $class ) && is_subclass_of( $class, 'WC_Product' ) ) {
-					return new $class();
+				$class = \WC_Product_Factory::get_product_classname( 0, $type );
+				if ( is_subclass_of( $class, \WC_Product::class ) && ! is_a( $class, \WC_Product_Variation::class, true ) ) {
+					$product = new $class();
+					// The factory falls back to a simple product for unknown types.
+					if ( $type === $product->get_type() ) {
+						return $product;
+					}
 				}
 				throw new RuntimeException( 'Unsupported product type.' );
 		}
