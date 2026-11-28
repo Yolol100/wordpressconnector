@@ -199,4 +199,63 @@ if ( class_exists( 'ZipArchive' ) ) {
     }
 }
 
+// Exercise the actual theme package inspector, including root and segment
+// validation, instead of relying only on source-fragment assertions.
+if (class_exists('ZipArchive')) {
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/class-pluginpackageadapter.php';
+    $instance = new \Webactueel\WordPressConnector\Adapters\PluginPackageAdapter();
+    $inspect = new ReflectionMethod($instance, 'inspect_theme_package');
+    if (PHP_VERSION_ID < 80100) {
+        $inspect->setAccessible(true);
+    }
+    $header = "/*\nTheme Name: Connector Fixture\n*/\n";
+    $fixtures = array(
+        array(array('fixture/style.css' => $header, 'fixture/index.php' => '<?php'), ''),
+        array(array('fixture/style.css' => $header, 'wrong/index.php' => '<?php'), 'Theme ZIP folder or duplicate path mismatch.'),
+        array(array('fixture/style.css' => $header, 'fixture//index.php' => '<?php'), 'Theme ZIP contains traversal or invalid path.'),
+    );
+    foreach ($fixtures as $fixture) {
+        $archive = tempnam(sys_get_temp_dir(), 'wpc-theme-package-');
+        if (false === $archive) {
+            throw new RuntimeException('Could not create theme package fixture.');
+        }
+        $zip = new ZipArchive();
+        $opened = false;
+        try {
+            if (true !== $zip->open($archive, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+                throw new RuntimeException('Could not open theme package fixture.');
+            }
+            $opened = true;
+            foreach ($fixture[0] as $name => $bytes) {
+                if (!$zip->addFromString($name, $bytes)) {
+                    throw new RuntimeException('Could not populate theme package fixture.');
+                }
+            }
+            if (!$zip->close()) {
+                throw new RuntimeException('Could not finalize theme package fixture.');
+            }
+            $opened = false;
+            $actualError = '';
+            $result = null;
+            try {
+                $result = $inspect->invoke($instance, $archive, 'fixture');
+            } catch (RuntimeException $error) {
+                $actualError = $error->getMessage();
+            }
+            if ($actualError !== $fixture[1]) {
+                throw new RuntimeException('Theme package path validation changed: ' . $actualError);
+            }
+            if ('' === $fixture[1] && (!is_array($result) || 2 !== $result['entries']
+                || strlen($header) + strlen('<?php') !== $result['uncompressed_bytes'])) {
+                throw new RuntimeException('Valid theme package inspection did not preserve its entry and byte counts.');
+            }
+        } finally {
+            if ($opened) {
+                $zip->close();
+            }
+            unlink($archive);
+        }
+    }
+}
+
 echo "plugin package contract OK\n";
