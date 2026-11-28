@@ -79,7 +79,7 @@ final class AssetStore {
 		}
 
 		if ( file_exists( $destination ) || is_link( $destination ) ) {
-			throw new RuntimeException( 'Duplicate request asset path: ' . $relativePath );
+			throw new RuntimeException( 'Duplicate request asset path: ' . esc_html( $relativePath ) );
 		}
 		if ( ! move_uploaded_file( $tmp_name, $destination ) ) {
 			throw new RuntimeException( 'Could not store uploaded request asset.' );
@@ -94,10 +94,11 @@ final class AssetStore {
 		if ( ! is_array( $created_stat ) || ! LocalFileIdentity::matches( $resolved, $created_stat ) || null === $identity ) {
 			throw new RuntimeException( 'Uploaded request asset identity changed; manual recovery is required.' );
 		}
-		$secured = true;
-		if ( ! @chmod( $destination, 0600 ) ) {
-			$secured = false;
-		}
+		$secured = $this->native_operation_succeeded(
+			static function () use ( $destination ): bool {
+				return chmod( $destination, 0600 );
+			}
+		);
 		if ( ! $secured || ! LocalFilesystem::private_mode_matches( $destination, 0600, $identity ) ||
 			! LocalFileIdentity::matches( $resolved, $created_stat ) ) {
 			if ( ! LocalFileIdentity::matches( $resolved, $created_stat ) ||
@@ -440,10 +441,41 @@ final class AssetStore {
 		if ( null === $identity ) {
 			return false;
 		}
-		if ( ! @chmod( $base, 0700 ) ) {
+		if ( ! $this->native_operation_succeeded(
+			static function () use ( $base ): bool {
+				return chmod( $base, 0700 );
+			}
+		) ) {
 			return false;
 		}
 		return LocalFilesystem::private_mode_matches( $base, 0700, $identity );
+	}
+
+	/**
+	 * Treat a native filesystem warning as a failed private operation.
+	 *
+	 * Native warnings can include server paths. Handle them only during the
+	 * operation and restore the caller's error handler even on exceptions.
+	 * The caller independently verifies identity and the resulting state.
+	 *
+	 * @param callable $operation Native local operation returning success.
+	 * @return bool Whether the operation succeeded without warnings.
+	 */
+	private function native_operation_succeeded( callable $operation ): bool {
+		$warning = false;
+		set_error_handler(
+			static function () use ( &$warning ): bool {
+				$warning = true;
+				return true;
+			},
+			E_WARNING | E_USER_WARNING
+		);
+		try {
+			$result = $operation();
+		} finally {
+			restore_error_handler();
+		}
+		return $result && ! $warning;
 	}
 
 	/**
@@ -464,7 +496,11 @@ final class AssetStore {
 			}
 			throw new RuntimeException( 'Could not remove private request asset directory.' );
 		}
-		if ( ! @rmdir( $real ) ) {
+		if ( ! $this->native_operation_succeeded(
+			static function () use ( $real ): bool {
+				return rmdir( $real );
+			}
+		) ) {
 			if ( $root ) {
 				throw new RuntimeException( 'Could not remove private request asset root.' );
 			}

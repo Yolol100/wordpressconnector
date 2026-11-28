@@ -19,6 +19,10 @@ namespace Webactueel\WordPressConnector\REST {
             file_put_contents($path, $bytes);
             return true;
         }
+        if (($GLOBALS['warn_wpconn_chmod_mode'] ?? null) === $mode) {
+            trigger_error('Synthetic private filesystem warning.', E_USER_WARNING);
+            return false;
+        }
         if (($GLOBALS['deny_wpconn_chmod_mode'] ?? null) === $mode) {
             return false;
         }
@@ -41,6 +45,9 @@ namespace Webactueel\WordPressConnector\REST {
         if (($GLOBALS['wpconn_rmdir_path'] ?? null) === $path) {
             switch ($GLOBALS['wpconn_rmdir_fault'] ?? '') {
                 case 'false': return false;
+                case 'warning':
+                    trigger_error('Synthetic private directory warning.', E_USER_WARNING);
+                    return false;
                 case 'false_success': return true;
             }
         }
@@ -88,6 +95,7 @@ namespace {
 
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
     require_once __DIR__ . '/fixtures/direct-file-delete-fixture.php';
+    require_once __DIR__ . '/fixtures/wordpress-escape-fixture.php';
     $GLOBALS['wpconn_direct_file_delete'] = '\\Webactueel\\WordPressConnector\\REST\\unlink';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
 
@@ -123,6 +131,62 @@ namespace {
     }
     if (is_file($root . '/sample.json')) {
         throw new RuntimeException('Rejected uploaded file was not removed.');
+    }
+
+    // Native warnings must fail closed without reaching the caller's handler;
+    // that handler must still receive subsequent unrelated warnings.
+    $warningReceipts = array();
+    set_error_handler(static function (int $severity, string $message) use (&$warningReceipts): bool {
+        $warningReceipts[] = $message;
+        return true;
+    }, E_USER_WARNING);
+    try {
+        $GLOBALS['deny_wpconn_chmod_mode'] = null;
+        foreach (array(0700, 0600) as $mode) {
+            $GLOBALS['warn_wpconn_chmod_mode'] = $mode;
+            $message = '';
+            $temp = null;
+            try {
+                if (0700 === $mode) {
+                    $store->rootForRequest($id, true);
+                } else {
+                    $temp = tempnam(sys_get_temp_dir(), 'wpconn-warning');
+                    file_put_contents($temp, '{"warning":true}');
+                    $store->put($id, 'warning.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $temp));
+                }
+            } catch (RuntimeException $error) {
+                $message = $error->getMessage();
+            } finally {
+                unset($GLOBALS['warn_wpconn_chmod_mode']);
+                if (is_string($temp) && is_file($temp)) \unlink($temp);
+            }
+            $expected = 0700 === $mode
+                ? 'Could not secure connector asset base directory.'
+                : 'Could not secure uploaded request asset.';
+            if ($expected !== $message || is_file($root . '/warning.json') || array() !== $warningReceipts) {
+                throw new LogicException('Native chmod warning handling failed.');
+            }
+        }
+        $warningId = 'request-warning-rmdir';
+        $warningRoot = $store->rootForRequest($warningId, true);
+        $GLOBALS['wpconn_rmdir_path'] = $warningRoot;
+        $GLOBALS['wpconn_rmdir_fault'] = 'warning';
+        $message = '';
+        try { $store->cleanup($warningId); }
+        catch (RuntimeException $error) { $message = $error->getMessage(); }
+        finally { unset($GLOBALS['wpconn_rmdir_path'], $GLOBALS['wpconn_rmdir_fault']); }
+        if ('Could not remove private request asset root.' !== $message || !is_dir($warningRoot)
+            || array() !== $warningReceipts) {
+            throw new LogicException('Native rmdir warning handling failed.');
+        }
+        $store->cleanup($warningId);
+        trigger_error('Caller handler restored.', E_USER_WARNING);
+        if (array('Caller handler restored.') !== $warningReceipts) {
+            throw new LogicException('Native operation did not restore the caller error handler.');
+        }
+    } finally {
+        restore_error_handler();
+        $GLOBALS['deny_wpconn_chmod_mode'] = 0600;
     }
 
     // A cleanup return value alone must not determine whether private
