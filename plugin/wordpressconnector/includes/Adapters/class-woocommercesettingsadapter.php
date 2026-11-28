@@ -596,7 +596,7 @@ final class WooCommerceSettingsAdapter {
 		if ( 'color' === $type && ! preg_match( '/^#[0-9a-fA-F]{6}$/D', $value ) ) {
 			throw new RuntimeException( 'WooCommerce color requires six hex digits.' );
 		}
-		if ( 'textarea' === $type && ( strlen( $value ) > 1200 || preg_match( '/[<>]/', $value ) ) ) {
+		if ( 'textarea' === $type && preg_match( '/[<>]/', $value ) ) {
 			throw new RuntimeException( 'WooCommerce textarea contains unsupported markup.' );
 		}
 		if ( ! in_array( $type, array( 'select', 'radio', 'checkbox', 'text', 'number', 'email', 'color', 'textarea' ), true ) ) {

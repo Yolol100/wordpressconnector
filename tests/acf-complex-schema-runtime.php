@@ -271,7 +271,7 @@ $ensurePayload = array(
     'fields' => $nested,
 );
 $preview = $adapter->ensureFields($ensurePayload, array('dry_run' => true));
-if (count($preview['would_create'] ?? array()) !== 3 || ! preg_match('/^[a-f0-9]{64}$/D', (string) ($preview['_current_fingerprint'] ?? ''))) {
+if (($preview['would_create'] ?? array()) !== array('field_heroimage123', 'field_details123', 'field_items123') || ! preg_match('/^[a-f0-9]{64}$/D', (string) ($preview['_current_fingerprint'] ?? ''))) {
     fwrite(STDERR, "Complex ACF ensure dry-run failed.\n");
     exit(1);
 }

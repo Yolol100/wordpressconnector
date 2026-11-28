@@ -122,7 +122,7 @@ final class CodeSnippetsAdapter {
 		} catch ( \Throwable $error ) {
 			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );
 		}
-		if ( ! is_string( $code ) || '' === trim( $code ) ||
+		if ( '' === trim( $code ) ||
 			strlen( $code ) > self::MAX_CODE_BYTES ||
 			false === strpos( $code, self::CATALOG_MARKER ) ) {
 			throw new RuntimeException( 'Audited WooCommerce catalogue preset is unavailable.' );

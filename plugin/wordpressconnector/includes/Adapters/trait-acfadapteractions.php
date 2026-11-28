@@ -163,12 +163,11 @@ trait AcfAdapterActions {
 			'group_key'            => $group_key,
 			'before'               => $before,
 			'requested'            => $normalized,
-			'would_create'         => array_values(
-				array_map(
-					static function ( array $field ): string {
-						return $field['key']; },
-					$would_create
-				)
+			'would_create'         => array_map(
+				static function ( array $field ): string {
+					return $field['key'];
+				},
+				$would_create
 			),
 			'_current_fingerprint' => Fingerprint::make( $state ),
 		);
@@ -219,13 +218,11 @@ trait AcfAdapterActions {
 			$after[ $definition['key'] ] = is_array( $readback ) ? $this->field_summary( $readback ) : null;
 		}
 		$result['after']   = $after;
-		$result['created'] = array_values(
-			array_map(
-				static function ( array $field ): string {
-					return $field['key'];
-				},
-				$created
-			)
+		$result['created'] = array_map(
+			static function ( array $field ): string {
+				return $field['key'];
+			},
+			$created
 		);
 		if ( $created ) {
 			$result['_rollback'] = array(
