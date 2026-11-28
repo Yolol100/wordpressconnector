@@ -18,6 +18,10 @@ final class WPC_Runtime_Custom_Product extends WC_Product_Simple
 {
     public function get_type() { return 'wpc-runtime-custom'; }
 }
+final class WPC_Runtime_Custom_Variation extends WC_Product_Variation
+{
+    public function get_type() { return 'wpc-runtime-variation'; }
+}
 $factoryFilter = static function ($classname, $type) {
     switch ($type) {
         case 'wpc-runtime-custom':
@@ -26,6 +30,8 @@ $factoryFilter = static function ($classname, $type) {
             return WC_Product_Variable::class;
         case 'wpc-runtime-not-product':
             return stdClass::class;
+        case 'wpc-runtime-variation':
+            return WPC_Runtime_Custom_Variation::class;
         default:
             return $classname;
     }
@@ -39,7 +45,7 @@ try {
             throw new RuntimeException('WooCommerce dry-run returned an unexpected product identity.');
         }
     }
-    foreach (array('wpc-runtime-unknown', 'wpc-runtime-wrong', 'wpc-runtime-not-product') as $type) {
+    foreach (array('wpc-runtime-unknown', 'wpc-runtime-wrong', 'wpc-runtime-not-product', 'variation', 'wpc-runtime-variation') as $type) {
         $rejected = false;
         try {
             $factoryAdapter->product_create(array('type' => $type), array('dry_run' => true));
