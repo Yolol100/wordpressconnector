@@ -13,6 +13,51 @@ if (! current_user_can('manage_woocommerce')) {
     throw new RuntimeException('Runtime administrator lacks manage_woocommerce.');
 }
 
+// Exercise the provider factory in the real WooCommerce runtime, before any write.
+final class WPC_Runtime_Custom_Product extends WC_Product_Simple
+{
+    public function get_type() { return 'wpc-runtime-custom'; }
+}
+$factoryFilter = static function ($classname, $type) {
+    switch ($type) {
+        case 'wpc-runtime-custom':
+            return WPC_Runtime_Custom_Product::class;
+        case 'wpc-runtime-wrong':
+            return WC_Product_Variable::class;
+        case 'wpc-runtime-not-product':
+            return stdClass::class;
+        default:
+            return $classname;
+    }
+};
+add_filter('woocommerce_product_class', $factoryFilter, 10, 2);
+try {
+    $factoryAdapter = new WooCommerceAdapter();
+    foreach (array('simple', 'variable', 'grouped', 'external', 'wpc-runtime-custom') as $type) {
+        $preview = $factoryAdapter->product_create(array('type' => $type, 'name' => 'Runtime preview'), array('dry_run' => true));
+        if ($type !== ($preview['would_create']['type'] ?? null) || 0 !== ($preview['would_create']['id'] ?? null)) {
+            throw new RuntimeException('WooCommerce dry-run returned an unexpected product identity.');
+        }
+    }
+    foreach (array('wpc-runtime-unknown', 'wpc-runtime-wrong', 'wpc-runtime-not-product') as $type) {
+        $rejected = false;
+        try {
+            $factoryAdapter->product_create(array('type' => $type), array('dry_run' => true));
+        } catch (RuntimeException $error) {
+            if ('Unsupported product type.' !== $error->getMessage()) {
+                throw $error;
+            }
+            $rejected = true;
+        }
+        if (!$rejected) {
+            throw new RuntimeException('WooCommerce unsupported product type was accepted.');
+        }
+    }
+    echo "WooCommerce native product factory and fallback guards OK\n";
+} finally {
+    remove_filter('woocommerce_product_class', $factoryFilter, 10);
+}
+
 $expectHpos = 'yes' === getenv('WPC_RUNTIME_EXPECT_HPOS');
 $product = new WC_Product_Simple();
 $product->set_name('Connector runtime product');
