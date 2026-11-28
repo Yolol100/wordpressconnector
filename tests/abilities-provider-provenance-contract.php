@@ -100,7 +100,14 @@ if (! isset($catalog['abilities']['elementor/network-write'])
 }
 
 $networkActive = array('elementor/elementor.php' => time());
-$catalog = $adapter->catalog(array('namespace' => 'elementor'), array());
+set_error_handler(static function (int $severity, string $message): bool {
+    throw new ErrorException($message, 0, $severity);
+}, E_DEPRECATED | E_USER_DEPRECATED);
+try {
+    $catalog = $adapter->catalog(array('namespace' => 'elementor'), array());
+} finally {
+    restore_error_handler();
+}
 if (true !== ($catalog['abilities']['elementor/network-write']['mutation_execution_exposed'] ?? false)) {
     fwrite(STDERR, "Network-active Elementor did not receive native mutation trust.\n");
     exit(1);

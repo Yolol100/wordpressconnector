@@ -704,7 +704,8 @@ final class AbilitiesAdapter {
 				return null;
 			}
 			$property = $reflection->getProperty( 'execute_callback' );
-			if ( method_exists( $property, 'setAccessible' ) ) {
+			// PHP 8.1+ can access nonpublic properties without setAccessible().
+			if ( PHP_VERSION_ID < 80100 ) {
 				$property->setAccessible( true );
 			}
 			return $property->getValue( $ability );

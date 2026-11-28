@@ -91,7 +91,7 @@ final class PluginPackageAdapter {
 				}
 				$normal   = rtrim( $path, '/' );
 				$segments = explode( '/', $normal );
-				if ( count( $segments ) < 1 || $segments[0] !== $expected || isset( $seen[ $normal ] ) ) {
+				if ( $segments[0] !== $expected || isset( $seen[ $normal ] ) ) {
 					throw new RuntimeException( 'Theme ZIP folder or duplicate path mismatch.' );
 				}
 				foreach ( $segments as $segment ) {
