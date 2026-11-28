@@ -267,20 +267,20 @@ trait ElementorAdapterActions {
 		foreach ( $checks as $check ) {
 			$element_id    = $check['element_id'];
 			$matches_count = 0;
-			$is_icon_list  = false;
 			try {
-				$element      = $this->find_element( $snapshot['data'], $element_id );
-				$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
-					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
-				if ( $is_icon_list ) {
-					foreach ( $element['settings']['icon_list'] as $item ) {
-						if ( is_array( $item ) && ( $item['link']['url'] ?? null ) === $check['from'] ) {
-							++$matches_count;
-						}
+				$element = $this->find_element( $snapshot['data'], $element_id );
+			} catch ( RuntimeException $error ) {
+				// Represent a missing widget as an empty element for the read-only checks below.
+				$element = array();
+			}
+			$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
+				&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
+			if ( $is_icon_list ) {
+				foreach ( $element['settings']['icon_list'] as $item ) {
+					if ( is_array( $item ) && ( $item['link']['url'] ?? null ) === $check['from'] ) {
+						++$matches_count;
 					}
 				}
-			} catch ( RuntimeException $error ) {
-				// A missing element contributes zero matches and does not affect other checks.
 			}
 			$matches[] = array(
 				'element_id'        => $element_id,
