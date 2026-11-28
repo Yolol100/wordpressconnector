@@ -247,7 +247,7 @@ final class ElementorCapabilitiesAdapter {
 				'title'            => wp_strip_all_tags( (string) get_the_title( $post ) ),
 				'slug'             => (string) $post->post_name,
 				'architecture'     => $architecture,
-				'families'         => array_values( array_keys( array_filter( $families ) ) ),
+				'families'         => array_keys( array_filter( $families ) ),
 				'widget_instances' => $document_widget_instances,
 				'widgets'          => $document_widgets,
 				'element_types'    => $document_element_types,
