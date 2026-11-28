@@ -269,7 +269,7 @@ trait ElementorAdapterActions {
 			$matches_count = 0;
 			$is_icon_list  = false;
 			try {
-				$element      =& $this->find_element( $snapshot['data'], $element_id );
+				$element      = $this->find_element( $snapshot['data'], $element_id );
 				$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
 					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
 				if ( $is_icon_list ) {
@@ -279,9 +279,8 @@ trait ElementorAdapterActions {
 						}
 					}
 				}
-				unset( $element );
 			} catch ( RuntimeException $error ) {
-				unset( $element ); // Avoid retaining a by-reference handle after an unsuccessful lookup.
+				// A missing element contributes zero matches and does not affect other checks.
 			}
 			$matches[] = array(
 				'element_id'        => $element_id,
